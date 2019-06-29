@@ -1,1 +1,1 @@
-cerver-client
+**cerver-client** is originally being develop as a direct way to interact with the cerver framework, although there is the plan to make this into a general framework to make any kind of requests.
