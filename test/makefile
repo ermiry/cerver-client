@@ -1,7 +1,5 @@
 TARGET      :=	test-client
 
-MANUAL		:=  -l:/usr/lib/x86_64-linux-gnu/libavformat.so.58.20.100 -l:/usr/lib/x86_64-linux-gnu/libavutil.so -l:/usr/lib/x86_64-linux-gnu/libswscale.so 
-
 PTHREAD		:= -l pthread
 MATH		:= -lm
 
