@@ -1,10 +1,10 @@
 # Cerver-Client
 
-**Cever-Client** is just the necesarry components from the **Cengine** framework (https://github.com/ermiry/cengine), created and developed by Ermiry, that make the networking module work. It is network client created primarily to work directly with the **Cerver** framework, also created and developed by Ermiry, although a connection and communication with any other server using TCP or UDP protocol will be made available soon.
+**Cever-Client** is just the necesary components from the **Cengine** framework (https://github.com/ermiry/cengine), created and developed by Ermiry, that make the networking module work. It is network client created primarily to work directly with the **Cerver** framework, also created and developed by Ermiry, although a connection and communication with any other server using TCP or UDP protocol will be fully supported soon.
 
 This source is intended to be a starting point to create a successfull connection and data exchnage protocol for your custom application using the **Cerver** framework.
 
-In this repo you will find some examples on how to perform a success connection as well as how to add your own application code to transfer youw custom data structures.
+In this repo you will find some examples on how to perform a success connection as well as how to add your own application code to transfer your custom data.
 
 For a more detailed information on how **Cerver** works, please refer to the offical website (https://cerver.ermiry.com) to view how to get started and the necessary documentation to take full advantage of the framework. 
 
