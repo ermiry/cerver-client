@@ -1,9 +1,12 @@
-TARGET      :=	test-client
+TARGET      := example
 
-PTHREAD		:= -l pthread
-MATH		:= -lm
+MATH 		:= -lm 
+PTHREAD 	:= -l pthread
 
-DEFINES		:= -D CENGINE_DEBUG -D CERVER_DEBUG -D CLIENT_DEBUG
+# development
+DEVELOPMENT = -D CENGINE_DEBUG -D CERVER_DEBUG -D CLIENT_DEBUG
+
+DEFINES = $(DEVELOPMENT)
 
 CC          := gcc
 
@@ -11,13 +14,13 @@ SRCDIR      := src
 INCDIR      := include
 BUILDDIR    := objs
 TARGETDIR   := bin
-SRCEXT      := cpp
+SRCEXT      := c
 DEPEXT      := d
 OBJEXT      := o
 
 CFLAGS      := -g $(DEFINES)
 LIB         := $(MATH) $(PTHREAD)
-INC         := -I $(INCDIR) -I /usr/local/include $(LIB)
+INC         := -I $(INCDIR) -I /usr/local/include
 INCDEP      := -I $(INCDIR)
 
 SOURCES     := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
@@ -28,7 +31,7 @@ all: directories $(TARGET)
 run: 
 	./$(TARGETDIR)/$(TARGET)
 
-remake: cleaner all
+remake: clean all
 
 directories:
 	@mkdir -p $(TARGETDIR)
@@ -36,7 +39,7 @@ directories:
 
 # clean only Objecst
 clean:
-	@$(RM) -rf $(BUILDDIR) -rf $(TARGETDIR)
+	@$(RM) -rf $(BUILDDIR)	@$(RM) -rf $(TARGETDIR)
 
 # full Clean, Objects and Binaries
 cleaner: clean
@@ -52,7 +55,7 @@ $(TARGET): $(OBJECTS)
 # compile
 $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $(INC) -c -o $@ $<
+	$(CC) $(LIB) $(CFLAGS) $(INC) -c -o $@ $<
 	@$(CC) $(CFLAGS) $(INCDEP) -MM $(SRCDIR)/$*.$(SRCEXT) > $(BUILDDIR)/$*.$(DEPEXT)
 	@cp -f $(BUILDDIR)/$*.$(DEPEXT) $(BUILDDIR)/$*.$(DEPEXT).tmp
 	@sed -e 's|.*:|$(BUILDDIR)/$*.$(OBJEXT):|' < $(BUILDDIR)/$*.$(DEPEXT).tmp > $(BUILDDIR)/$*.$(DEPEXT)
@@ -60,4 +63,4 @@ $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@rm -f $(BUILDDIR)/$*.$(DEPEXT).tmp
 
 # non-file Targets
-.PHONY: all remake clean cleaner resources%  
+.PHONY: all remake clean cleaner resources
