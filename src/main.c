@@ -14,9 +14,19 @@
 
 typedef enum AppRequest {
 
-	TEST_MSG		= 0
+	TEST_MSG		= 0,
+
+	GET_MSG			= 1
 
 } AppRequest;
+
+// message from the cerver
+typedef struct AppMessage {
+
+	unsigned int len;
+	char message[128];
+
+} AppMessage;
 
 static Client *client = NULL;
 static Connection *connection = NULL;
@@ -31,6 +41,14 @@ static void app_handler (void *packet_ptr) {
 
                 switch (req->type) {
                     case TEST_MSG: cengine_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Got a test message from cerver!"); break;
+
+                    case GET_MSG: {
+                        char *end = (char *) packet->data;
+                        end += sizeof (RequestData);
+
+                        AppMessage *app_message = (AppMessage *) end;
+                        printf ("%s - %d\n", app_message->message, app_message->len);
+                    } break;
 
                     default: 
                         cengine_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown app request.");
@@ -93,7 +111,7 @@ static void cerver_disconnect (void) {
 static u8 max_handler_id = 3;
 static u8 handler_id = 0;
 
-static int test_msg_send () {
+static int test_msg_send (void) {
 
     int retval = 1;
 
@@ -136,6 +154,49 @@ static int test_msg_send () {
 
 }
 
+static int request_message (void) {
+
+    int retval = 1;
+
+    // manually create a packet to send
+    Packet *packet = packet_new ();
+    if (packet) {
+        size_t packet_len = sizeof (PacketHeader) + sizeof (RequestData);
+        packet->packet = malloc (packet_len);
+        packet->packet_size = packet_len;
+
+        char *end = (char *) packet->packet;
+        PacketHeader *header = (PacketHeader *) end;
+        header->protocol_id = packets_get_protocol_id ();
+        header->protocol_version = packets_get_protocol_version ();
+        header->packet_type = APP_PACKET;
+        header->packet_size = packet_len;
+
+        header->handler_id = handler_id;
+        handler_id += 1;
+        if (handler_id > max_handler_id) handler_id = 0;
+
+        end += sizeof (PacketHeader);
+        RequestData *req_data = (RequestData *) end;
+        req_data->type = GET_MSG;
+
+        packet_set_network_values (packet, client, connection);
+
+        size_t sent = 0;
+        if (packet_send (packet, 0, &sent, false)) {
+            cengine_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send message request to cerver");
+        }
+
+        else {
+            printf ("Request sent to cerver: %ld\n", sent);
+            retval = 0;
+        } 
+        
+        packet_delete (packet);
+    }
+
+}
+
 static void end (int dummy) {
 	
 	cerver_disconnect ();
@@ -154,7 +215,10 @@ int main (int argc, const char **argv) {
     if (!cerver_connect ("127.0.0.1", 8007)) {
         while (1) {
             // send a test message every second
-            test_msg_send ();
+            // test_msg_send ();
+
+            // request unique message from each handler
+            request_message ();
 
             sleep (1);
         }
