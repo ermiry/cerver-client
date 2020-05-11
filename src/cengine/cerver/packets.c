@@ -558,14 +558,14 @@ u8 packet_check (Packet *packet) {
 
         if (header->protocol_id != protocol_id) {
             #ifdef CERVER_DEBUG
-            cerver_log_msg (stdout, LOG_WARNING, LOG_PACKET, "Packet with unknown protocol ID.");
+            cengine_log_msg (stdout, LOG_WARNING, LOG_NO_TYPE, "Packet with unknown protocol ID.");
             #endif
             errors |= 1;
         }
 
         if (header->protocol_version.major != protocol_version.major) {
             #ifdef CERVER_DEBUG
-            cerver_log_msg (stdout, LOG_WARNING, LOG_PACKET, "Packet with incompatible version.");
+            cengine_log_msg (stdout, LOG_WARNING, LOG_NO_TYPE, "Packet with incompatible version.");
             #endif
             errors |= 1;
         }

@@ -1,19 +1,19 @@
 #ifndef _CERVER_CLIENT_VERSION_H_
 #define _CERVER_CLIENT_VERSION_H_
 
-#define VERSION                 "1.0"
-#define VERSION_NAME            "Release 1.0"
-#define VERSION_DATE			"20/01/2020"
-#define VERSION_TIME			"18:01 CST"
-#define VERSION_AUTHOR			"Erick Salas"
+#define CERVER_CLIENT_VERSION                   "1.1"
+#define CERVER_CLIENT_VERSION_NAME              "Release 1.1"
+#define CERVER_CLIENT_VERSION_DATE			    "11/05/2020"
+#define CERVER_CLIENT_VERSION_TIME			    "06:01 CST"
+#define CERVER_CLIENT_VERSION_AUTHOR			"Erick Salas"
 
-// print full cengine version information 
-extern void version_print_full (void);
+// print full cerver client version information 
+extern void cerver_client_version_print_full (void);
 
 // print the version id
-extern void version_print_version_id (void);
+extern void cerver_client_version_print_version_id (void);
 
 // print the version name
-extern void version_print_version_name (void);
+extern void cerver_client_version_print_version_name (void);
 
 #endif
