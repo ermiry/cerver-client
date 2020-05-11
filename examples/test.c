@@ -125,6 +125,9 @@ int main (int argc, const char **argv) {
 
     cerver_client_version_print_full ();
 
+    cerver_log_debug ("Basic Test Message Example");
+	printf ("\n");
+
     if (!cerver_connect ("127.0.0.1", 8007)) {
         while (1) {
             // send a test message every second
