@@ -1,12 +1,12 @@
-TARGET      := example
+# TARGET      := client
+SLIB		:= libclient.so
 
-MATH 		:= -lm 
 PTHREAD 	:= -l pthread
+MATH		:= -lm
+# CMONGO 		:= `pkg-config --libs --cflags libmongoc-1.0`
 
-# development
-DEVELOPMENT = -D CENGINE_DEBUG -D CERVER_DEBUG -D CLIENT_DEBUG
-
-DEFINES = $(DEVELOPMENT)
+# print additional information
+DEFINES = -D CERVER_DEBUG -D CLIENT_DEBUG
 
 CC          := gcc
 
@@ -14,53 +14,65 @@ SRCDIR      := src
 INCDIR      := include
 BUILDDIR    := objs
 TARGETDIR   := bin
+
 SRCEXT      := c
 DEPEXT      := d
 OBJEXT      := o
 
-CFLAGS      := -g $(DEFINES)
-LIB         := $(MATH) $(PTHREAD)
+# CFLAGS      := -g $(DEFINES)
+CFLAGS      := -g $(DEFINES) -fPIC
+LIB         := $(PTHREAD) $(MATH)
 INC         := -I $(INCDIR) -I /usr/local/include
 INCDEP      := -I $(INCDIR)
 
 SOURCES     := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS     := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
-all: directories $(TARGET)
+# all: directories $(TARGET)
+all: directories $(SLIB)
 
 run: 
 	./$(TARGETDIR)/$(TARGET)
 
-remake: clean all
+install: $(SLIB)
+	install -m 644 ./bin/libclient.so /usr/local/lib/
+	cp -R ./include/client /usr/local/include
+
+uninstall:
+	rm /usr/local/lib/libclient.so
+	rm -r /usr/local/include/client
 
 directories:
 	@mkdir -p $(TARGETDIR)
 	@mkdir -p $(BUILDDIR)
 
-# clean only Objecst
 clean:
-	@$(RM) -rf $(BUILDDIR)	@$(RM) -rf $(TARGETDIR)
-
-# full Clean, Objects and Binaries
-cleaner: clean
-	@$(RM) -rf $(TARGETDIR)
+	@$(RM) -rf $(BUILDDIR) @$(RM) -rf $(TARGETDIR)
+	@$(RM) -rf ./examples/bin
 
 # pull in dependency info for *existing* .o files
 -include $(OBJECTS:.$(OBJEXT)=.$(DEPEXT))
 
 # link
-$(TARGET): $(OBJECTS)
-	$(CC) $^ $(LIB) -o $(TARGETDIR)/$(TARGET)
+# $(TARGET): $(OBJECTS)
+# 	$(CC) $^ $(LIB) -o $(TARGETDIR)/$(TARGET)
+
+$(SLIB): $(OBJECTS)
+	$(CC) $^ $(LIB) -shared -o $(TARGETDIR)/$(SLIB)
 
 # compile
 $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@mkdir -p $(dir $@)
-	$(CC) $(LIB) $(CFLAGS) $(INC) -c -o $@ $<
+	$(CC) $(CFLAGS) $(INC) $(LIB) -c -o $@ $<
 	@$(CC) $(CFLAGS) $(INCDEP) -MM $(SRCDIR)/$*.$(SRCEXT) > $(BUILDDIR)/$*.$(DEPEXT)
 	@cp -f $(BUILDDIR)/$*.$(DEPEXT) $(BUILDDIR)/$*.$(DEPEXT).tmp
 	@sed -e 's|.*:|$(BUILDDIR)/$*.$(OBJEXT):|' < $(BUILDDIR)/$*.$(DEPEXT).tmp > $(BUILDDIR)/$*.$(DEPEXT)
 	@sed -e 's/.*://' -e 's/\\$$//' < $(BUILDDIR)/$*.$(DEPEXT).tmp | fmt -1 | sed -e 's/^ *//' -e 's/$$/:/' >> $(BUILDDIR)/$*.$(DEPEXT)
 	@rm -f $(BUILDDIR)/$*.$(DEPEXT).tmp
 
-# non-file Targets
-.PHONY: all remake clean cleaner resources
+examples: ./examples/welcome.c ./examples/game.c
+	@mkdir -p ./examples/bin
+	$(CC) -I ./include -L ./bin ./examples/test.c -o ./examples/bin/test -l client
+	$(CC) -I ./include -L ./bin ./examples/handlers.c -o ./examples/bin/handlers -l client
+
+.PHONY: all clean examples
