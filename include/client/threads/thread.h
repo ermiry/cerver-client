@@ -3,16 +3,16 @@
 
 #include <SDL2/SDL.h>
 
-#include "cengine/os.h"
+#include "client/os.h"
 
 #if defined OS_LINUX
     #include <pthread.h>
 #endif
 
-#include "cengine/types/types.h"
-#include "cengine/types/string.h"
+#include "client/types/types.h"
+#include "client/types/string.h"
 
-#include "cengine/collections/dlist.h"
+#include "client/collections/dlist.h"
 
 #define THREAD_OK   0
 

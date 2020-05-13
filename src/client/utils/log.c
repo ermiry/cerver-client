@@ -4,10 +4,10 @@
 
 #include <stdarg.h>
 
-#include "cengine/utils/utils.h"
-#include "cengine/utils/log.h"
+#include "client/utils/utils.h"
+#include "client/utils/log.h"
 
-static char *cengine_get_msg_type (LogMsgType type) {
+static char *client_get_msg_type (LogMsgType type) {
 
     char temp[15];
 
@@ -29,15 +29,15 @@ static char *cengine_get_msg_type (LogMsgType type) {
 
 }
 
-void cengine_log_msg (FILE *__restrict __stream, LogMsgType first_type, LogMsgType second_type,
+void client_log_msg (FILE *__restrict __stream, LogMsgType first_type, LogMsgType second_type,
     const char *msg, ...) {
 
-    char *first = cengine_get_msg_type (first_type);
+    char *first = client_get_msg_type (first_type);
     char *second = NULL;
     char *message = NULL;
 
     if (second_type != 0) {
-        second = cengine_get_msg_type (second_type);
+        second = client_get_msg_type (second_type);
 
         if (first_type == LOG_DEBUG)
             message = c_string_create ("%s: %s\n", second, msg);

@@ -4,16 +4,16 @@
 
 #include <SDL2/SDL.h>
 
-#include "cengine/os.h"
+#include "client/os.h"
 
 #if defined OS_LINUX
     #include <sys/prctl.h>
 #endif
 
-#include "cengine/types/types.h"
-#include "cengine/threads/thread.h"
-#include "cengine/utils/log.h"
-#include "cengine/utils/utils.h"
+#include "client/types/types.h"
+#include "client/threads/thread.h"
+#include "client/utils/log.h"
+#include "client/utils/utils.h"
 
 // creates a custom detachable thread (will go away on its own upon completion)
 // handle manually in linux, with no name
@@ -30,7 +30,7 @@ u8 thread_create_detachable (void *(*work) (void *), void *args) {
         rc = pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_DETACHED);
 
         if (pthread_create (&thread, &attr, work, args) != THREAD_OK)
-            cengine_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create detachable thread!");
+            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create detachable thread!");
         else retval = 0;
     #else
         SDL_Thread *thread = SDL_CreateThread ((int (*) (void *)) work, NULL, args);
@@ -55,8 +55,8 @@ int thread_set_name (const char *name) {
             retval = prctl (PR_SET_NAME, name);
         #elif defined   OS_MACOS
             retval = pthread_setname_np (name);
-        #elif defined   CENGINE_DEBUG
-            cengine_log_msg (stdout, LOG_WARNING, LOG_NO_TYPE, "pthread_setname_np is not supported on this system.");
+        #elif defined   CLIENT_DEBUG
+            client_log_msg (stdout, LOG_WARNING, LOG_NO_TYPE, "pthread_setname_np is not supported on this system.");
         #endif
     }
 

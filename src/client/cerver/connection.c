@@ -2,20 +2,20 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "cengine/types/types.h"
-#include "cengine/types/string.h"
+#include "client/types/types.h"
+#include "client/types/string.h"
 
-#include "cengine/cerver/network.h"
-#include "cengine/cerver/cerver.h"
-#include "cengine/cerver/client.h"
-#include "cengine/cerver/connection.h"
-#include "cengine/cerver/handler.h"
-#include "cengine/cerver/packets.h"
+#include "client/cerver/network.h"
+#include "client/cerver/cerver.h"
+#include "client/cerver/client.h"
+#include "client/cerver/connection.h"
+#include "client/cerver/handler.h"
+#include "client/cerver/packets.h"
 
-#include "cengine/threads/thread.h"
+#include "client/threads/thread.h"
 
-#include "cengine/utils/utils.h"
-#include "cengine/utils/log.h"
+#include "client/utils/utils.h"
+#include "client/utils/log.h"
 
 void connection_remove_auth_data (Connection *connection);
 
@@ -231,7 +231,7 @@ static u8 connection_init (Connection *connection) {
                 connection->sock_fd = socket ((connection->use_ipv6 == 1 ? AF_INET6 : AF_INET), SOCK_DGRAM, 0);
                 break;
 
-            default: cengine_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Unkonw protocol type!"); return 1;
+            default: client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Unkonw protocol type!"); return 1;
         }
 
         if (connection->sock_fd > 0) {
@@ -259,7 +259,7 @@ static u8 connection_init (Connection *connection) {
 
                 // else {
                 //     #ifdef CLIENT_DEBUG
-                //     cengine_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, 
+                //     client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, 
                 //         "Failed to set the socket to non blocking mode!");
                 //     #endif
                 //     close (connection->sock_fd);
@@ -267,7 +267,7 @@ static u8 connection_init (Connection *connection) {
             // }
         }
 
-        else cengine_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create new socket!");
+        else client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create new socket!");
     }
 
     return retval;
@@ -297,7 +297,7 @@ Connection *connection_create (const char *name,
             // set up the new connection to be ready to be started
             if (connection_init (connection)) {
                 #ifdef CLIENT_DEBUG
-                cengine_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to set up the new connection!");
+                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to set up the new connection!");
                 #endif
                 connection_delete (connection);
                 connection = NULL;

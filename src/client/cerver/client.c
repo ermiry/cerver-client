@@ -4,25 +4,25 @@
 
 #include <time.h>
 
-#include "cengine/types/types.h"
-#include "cengine/types/string.h"
+#include "client/types/types.h"
+#include "client/types/string.h"
 
-#include "cengine/cerver/network.h"
-#include "cengine/cerver/packets.h"
-#include "cengine/cerver/events.h"
-#include "cengine/cerver/errors.h"
-#include "cengine/cerver/client.h"
-#include "cengine/cerver/handler.h"
-#include "cengine/cerver/cerver.h"
-#include "cengine/cerver/connection.h"
-#include "cengine/cerver/game.h"
+#include "client/cerver/network.h"
+#include "client/cerver/packets.h"
+#include "client/cerver/events.h"
+#include "client/cerver/errors.h"
+#include "client/cerver/client.h"
+#include "client/cerver/handler.h"
+#include "client/cerver/cerver.h"
+#include "client/cerver/connection.h"
+#include "client/cerver/game.h"
 
-#include "cengine/collections/dlist.h"
+#include "client/collections/dlist.h"
 
-#include "cengine/threads/thread.h"
+#include "client/threads/thread.h"
 
-#include "cengine/utils/log.h"
-#include "cengine/utils/utils.h"
+#include "client/utils/log.h"
+#include "client/utils/utils.h"
 
 int client_disconnect (Client *client);
 int client_connection_end (Client *client, Connection *connection);
@@ -72,13 +72,13 @@ void client_stats_print (Client *client) {
         }
 
         else {
-            cengine_log_msg (stderr, LOG_ERROR, LOG_CLIENT, 
+            client_log_msg (stderr, LOG_ERROR, LOG_CLIENT, 
                 "Client does not have a reference to a client stats!");
         }
     }
 
     else {
-        cengine_log_msg (stderr, LOG_WARNING, LOG_CLIENT, 
+        client_log_msg (stderr, LOG_WARNING, LOG_CLIENT, 
             "Can't get stats of a NULL client!");
     }
 
@@ -253,11 +253,11 @@ int client_connection_create (Client *client, const char *name,
                 retval = 0;
             }
 
-            else cengine_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create new connection!");
+            else client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create new connection!");
         }
 
         else 
-            cengine_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create new connection, no ip provided!");
+            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create new connection, no ip provided!");
     }
 
     return retval;

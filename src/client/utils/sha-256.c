@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "cengine/utils/sha-256.h"
+#include "client/utils/sha-256.h"
 
 #define CHUNK_SIZE 			64
 #define TOTAL_LEN_LEN 		8

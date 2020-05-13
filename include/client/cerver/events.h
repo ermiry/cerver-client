@@ -3,9 +3,9 @@
 
 #include <stdbool.h>
 
-#include "cengine/types/types.h"
+#include "client/types/types.h"
 
-#include "cengine/cerver/client.h"
+#include "client/cerver/client.h"
 
 struct _Client;
 
@@ -15,7 +15,7 @@ typedef enum ClientEventType {
     EVENT_CONNECTION_FAILED,    // failed to connect to cerver
     EVENT_DISCONNECTED,         // disconnected from the cerver, either by the cerver or by losing connection
 
-    EVENT_CONNECTION_CLOSE,     // this happens when a call to a recv () methods returns <= 0, the connection is clossed directly by cengine
+    EVENT_CONNECTION_CLOSE,     // this happens when a call to a recv () methods returns <= 0, the connection is clossed directly by client
 
     EVENT_CERVER_INFO,          // received cerver info from the cerver
     EVENT_CERVER_TEARDOWN,      // the cerver is going to teardown (disconnect happens automatically)

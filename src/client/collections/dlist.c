@@ -3,7 +3,7 @@
 
 #include <pthread.h>
 
-#include "cengine/collections/dlist.h"
+#include "client/collections/dlist.h"
 
 static inline void list_element_delete (ListElement *le);
 

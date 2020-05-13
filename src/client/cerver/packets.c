@@ -6,16 +6,16 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#include "cengine/types/types.h"
-#include "cengine/types/string.h"
+#include "client/types/types.h"
+#include "client/types/string.h"
 
-#include "cengine/cerver/network.h"
-#include "cengine/cerver/packets.h"
-#include "cengine/cerver/cerver.h"
-#include "cengine/cerver/client.h"
+#include "client/cerver/network.h"
+#include "client/cerver/packets.h"
+#include "client/cerver/cerver.h"
+#include "client/cerver/client.h"
 
 #ifdef CLIENT_DEBUG
-#include "cengine/utils/log.h"
+#include "client/utils/log.h"
 #endif
 
 static ProtocolID protocol_id = 0;
@@ -235,7 +235,7 @@ u8 packet_append_data (Packet *packet, void *data, size_t data_size) {
 
             else {
                 #ifdef CLIENT_DEBUG
-                cengine_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to realloc packet data!");
+                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to realloc packet data!");
                 #endif
                 packet->data = NULL;
                 packet->data_size = 0;
@@ -257,7 +257,7 @@ u8 packet_append_data (Packet *packet, void *data, size_t data_size) {
 
             else {
                 #ifdef CLIENT_DEBUG
-                cengine_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to allocate packet data!");
+                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to allocate packet data!");
                 #endif
                 packet->data = NULL;
                 packet->data_size = 0;
@@ -558,14 +558,14 @@ u8 packet_check (Packet *packet) {
 
         if (header->protocol_id != protocol_id) {
             #ifdef CERVER_DEBUG
-            cengine_log_msg (stdout, LOG_WARNING, LOG_NO_TYPE, "Packet with unknown protocol ID.");
+            client_log_msg (stdout, LOG_WARNING, LOG_NO_TYPE, "Packet with unknown protocol ID.");
             #endif
             errors |= 1;
         }
 
         if (header->protocol_version.major != protocol_version.major) {
             #ifdef CERVER_DEBUG
-            cengine_log_msg (stdout, LOG_WARNING, LOG_NO_TYPE, "Packet with incompatible version.");
+            client_log_msg (stdout, LOG_WARNING, LOG_NO_TYPE, "Packet with incompatible version.");
             #endif
             errors |= 1;
         }

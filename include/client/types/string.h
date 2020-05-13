@@ -1,7 +1,7 @@
 #ifndef _CENGINE_TYPES_STRING_H_
 #define _CENGINE_TYPES_STRING_H_
 
-#include "cengine/types/types.h"
+#include "client/types/types.h"
 
 typedef struct String {
 

@@ -3,14 +3,14 @@
 
 #include <stdbool.h>
 
-#include "cengine/types/types.h"
-#include "cengine/collections/dlist.h"
+#include "client/types/types.h"
+#include "client/collections/dlist.h"
 
-#include "cengine/cerver/network.h"
-#include "cengine/cerver/events.h"
-#include "cengine/cerver/errors.h"
-#include "cengine/cerver/connection.h"
-#include "cengine/cerver/packets.h"
+#include "client/cerver/network.h"
+#include "client/cerver/events.h"
+#include "client/cerver/errors.h"
+#include "client/cerver/connection.h"
+#include "client/cerver/packets.h"
 
 struct _Client;
 struct _Connection;
