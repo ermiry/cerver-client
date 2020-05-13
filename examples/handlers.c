@@ -3,14 +3,14 @@
 #include <unistd.h>
 #include <signal.h>
 
+#include "client/version.h"
+
 #include "client/types/types.h"
 
 #include "client/cerver/client.h"
 #include "client/cerver/packets.h"
 
 #include "client/utils/log.h"
-
-#include "version.h"
 
 typedef enum AppRequest {
 
@@ -212,7 +212,7 @@ int main (int argc, const char **argv) {
 
     cerver_client_version_print_full ();
 
-    cerver_log_debug ("Multiple Handlers Example");
+    client_log_debug ("Multiple Handlers Example");
 	printf ("\n");
 
     if (!cerver_connect ("127.0.0.1", 8007)) {
