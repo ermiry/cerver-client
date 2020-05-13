@@ -26,7 +26,19 @@ typedef enum LogMsgType {
 
 } LogMsgType;
 
-void client_log_msg (FILE *__restrict __stream, LogMsgType first_type, LogMsgType second_type,
+extern void client_log_msg (FILE *__restrict __stream, LogMsgType first_type, LogMsgType second_type,
     const char *msg, ...);
+
+// prints a red error message to stderr
+extern void client_log_error (const char *msg);
+
+// prints a yellow warning message to stderr
+extern void client_log_warning (const char *msg);
+
+// prints a green success message to stdout
+extern void client_log_success (const char *msg);
+
+// prints a debug message to stdout
+extern void client_log_debug (const char *msg);
 
 #endif

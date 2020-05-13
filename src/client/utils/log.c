@@ -62,3 +62,31 @@ void client_log_msg (FILE *__restrict __stream, LogMsgType first_type, LogMsgTyp
     if (message) free (message);
 
 }
+
+// prints a red error message to stderr
+void client_log_error (const char *msg) {
+
+	if (msg) fprintf (stderr, COLOR_RED "[ERROR]: " "%s\n" COLOR_RESET, msg);
+
+}
+
+// prints a yellow warning message to stderr
+void client_log_warning (const char *msg) {
+
+	if (msg) fprintf (stderr, COLOR_YELLOW "[WARNING]: " "%s\n" COLOR_RESET, msg);
+
+}
+
+// prints a green success message to stdout
+void client_log_success (const char *msg) {
+
+	if (msg) fprintf (stdout, COLOR_GREEN "[SUCCESS]: " "%s\n" COLOR_RESET, msg);
+
+}
+
+// prints a debug message to stdout
+void client_log_debug (const char *msg) {
+
+	if (msg) fprintf (stdout, COLOR_MAGENTA "[DEBUG]: " COLOR_RESET "%s\n", msg);
+
+}
