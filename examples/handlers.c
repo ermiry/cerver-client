@@ -3,12 +3,12 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include "cengine/types/types.h"
+#include "client/types/types.h"
 
-#include "cengine/cerver/client.h"
-#include "cengine/cerver/packets.h"
+#include "client/cerver/client.h"
+#include "client/cerver/packets.h"
 
-#include "cengine/utils/log.h"
+#include "client/utils/log.h"
 
 #include "version.h"
 
@@ -40,7 +40,7 @@ static void app_handler (void *packet_ptr) {
                 RequestData *req = (RequestData *) (packet->data);
 
                 switch (req->type) {
-                    case TEST_MSG: cengine_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Got a test message from cerver!"); break;
+                    case TEST_MSG: client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Got a test message from cerver!"); break;
 
                     case GET_MSG: {
                         char *end = (char *) packet->data;
@@ -51,7 +51,7 @@ static void app_handler (void *packet_ptr) {
                     } break;
 
                     default: 
-                        cengine_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown app request.");
+                        client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown app request.");
                         break;
                 }
             }
@@ -76,22 +76,22 @@ static int cerver_connect (const char *ip, unsigned int port) {
                 connection_set_max_sleep (connection, 30);
 
                 if (!client_connection_start (client, connection)) {
-                    cengine_log_msg (stdout, LOG_SUCCESS, LOG_NO_TYPE, "Connected to cerver!");
+                    client_log_msg (stdout, LOG_SUCCESS, LOG_NO_TYPE, "Connected to cerver!");
                     retval = 0;
                 }
 
                 else {
-                    cengine_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to connect to cerver!");
+                    client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to connect to cerver!");
                 } 
             }
 
             else {
-                cengine_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create connection!");
+                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create connection!");
             }
         }
 
         else {
-            cengine_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create client!");
+            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create client!");
         }
     }
 
@@ -141,7 +141,7 @@ static int test_msg_send (void) {
 
         size_t sent = 0;
         if (packet_send (packet, 0, &sent, false)) {
-            cengine_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send test to cerver");
+            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send test to cerver");
         }
 
         else {
@@ -184,7 +184,7 @@ static int request_message (void) {
 
         size_t sent = 0;
         if (packet_send (packet, 0, &sent, false)) {
-            cengine_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send message request to cerver");
+            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send message request to cerver");
         }
 
         else {
