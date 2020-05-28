@@ -12,6 +12,9 @@
 
 #include "client/utils/log.h"
 
+static Client *client = NULL;
+static Connection *connection = NULL;
+
 typedef enum AppRequest {
 
 	TEST_MSG		= 0,
@@ -20,43 +23,66 @@ typedef enum AppRequest {
 
 } AppRequest;
 
-// message from the cerver
-typedef struct AppMessage {
+static void my_app_handler (void *data) {
 
-	unsigned int len;
-	char message[128];
+	if (data) {
+		Packet *packet = (Packet *) data;
+		if (packet->data_size >= sizeof (RequestData)) {
+			RequestData *req = (RequestData *) (packet->data);
 
-} AppMessage;
+			switch (req->type) {
+				case TEST_MSG: 
+					client_log_debug ("Got a APP_PACKET test!");
+					break;
 
-static Client *client = NULL;
-static Connection *connection = NULL;
+				default: 
+					client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown APP_PACKET request.");
+					break;
+			}
+		}
+	}
 
-static void app_handler (void *packet_ptr) {
+}
 
-	if (packet_ptr) {
-        Packet *packet = (Packet *) packet_ptr;
-        if (packet) {
-            if (packet->data_size >= sizeof (RequestData)) {
-                RequestData *req = (RequestData *) (packet->data);
+static void my_app_error_handler (void *data) {
 
-                switch (req->type) {
-                    case TEST_MSG: client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Got a test message from cerver!"); break;
+	if (data) {
+		Packet *packet = (Packet *) data;
+		if (packet->data_size >= sizeof (RequestData)) {
+			RequestData *req = (RequestData *) (packet->data);
 
-                    case GET_MSG: {
-                        char *end = (char *) packet->data;
-                        end += sizeof (RequestData);
+			switch (req->type) {
+				case TEST_MSG: 
+					client_log_debug ("Got a APP_ERROR_PACKET test!");
+					break;
 
-                        AppMessage *app_message = (AppMessage *) end;
-                        printf ("%s - %d\n", app_message->message, app_message->len);
-                    } break;
+				default: 
+					client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown APP_ERROR_PACKET request.");
+					break;
+			}
+		}
+	}
 
-                    default: 
-                        client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown app request.");
-                        break;
-                }
-            }
-        }
-    }
+}
+
+static void my_custom_handler (void *data) {
+
+	if (data) {
+		Packet *packet = (Packet *) data;
+		if (packet->data_size >= sizeof (RequestData)) {
+			RequestData *req = (RequestData *) (packet->data);
+
+			switch (req->type) {
+				case TEST_MSG: 
+					client_log_debug ("Got a CUSTOM_PACKET test!");
+					break;
+
+				default: 
+					client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown CUSTOM_PACKET request.");
+					break;
+			}
+		}
+	}
 
 }
 
@@ -69,7 +95,8 @@ static int cerver_connect (const char *ip, unsigned int port) {
 
         client = client_create ();
         if (client) {
-            client_set_app_handlers (client, app_handler, NULL);
+            client_set_app_handlers (client, my_app_handler, my_app_error_handler);
+            client_set_custom_handler (client, my_custom_handler);
 
             if (!client_connection_create (client, "main", ip, port, PROTOCOL_TCP, false)) {
                 connection = client_connection_get_by_name (client, "main");
@@ -108,90 +135,67 @@ static void cerver_disconnect (void) {
 
 }
 
-static u8 max_handler_id = 3;
-static u8 handler_id = 0;
-
-static int test_msg_send (void) {
+static int test_app_msg_send (void ) {
 
     int retval = 1;
 
-    // manually create a packet to send
-    Packet *packet = packet_new ();
+    Packet *packet = packet_generate_request (APP_PACKET, TEST_MSG, NULL, 0);
     if (packet) {
-        size_t packet_len = sizeof (PacketHeader) + sizeof (RequestData);
-        packet->packet = malloc (packet_len);
-        packet->packet_size = packet_len;
-
-        char *end = (char *) packet->packet;
-        PacketHeader *header = (PacketHeader *) end;
-        header->protocol_id = packets_get_protocol_id ();
-        header->protocol_version = packets_get_protocol_version ();
-        header->packet_type = APP_PACKET;
-        header->packet_size = packet_len;
-
-        header->handler_id = handler_id;
-        handler_id += 1;
-        if (handler_id > max_handler_id) handler_id = 0;
-
-        end += sizeof (PacketHeader);
-        RequestData *req_data = (RequestData *) end;
-        req_data->type = TEST_MSG;
-
         packet_set_network_values (packet, client, connection);
-
         size_t sent = 0;
         if (packet_send (packet, 0, &sent, false)) {
             client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send test to cerver");
         }
 
         else {
-            printf ("Test sent to cerver: %ld\n", sent);
+            printf ("APP_PACKET sent to cerver: %ld\n", sent);
             retval = 0;
         } 
-        
+
         packet_delete (packet);
     }
 
 }
 
-static int request_message (void) {
+static int test_app_error_msg_send (void ) {
 
     int retval = 1;
 
-    // manually create a packet to send
-    Packet *packet = packet_new ();
+    Packet *packet = packet_generate_request (APP_ERROR_PACKET, TEST_MSG, NULL, 0);
     if (packet) {
-        size_t packet_len = sizeof (PacketHeader) + sizeof (RequestData);
-        packet->packet = malloc (packet_len);
-        packet->packet_size = packet_len;
-
-        char *end = (char *) packet->packet;
-        PacketHeader *header = (PacketHeader *) end;
-        header->protocol_id = packets_get_protocol_id ();
-        header->protocol_version = packets_get_protocol_version ();
-        header->packet_type = APP_PACKET;
-        header->packet_size = packet_len;
-
-        header->handler_id = handler_id;
-        handler_id += 1;
-        if (handler_id > max_handler_id) handler_id = 0;
-
-        end += sizeof (PacketHeader);
-        RequestData *req_data = (RequestData *) end;
-        req_data->type = GET_MSG;
-
         packet_set_network_values (packet, client, connection);
-
         size_t sent = 0;
         if (packet_send (packet, 0, &sent, false)) {
-            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send message request to cerver");
+            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send test to cerver");
         }
 
         else {
-            printf ("Request sent to cerver: %ld\n", sent);
+            printf ("APP_ERROR_PACKET sent to cerver: %ld\n", sent);
             retval = 0;
         } 
-        
+
+        packet_delete (packet);
+    }
+
+}
+
+static int test_custom_msg_send (void ) {
+
+    int retval = 1;
+
+    Packet *packet = packet_generate_request (CUSTOM_PACKET, TEST_MSG, NULL, 0);
+    if (packet) {
+        packet_set_network_values (packet, client, connection);
+        size_t sent = 0;
+        if (packet_send (packet, 0, &sent, false)) {
+            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send test to cerver");
+        }
+
+        else {
+            printf ("CUSTOM_PACKET sent to cerver: %ld\n", sent);
+            retval = 0;
+        } 
+
         packet_delete (packet);
     }
 
@@ -217,11 +221,11 @@ int main (int argc, const char **argv) {
 
     if (!cerver_connect ("127.0.0.1", 8007)) {
         while (1) {
-            // send a test message every second
-            // test_msg_send ();
+            test_app_msg_send ();
 
-            // request unique message from each handler
-            request_message ();
+            test_app_error_msg_send ();
+
+            test_custom_msg_send ();
 
             sleep (1);
         }
