@@ -60,6 +60,8 @@ Connection *connection_new (void) {
         connection->max_sleep = DEFAULT_CONNECTION_MAX_SLEEP;
         connection->connected = false;
 
+        connection->cerver = NULL;
+
         connection->receive_packet_buffer_size = RECEIVE_PACKET_BUFFER_SIZE;
         connection->sock_receive = NULL;
 
@@ -96,6 +98,7 @@ void connection_delete (void *ptr) {
         } 
 
         cerver_delete (connection->cerver);
+        
         sock_receive_delete (connection->sock_receive);
 
         if (connection->received_data && connection->received_data_delete)

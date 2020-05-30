@@ -101,6 +101,7 @@ Cerver *cerver_new (void) {
     Cerver *cerver = (Cerver *) malloc (sizeof (Cerver));
     if (cerver) {
         memset (cerver, 0, sizeof (Cerver));
+
         cerver->ip = NULL;
         cerver->name = NULL;
         cerver->token = NULL;
@@ -118,6 +119,8 @@ void cerver_delete (void *ptr) {
 
         str_delete (cerver->name);
         str_delete (cerver->ip);
+
+        cerver_stats_delete (cerver->stats);
 
         free (cerver);
     }

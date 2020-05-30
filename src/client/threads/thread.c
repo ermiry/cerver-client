@@ -23,21 +23,26 @@ u8 thread_create_detachable (void *(*work) (void *), void *args) {
     u8 retval = 1;
 
     #ifdef OS_LINUX
-        pthread_attr_t attr;
-        pthread_t thread;
+    pthread_attr_t attr = { 0 };
+    pthread_t thread = 0;
+    if (!pthread_attr_init (&attr)) {
+        if (!pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_DETACHED)) {
+            if (!pthread_create (&thread, &attr, work, args) != THREAD_OK) {
+                retval = 0;     // success
+            }
 
-        int rc = pthread_attr_init (&attr);
-        rc = pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_DETACHED);
-
-        if (pthread_create (&thread, &attr, work, args) != THREAD_OK)
-            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create detachable thread!");
-        else retval = 0;
-    #else
-        SDL_Thread *thread = SDL_CreateThread ((int (*) (void *)) work, NULL, args);
-        if (thread) {
-            SDL_DetachThread (thread);  // will go away on its own upon completion
-            retval = 0;
+            else {
+                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create detachable thread!");
+                perror ("Error");
+            }
         }
+    }
+    #else
+    SDL_Thread *thread = SDL_CreateThread ((int (*) (void *)) work, NULL, args);
+    if (thread) {
+        SDL_DetachThread (thread);  // will go away on its own upon completion
+        retval = 0;
+    }
     #endif
 
     return retval;

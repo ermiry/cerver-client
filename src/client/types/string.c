@@ -172,6 +172,9 @@ int str_compare (const String *s1, const String *s2) { return strcmp (s1->str, s
 int str_comparator (const void *a, const void *b) {
 
     if (a && b) return strcmp (((String *) a)->str, ((String *) b)->str);
+    if (a && !b) return -1;
+    if (!a && b) return 1;
+    return 0;
 
 }
 

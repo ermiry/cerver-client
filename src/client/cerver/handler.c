@@ -55,7 +55,7 @@ static void client_client_packet_handler (Packet *packet) {
 
     if (packet) {
         if (packet->data_size >= sizeof (RequestData)) {
-            char *end = (char *) packet->data;
+            // char *end = (char *) packet->data;
             RequestData *req = (RequestData *) packet->data;
 
             switch (req->type) {
@@ -84,7 +84,7 @@ static void client_auth_packet_handler (Packet *packet) {
 
     if (packet) {
         if (packet->data_size >= sizeof (RequestData)) {
-            char *end = (char *) packet->data;
+            // char *end = (char *) packet->data;
             RequestData *req = (RequestData *) packet->data;
 
             switch (req->type) {
@@ -117,7 +117,7 @@ static void client_request_packet_handler (Packet *packet) {
 
     if (packet) {
         if (packet->data_size >= sizeof (RequestData)) {
-            char *end = (char *) packet->data;
+            // char *end = (char *) packet->data;
             RequestData *req = (RequestData *) packet->data;
 
             switch (req->type) {
@@ -288,7 +288,7 @@ static void client_receive_handle_buffer (Client *client, Connection *connection
 
         PacketHeader *header = NULL;
         size_t packet_size = 0;
-        char *packet_data = NULL;
+        // char *packet_data = NULL;
 
         size_t remaining_buffer_size = 0;
         size_t packet_real_size = 0;

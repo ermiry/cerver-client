@@ -266,7 +266,7 @@ char *c_string_remove_sub (char *str, const char *sub) {
 				}
 
 				idx += len_sub;
-				char *end_sub = str + len_sub;
+				// char *end_sub = str + len_sub;
 				while (idx < len_str) {
 					*ptr = str[idx];
 					ptr++;
@@ -356,7 +356,7 @@ char *c_string_remove_sub_after_token_with_idx (char *str, const char token, cha
     char *retval = NULL;
 
     if (str) {
-        int count = 0;
+        // int count = 0;
         char *ptr = str;
         char *last_ptr = NULL;
         int last_token_count = 0;
@@ -497,5 +497,7 @@ char *c_string_remove_sub_range_token (char *str, const char token, unsigned int
 char *c_string_remove_sub_different_token (char *str, const char token_one, const char token_two) {
 
 	// TODO:
+
+    return NULL;
 
 }
