@@ -156,8 +156,12 @@ static u8 cerver_check_info (Cerver *cerver, Connection *connection) {
 
     if (cerver && connection) {
         #ifdef CLIENT_DEBUG
-        client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, 
-            c_string_create ("Connected to cerver %s.", cerver->name->str));
+        char *s = c_string_create ("Connected to cerver %s.", cerver->name->str);
+        if (s) {
+            client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, s);
+            free (s);
+        }
+        
         switch (cerver->protocol) {
             case PROTOCOL_TCP: 
                 client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Cerver using TCP protocol."); 

@@ -458,8 +458,11 @@ void client_receive (Client *client, Connection *connection) {
             if (rc < 0) {
                 if (errno != EWOULDBLOCK) {     // no more data to read 
                     #ifdef CLIENT_DEBUG 
-                    client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, 
-                        c_string_create ("client_receive () - rc < 0 - sock fd: %d", connection->sock_fd));
+                    char *s = c_string_create ("client_receive () - rc < 0 - sock fd: %d", connection->sock_fd);
+                    if (s) {
+                        client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, s);
+                        free (s);
+                    }
                     perror ("Error");
                     #endif
 
@@ -473,9 +476,12 @@ void client_receive (Client *client, Connection *connection) {
                 // man recv -> steam socket perfomed an orderly shutdown
                 // but in dgram it might mean something?
                 #ifdef CLIENT_DEBUG
-                client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, 
-                    c_string_create ("client_receive () - rc == 0 - sock fd: %d",
-                    connection->sock_fd));
+                char *s = c_string_create ("client_receive () - rc == 0 - sock fd: %d",
+                    connection->sock_fd);
+                if (s) {
+                    client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, s);
+                    free (s);
+                }
                 // perror ("Error");
                 #endif
 
@@ -485,9 +491,13 @@ void client_receive (Client *client, Connection *connection) {
             }
 
             else {
-                // client_log_msg (stdout, LOG_DEBUG, LOG_CLIENT, 
-                //     c_string_create ("Connection %s rc: %ld",
-                //     connection->name->str, rc));
+                // char *s = c_string_create ("Connection %s rc: %ld",
+                //     connection->name->str, rc);
+                // if (s) {
+                //     client_log_msg (stdout, LOG_DEBUG, LOG_CLIENT, s);
+                //     free (s);
+                // }
+
                 client->stats->n_receives_done += 1;
                 client->stats->total_bytes_received += rc;
 

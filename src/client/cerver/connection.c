@@ -359,8 +359,13 @@ void connection_update (void *ptr) {
     if (ptr) {
         ClientConnection *cc = (ClientConnection *) ptr;
         
-        if (cc->connection->name)
-            thread_set_name (c_string_create ("connection-%s", cc->connection->name->str));
+        if (cc->connection->name) {
+            char *s = c_string_create ("connection-%s", cc->connection->name->str);
+            if (s) {
+                thread_set_name (s);
+                free (s);
+            }
+        }
 
         ConnectionCustomReceiveData *custom_data = connection_custom_receive_data_new (cc->client, cc->connection, 
             cc->connection->custom_receive_args);
