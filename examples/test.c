@@ -88,7 +88,7 @@ static void cerver_disconnect (void) {
 
 }
 
-static int test_msg_send () {
+static int test_msg_send (void) {
 
     int retval = 1;
 
@@ -107,6 +107,8 @@ static int test_msg_send () {
 
         packet_delete (packet);
     }
+
+    return retval;
 
 }
 
@@ -131,6 +133,8 @@ int main (int argc, const char **argv) {
     if (!cerver_connect ("127.0.0.1", 8007)) {
         while (1) {
             // send a test message every second
+            test_msg_send ();
+            test_msg_send ();
             test_msg_send ();
 
             sleep (1);

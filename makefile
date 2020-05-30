@@ -72,8 +72,8 @@ $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 
 examples: ./examples/test.c ./examples/handlers.c ./examples/multi.c
 	@mkdir -p ./examples/bin
-	$(CC) -I ./include -L ./bin ./examples/test.c -o ./examples/bin/test -l client
-	$(CC) -I ./include -L ./bin ./examples/handlers.c -o ./examples/bin/handlers -l client
-	$(CC) -I ./include -L ./bin ./examples/multi.c -o ./examples/bin/multi -l client
+	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/test.c -o ./examples/bin/test -l client
+	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/handlers.c -o ./examples/bin/handlers -l client
+	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/multi.c -o ./examples/bin/multi -l client
 
 .PHONY: all clean examples

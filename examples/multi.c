@@ -111,6 +111,8 @@ static void cerver_disconnect (void) {
 static u8 max_handler_id = 3;
 static u8 handler_id = 0;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
 static int test_msg_send (void) {
 
     int retval = 1;
@@ -152,8 +154,13 @@ static int test_msg_send (void) {
         packet_delete (packet);
     }
 
-}
+    return retval;
 
+}
+#pragma GCC diagnostic pop
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
 static int request_message (void) {
 
     int retval = 1;
@@ -195,7 +202,10 @@ static int request_message (void) {
         packet_delete (packet);
     }
 
+    return retval;
+
 }
+#pragma GCC diagnostic pop
 
 static void end (int dummy) {
 	

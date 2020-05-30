@@ -155,6 +155,8 @@ static int test_app_msg_send (void ) {
         packet_delete (packet);
     }
 
+    return retval;
+
 }
 
 static int test_app_error_msg_send (void ) {
@@ -177,6 +179,8 @@ static int test_app_error_msg_send (void ) {
         packet_delete (packet);
     }
 
+    return retval;
+
 }
 
 static int test_custom_msg_send (void ) {
@@ -198,6 +202,8 @@ static int test_custom_msg_send (void ) {
 
         packet_delete (packet);
     }
+
+    return retval;
 
 }
 
