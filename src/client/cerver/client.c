@@ -415,7 +415,7 @@ static void *client_request_to_cerver_thread (ClientConnection *cc_ptr) {
 
 // when a client is already connected to the cerver, a request can be made to the cerver
 // the result will be placed inside the connection
-// this method will NOT block, instead EVENT_CONNECTION_DATA will be triggered
+// this method will NOT block and the response will be handled using the client's packet handler
 // this method only works if your response consists only of one packet
 // neither client nor the connection will be stopped after the request has ended, the request packet won't be deleted
 // returns 0 on success request, 1 on error
@@ -521,6 +521,8 @@ int client_connection_end (Client *client, Connection *connection) {
 
     if (client && connection) {
         connection_end (connection);
+
+        client_event_trigger (client, EVENT_CONNECTION_CLOSE);
 
         // connection_delete (dlist_remove_element (client->connections, 
         //     dlist_get_element (client->connections, connection, NULL)));
