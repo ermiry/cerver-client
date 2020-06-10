@@ -237,17 +237,17 @@ Connection *client_connection_get_by_socket (Client *client, i32 sock_fd) {
 
 }
 
-// creates a new connection and registers it to the specified client;
+// creates a new connection and registers it to the specified client
 // the connection should be ready to be started
 // returns 0 on success, 1 on error
-int client_connection_create (Client *client, const char *name,
+int client_connection_create (Client *client,
     const char *ip_address, u16 port, Protocol protocol, bool use_ipv6) {
 
     int retval = 1;
 
     if (client) {
         if (ip_address) {
-            Connection *connection = connection_create (name, ip_address, port, protocol, use_ipv6);
+            Connection *connection = connection_create (ip_address, port, protocol, use_ipv6);
             if (connection) {
                 dlist_insert_after (client->connections, dlist_end (client->connections), connection);
                 retval = 0;
@@ -256,8 +256,10 @@ int client_connection_create (Client *client, const char *name,
             else client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create new connection!");
         }
 
-        else 
-            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create new connection, no ip provided!");
+        else {
+            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, 
+                "Failed to create new connection, no ip provided!");
+        }
     }
 
     return retval;
@@ -278,6 +280,8 @@ int client_connection_register (Client *client, Connection *connection) {
     return retval;
 
 }
+
+#pragma region connect
 
 // connects a client to the host with the specified values in the connection
 // it can be a cerver or not
@@ -316,6 +320,8 @@ static void *client_connect_thread (void *client_connection_ptr) {
             
             client_start (cc->client);
         }
+
+        client_connection_aux_delete (cc);
     }
 
     return NULL;
@@ -350,6 +356,104 @@ unsigned int client_connect_async (Client *client, Connection *connection) {
     return retval;
 
 }
+
+#pragma endregion
+
+#pragma region requests
+
+// when a client is already connected to the cerver, a request can be made to the cerver
+// and the result will be returned
+// this is a blocking method, as it will wait until a complete cerver response has been received
+// the response will be handled using the client's packet handler
+// this method only works if your response consists only of one packet
+// neither client nor the connection will be stopped after the request has ended, the request packet won't be deleted
+// retruns 0 when the response has been handled, 1 on error
+unsigned int client_request_to_cerver (Client *client, Connection *connection, Packet *request) {
+
+    void *retval = NULL;
+
+    if (client && connection && request) {
+        // send the request to the cerver
+        packet_set_network_values (request, client, connection);
+        if (!packet_send (request, 0, NULL, false)) {
+            // receive the data directly
+            connection->full_packet = false;
+            while (!connection->full_packet) {
+                client_receive (client, connection);
+            }
+
+            retval = 0;
+        }
+
+        else {
+            #ifdef CLIENT_DEBUG
+            client_log_error ("client_request_to_cerver () - failed to send request packet!");
+            #endif
+        }
+    }
+
+    return retval;
+
+}
+
+static void *client_request_to_cerver_thread (ClientConnection *cc_ptr) {
+
+    if (cc_ptr) {
+        ClientConnection *cc = (ClientConnection *) cc_ptr;
+
+        cc->connection->full_packet = false;
+        while (!cc->connection->full_packet) {
+            client_receive (cc->client, cc->connection);
+        }
+
+        client_connection_aux_delete (cc);
+    }
+
+    return NULL;
+
+}
+
+// when a client is already connected to the cerver, a request can be made to the cerver
+// the result will be placed inside the connection
+// this method will NOT block, instead EVENT_CONNECTION_DATA will be triggered
+// this method only works if your response consists only of one packet
+// neither client nor the connection will be stopped after the request has ended, the request packet won't be deleted
+// returns 0 on success request, 1 on error
+unsigned int client_request_to_cerver_async (Client *client, Connection *connection, Packet *request) {
+
+    unsigned int retval = 1;
+
+    if (client && connection && request) {
+        // send the request to the cerver
+        packet_set_network_values (request, client, connection);
+        if (!packet_send (request, 0, NULL, false)) {
+            ClientConnection *cc = client_connection_aux_new (client, connection);
+            if (cc) {
+                // create a new thread to receive & handle the response
+                if (!thread_create_detachable (client_request_to_cerver_thread, cc)) {
+                    retval = 0;         // success
+                }
+
+                else {
+                    #ifdef CLIENT_DEBUG
+                    client_log_error ("Failed to create client_request_to_cerver_thread () detachable thread!");
+                    #endif
+                }
+            }
+        }
+
+        else {
+            #ifdef CLIENT_DEBUG
+            client_log_error ("client_request_to_cerver_async () - failed to send request packet!");
+            #endif
+        }
+    }
+
+    return retval;
+
+}
+
+#pragma endregion
 
 // this is a blocking method and ONLY works for cerver packets
 // connects the client connection and makes a first request to the cerver
