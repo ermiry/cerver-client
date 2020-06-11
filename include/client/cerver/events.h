@@ -12,10 +12,12 @@ struct _Client;
 typedef enum ClientEventType {
 
     EVENT_CONNECTED,            // connected to cerver
-    EVENT_CONNECTION_FAILED,    // failed to connect to cerver
     EVENT_DISCONNECTED,         // disconnected from the cerver, either by the cerver or by losing connection
 
+    EVENT_CONNECTION_FAILED,    // failed to connect to cerver
     EVENT_CONNECTION_CLOSE,     // this happens when a call to a recv () methods returns <= 0, the connection is clossed directly by client
+
+    EVENT_CONNECTION_DATA,      // data has been received, only triggered from client request methods
 
     EVENT_CERVER_INFO,          // received cerver info from the cerver
     EVENT_CERVER_TEARDOWN,      // the cerver is going to teardown (disconnect happens automatically)

@@ -19,13 +19,15 @@
 
 void connection_remove_auth_data (Connection *connection);
 
-static ConnectionStats *connection_stats_new (void) {
+#pragma region stats
+
+static inline ConnectionStats *connection_stats_new (void) {
 
     ConnectionStats *stats = (ConnectionStats *) malloc (sizeof (ConnectionStats));
     if (stats) {
         memset (stats, 0, sizeof (ConnectionStats));
-        stats->received_packets = packets_per_type_new ();
-        stats->sent_packets = packets_per_type_new ();
+        stats->received_packets = NULL;
+        stats->sent_packets = NULL;
     } 
 
     return stats;
@@ -42,6 +44,20 @@ static inline void connection_stats_delete (ConnectionStats *stats) {
     } 
     
 }
+
+static ConnectionStats *connection_stats_create (void) {
+
+    ConnectionStats *stats = connection_stats_new ();
+    if (stats) {
+        stats->received_packets = packets_per_type_new ();
+        stats->sent_packets = packets_per_type_new ();
+    }
+
+    return stats;
+
+}
+
+#pragma endregion
 
 Connection *connection_new (void) {
 
@@ -65,6 +81,8 @@ Connection *connection_new (void) {
         connection->receive_packet_buffer_size = RECEIVE_PACKET_BUFFER_SIZE;
         connection->sock_receive = NULL;
 
+        connection->full_packet = false;
+
         connection->received_data = NULL;
         connection->received_data_delete = NULL;
 
@@ -76,26 +94,21 @@ Connection *connection_new (void) {
         connection->delete_auth_data = NULL;
         connection->auth_packet = NULL;
 
-        connection->stats = connection_stats_new ();
+        connection->stats = NULL;
     }
 
     return connection;
 
 }
 
-void connection_delete (void *ptr) {
+void connection_delete (void *connection_ptr) {
 
-    if (ptr) {
-        Connection *connection = (Connection *) ptr;
+    if (connection_ptr) {
+        Connection *connection = (Connection *) connection_ptr;
 
         str_delete (connection->name);
-        str_delete (connection->ip);
 
-        // FIXME: 18/01/2020
-        if (connection->connected) {
-            // connection_end (connection);
-            // close (connection->sock_fd);
-        } 
+        str_delete (connection->ip);
 
         cerver_delete (connection->cerver);
         
@@ -110,6 +123,18 @@ void connection_delete (void *ptr) {
 
         free (connection);
     }
+
+}
+
+Connection *connection_create_empty (void) {
+
+    Connection *connection = connection_new ();
+    if (connection) {
+        connection->sock_receive = sock_receive_new ();
+        connection->stats = connection_stats_create ();
+    }
+
+    return connection;
 
 }
 
@@ -133,6 +158,16 @@ int connection_comparator_by_sock_fd (const void *a, const void *b) {
     }
 
     return 0;
+
+}
+
+// sets the connection's name, if it had a name before, it will be replaced
+void connection_set_name (Connection *connection, const char *name) {
+
+    if (connection) {
+        if (connection->name) str_delete (connection->name);
+        connection->name = name ? str_new (name) : NULL;
+    }
 
 }
 
@@ -225,7 +260,6 @@ static u8 connection_init (Connection *connection) {
     u8 retval = 1;
 
     if (connection) {
-        // init the new connection socket
         switch (connection->protocol) {
             case IPPROTO_TCP: 
                 connection->sock_fd = socket ((connection->use_ipv6 == 1 ? AF_INET6 : AF_INET), SOCK_STREAM, 0);
@@ -234,43 +268,32 @@ static u8 connection_init (Connection *connection) {
                 connection->sock_fd = socket ((connection->use_ipv6 == 1 ? AF_INET6 : AF_INET), SOCK_DGRAM, 0);
                 break;
 
-            default: client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Unkonw protocol type!"); return 1;
+            default: 
+                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Unkonw protocol type!"); 
+                return 1;
         }
 
         if (connection->sock_fd > 0) {
-            // if (connection->async) {
-            //     if (sock_set_blocking (connection->sock_fd, connection->blocking)) {
-            //         connection->blocking = false;
+            if (connection->use_ipv6) {
+                struct sockaddr_in6 *addr = (struct sockaddr_in6 *) &connection->address;
+                addr->sin6_family = AF_INET6;
+                addr->sin6_addr = in6addr_any;
+                addr->sin6_port = htons (connection->port);
+            } 
 
-                    // get the address ready
-                    if (connection->use_ipv6) {
-                        struct sockaddr_in6 *addr = (struct sockaddr_in6 *) &connection->address;
-                        addr->sin6_family = AF_INET6;
-                        addr->sin6_addr = in6addr_any;
-                        addr->sin6_port = htons (connection->port);
-                    } 
+            else {
+                struct sockaddr_in *addr = (struct sockaddr_in *) &connection->address;
+                addr->sin_family = AF_INET;
+                addr->sin_addr.s_addr = inet_addr (connection->ip->str);
+                addr->sin_port = htons (connection->port);
+            }
 
-                    else {
-                        struct sockaddr_in *addr = (struct sockaddr_in *) &connection->address;
-                        addr->sin_family = AF_INET;
-                        addr->sin_addr.s_addr = inet_addr (connection->ip->str);
-                        addr->sin_port = htons (connection->port);
-                    }
-
-                    retval = 0;     // connection setup was successfull
-                // }
-
-                // else {
-                //     #ifdef CLIENT_DEBUG
-                //     client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, 
-                //         "Failed to set the socket to non blocking mode!");
-                //     #endif
-                //     close (connection->sock_fd);
-            //     }
-            // }
+            retval = 0;     // connection setup was successfull
         }
 
-        else client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create new socket!");
+        else {
+            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create new socket!");
+        }
     }
 
     return retval;
@@ -278,29 +301,26 @@ static u8 connection_init (Connection *connection) {
 }
 
 // creates a new connection that is ready to be started
-Connection *connection_create (const char *name,
-     const char *ip_address, u16 port, Protocol protocol, bool use_ipv6) {
+// returns a newly allocated connection on success, NULL if any initial setup has failed
+Connection *connection_create (const char *ip_address, u16 port, Protocol protocol, bool use_ipv6) {
 
     Connection *connection = NULL;
 
     if (ip_address) {
-        connection = connection_new ();
+        connection = connection_create_empty ();
         if (connection) {
-            connection->name = name ? str_new (name) : NULL;
             connection->ip = str_new (ip_address);
+
             connection->port = port;
             connection->protocol = protocol;
             connection->use_ipv6 = use_ipv6;
 
             connection->connected = false;
 
-            // 18/01/2020 -- 16:31 -- moved to connection_update ()
-            // connection->sock_receive = sock_receive_new ();
-
             // set up the new connection to be ready to be started
             if (connection_init (connection)) {
                 #ifdef CLIENT_DEBUG
-                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to set up the new connection!");
+                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to init the new connection!");
                 #endif
                 connection_delete (connection);
                 connection = NULL;

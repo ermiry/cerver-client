@@ -229,49 +229,47 @@ static void client_packet_handler (void *data) {
 
 #pragma region receive
 
-static SockReceive *client_receive_handle_spare_packet (Client *client, Connection *connection, 
+static void client_receive_handle_spare_packet (Client *client, Connection *connection, 
     size_t buffer_size, char **end, size_t *buffer_pos) {
 
-    if (connection->sock_receive) {
-        if (connection->sock_receive->header) {
-            // copy the remaining header size
-            memcpy (connection->sock_receive->header_end, (void *) *end, connection->sock_receive->remaining_header);
+    if (connection->sock_receive->header) {
+        // copy the remaining header size
+        memcpy (connection->sock_receive->header_end, (void *) *end, connection->sock_receive->remaining_header);
 
-            connection->sock_receive->complete_header = true;
-        }
-
-        if (connection->sock_receive->spare_packet) {
-            size_t copy_to_spare = 0;
-            if (connection->sock_receive->missing_packet < buffer_size) 
-                copy_to_spare = connection->sock_receive->missing_packet;
-
-            else copy_to_spare = buffer_size;
-
-            // append new data from buffer to the spare packet
-            if (copy_to_spare > 0) {
-                packet_append_data (connection->sock_receive->spare_packet, *end, copy_to_spare);
-
-                // check if we can handler the packet 
-                size_t curr_packet_size = connection->sock_receive->spare_packet->data_size + sizeof (PacketHeader);
-                if (connection->sock_receive->spare_packet->header->packet_size == curr_packet_size) {
-                    connection->sock_receive->spare_packet->client = client;
-                    connection->sock_receive->spare_packet->connection = connection;
-                    client_packet_handler (connection->sock_receive->spare_packet);
-
-                    connection->sock_receive->spare_packet = NULL;
-                    connection->sock_receive->missing_packet = 0;
-                }
-
-                else connection->sock_receive->missing_packet -= copy_to_spare;
-
-                // offset for the buffer
-                if (copy_to_spare < buffer_size) *end += copy_to_spare;
-                *buffer_pos += copy_to_spare;
-            }
-        }
+        connection->sock_receive->complete_header = true;
     }
 
-    return connection->sock_receive;
+    else if (connection->sock_receive->spare_packet) {
+        size_t copy_to_spare = 0;
+        if (connection->sock_receive->missing_packet < buffer_size) 
+            copy_to_spare = connection->sock_receive->missing_packet;
+
+        else copy_to_spare = buffer_size;
+
+        // append new data from buffer to the spare packet
+        if (copy_to_spare > 0) {
+            packet_append_data (connection->sock_receive->spare_packet, *end, copy_to_spare);
+
+            // check if we can handler the packet 
+            size_t curr_packet_size = connection->sock_receive->spare_packet->data_size + sizeof (PacketHeader);
+            if (connection->sock_receive->spare_packet->header->packet_size == curr_packet_size) {
+                connection->sock_receive->spare_packet->client = client;
+                connection->sock_receive->spare_packet->connection = connection;
+
+                connection->full_packet = true;
+                client_packet_handler (connection->sock_receive->spare_packet);
+
+                connection->sock_receive->spare_packet = NULL;
+                connection->sock_receive->missing_packet = 0;
+            }
+
+            else connection->sock_receive->missing_packet -= copy_to_spare;
+
+            // offset for the buffer
+            if (copy_to_spare < buffer_size) *end += copy_to_spare;
+            *buffer_pos += copy_to_spare;
+        }
+    }
 
 }
 
@@ -283,8 +281,13 @@ static void client_receive_handle_buffer (Client *client, Connection *connection
         char *end = buffer;
         size_t buffer_pos = 0;
 
-        SockReceive *sock_receive = client_receive_handle_spare_packet (client, connection, 
-            buffer_size, &end, &buffer_pos);
+        SockReceive *sock_receive = connection->sock_receive;
+
+        client_receive_handle_spare_packet (
+            client, connection, 
+            buffer_size, &end, 
+            &buffer_pos
+        );
 
         PacketHeader *header = NULL;
         size_t packet_size = 0;
@@ -378,6 +381,7 @@ static void client_receive_handle_buffer (Client *client, Connection *connection
                         // printf ("second buffer pos: %ld\n", buffer_pos);
 
                         if (!sock_receive->spare_packet) {
+                            connection->full_packet = true;
                             client_packet_handler (packet);
                         }
                             
@@ -395,8 +399,6 @@ static void client_receive_handle_buffer (Client *client, Connection *connection
                         client_log_msg (stderr, LOG_WARNING, LOG_CLIENT, status); 
                         free (status);
                     }
-
-                    // FIXME: what to do next?
                     
                     break;
                 }
@@ -455,58 +457,60 @@ void client_receive (Client *client, Connection *connection) {
         if (packet_buffer) {
             ssize_t rc = recv (connection->sock_fd, packet_buffer, connection->receive_packet_buffer_size, 0);
 
-            if (rc < 0) {
-                if (errno != EWOULDBLOCK) {     // no more data to read 
-                    #ifdef CLIENT_DEBUG 
-                    char *s = c_string_create ("client_receive () - rc < 0 - sock fd: %d", connection->sock_fd);
+            switch (rc) {
+                case -1: {
+                    if (errno != EWOULDBLOCK) {
+                        #ifdef CLIENT_DEBUG 
+                        char *s = c_string_create ("client_receive () - rc < 0 - sock fd: %d", connection->sock_fd);
+                        if (s) {
+                            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, s);
+                            free (s);
+                        }
+                        perror ("Error");
+                        #endif
+
+                        client_receive_handle_failed (client, connection);
+                    }
+                } break;
+
+                case 0: {
+                    // man recv -> steam socket perfomed an orderly shutdown
+                    // but in dgram it might mean something?
+                    #ifdef CLIENT_DEBUG
+                    char *s = c_string_create ("client_receive () - rc == 0 - sock fd: %d",
+                        connection->sock_fd);
                     if (s) {
-                        client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, s);
+                        client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, s);
                         free (s);
                     }
-                    perror ("Error");
+                    // perror ("Error");
                     #endif
-
-                    // FIXME: pass the connection that stopped
-                    client_event_trigger (client, EVENT_CONNECTION_CLOSE);
+                    
                     client_receive_handle_failed (client, connection);
-                }
-            }
+                } break;
 
-            else if (rc == 0) {
-                // man recv -> steam socket perfomed an orderly shutdown
-                // but in dgram it might mean something?
-                #ifdef CLIENT_DEBUG
-                char *s = c_string_create ("client_receive () - rc == 0 - sock fd: %d",
-                    connection->sock_fd);
-                if (s) {
-                    client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, s);
-                    free (s);
-                }
-                // perror ("Error");
-                #endif
+                default: {
+                    // char *s = c_string_create ("Connection %s rc: %ld",
+                    //     connection->name->str, rc);
+                    // if (s) {
+                    //     client_log_msg (stdout, LOG_DEBUG, LOG_CLIENT, s);
+                    //     free (s);
+                    // }
 
-                // FIXME: pass the connection that stopped
-                client_event_trigger (client, EVENT_CONNECTION_CLOSE);
-                client_receive_handle_failed (client, connection);
-            }
+                    client->stats->n_receives_done += 1;
+                    client->stats->total_bytes_received += rc;
 
-            else {
-                // char *s = c_string_create ("Connection %s rc: %ld",
-                //     connection->name->str, rc);
-                // if (s) {
-                //     client_log_msg (stdout, LOG_DEBUG, LOG_CLIENT, s);
-                //     free (s);
-                // }
+                    connection->stats->n_receives_done += 1;
+                    connection->stats->total_bytes_received += rc;
 
-                client->stats->n_receives_done += 1;
-                client->stats->total_bytes_received += rc;
-
-                connection->stats->n_receives_done += 1;
-                connection->stats->total_bytes_received += rc;
-
-                // handle the recived packet buffer -> split them in packets of the correct size
-                client_receive_handle_buffer (client, connection, 
-                    packet_buffer, rc);
+                    // handle the recived packet buffer -> split them in packets of the correct size
+                    client_receive_handle_buffer (
+                        client, 
+                        connection, 
+                        packet_buffer, 
+                        rc
+                    );
+                } break;
             }
 
             free (packet_buffer);

@@ -12,9 +12,6 @@
 
 #include "client/utils/log.h"
 
-static Client *client = NULL;
-static Connection *connection = NULL;
-
 typedef enum AppRequest {
 
 	TEST_MSG		= 0,
@@ -22,6 +19,69 @@ typedef enum AppRequest {
 	GET_MSG			= 1
 
 } AppRequest;
+
+static Client *client = NULL;
+static Connection *connection = NULL;
+
+static void my_app_handler (void *data);
+static void my_app_error_handler (void *data);
+static void my_custom_handler (void *data);
+
+#pragma region connect
+
+static int cerver_connect (const char *ip, unsigned int port) {
+
+    int retval = 1;
+
+    if (ip) {
+        fprintf (stdout, "\nConnecting to cerver...\n");
+
+        client = client_create ();
+        if (client) {
+            client_set_app_handlers (client, my_app_handler, my_app_error_handler);
+            client_set_custom_handler (client, my_custom_handler);
+
+            connection = client_connection_create (client, ip, port, PROTOCOL_TCP, false);
+            if (connection) {
+                connection_set_name (connection, "main");
+                connection_set_max_sleep (connection, 30);
+
+                if (!client_connection_start (client, connection)) {
+                    client_log_msg (stdout, LOG_SUCCESS, LOG_NO_TYPE, "Connected to cerver!");
+                    retval = 0;
+                }
+
+                else {
+                    client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to connect to cerver!");
+                }
+            }
+
+            else {
+                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create connection!");
+            }
+        }
+
+        else {
+            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create client!");
+        }
+    }
+
+    return retval;
+
+}
+
+static void cerver_disconnect (void) {
+
+    client_connection_end (client, connection);
+
+    // TODO: 26/01/2020 -- 21:31 -- possible seg fault when quitting client with active connection
+    client_teardown (client);
+
+}
+
+#pragma endregion
+
+#pragma region handler
 
 static void my_app_handler (void *data) {
 
@@ -86,56 +146,11 @@ static void my_custom_handler (void *data) {
 
 }
 
-static int cerver_connect (const char *ip, unsigned int port) {
+#pragma endregion
 
-    int retval = 1;
+#pragma region request
 
-    if (ip) {
-        fprintf (stdout, "\nConnecting to cerver...\n");
-
-        client = client_create ();
-        if (client) {
-            client_set_app_handlers (client, my_app_handler, my_app_error_handler);
-            client_set_custom_handler (client, my_custom_handler);
-
-            if (!client_connection_create (client, "main", ip, port, PROTOCOL_TCP, false)) {
-                connection = client_connection_get_by_name (client, "main");
-                connection_set_max_sleep (connection, 30);
-
-                if (!client_connection_start (client, connection)) {
-                    client_log_msg (stdout, LOG_SUCCESS, LOG_NO_TYPE, "Connected to cerver!");
-                    retval = 0;
-                }
-
-                else {
-                    client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to connect to cerver!");
-                } 
-            }
-
-            else {
-                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create connection!");
-            }
-        }
-
-        else {
-            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create client!");
-        }
-    }
-
-    return retval;
-
-}
-
-static void cerver_disconnect (void) {
-
-    client_connection_end (client, connection);
-
-    // TODO: 26/01/2020 -- 21:31 -- possible seg fault when quitting client with active connection
-    client_teardown (client);
-
-}
-
-static int test_app_msg_send (void ) {
+static int test_app_msg_send (void) {
 
     int retval = 1;
 
@@ -159,7 +174,7 @@ static int test_app_msg_send (void ) {
 
 }
 
-static int test_app_error_msg_send (void ) {
+static int test_app_error_msg_send (void) {
 
     int retval = 1;
 
@@ -183,7 +198,7 @@ static int test_app_error_msg_send (void ) {
 
 }
 
-static int test_custom_msg_send (void ) {
+static int test_custom_msg_send (void) {
 
     int retval = 1;
 
@@ -206,6 +221,10 @@ static int test_custom_msg_send (void ) {
     return retval;
 
 }
+
+#pragma endregion
+
+#pragma region main
 
 static void end (int dummy) {
 	
@@ -240,3 +259,5 @@ int main (int argc, const char **argv) {
     return 0;
 
 }
+
+#pragma endregion
