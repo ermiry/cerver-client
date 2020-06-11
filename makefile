@@ -19,7 +19,6 @@ SRCEXT      := c
 DEPEXT      := d
 OBJEXT      := o
 
-# CFLAGS      := -g $(DEFINES)
 CFLAGS      := -g $(DEFINES) -Wall -Wno-unknown-pragmas -fPIC
 LIB         := $(PTHREAD) $(MATH)
 INC         := -I $(INCDIR) -I /usr/local/include
@@ -70,10 +69,11 @@ $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@sed -e 's/.*://' -e 's/\\$$//' < $(BUILDDIR)/$*.$(DEPEXT).tmp | fmt -1 | sed -e 's/^ *//' -e 's/$$/:/' >> $(BUILDDIR)/$*.$(DEPEXT)
 	@rm -f $(BUILDDIR)/$*.$(DEPEXT).tmp
 
-examples: ./examples/test.c ./examples/handlers.c ./examples/multi.c
+examples: ./examples/test.c ./examples/handlers.c ./examples/multi.c ./examples/requests.c
 	@mkdir -p ./examples/bin
 	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/test.c -o ./examples/bin/test -l client
 	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/handlers.c -o ./examples/bin/handlers -l client
 	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/multi.c -o ./examples/bin/multi -l client
+	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/requests.c -o ./examples/bin/requests -l client
 
 .PHONY: all clean examples
