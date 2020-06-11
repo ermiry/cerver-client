@@ -80,10 +80,10 @@ extern struct _Connection *client_connection_get_by_socket (Client *client, i32 
 // returns a connection (registered to a client) by its name
 extern struct _Connection *client_connection_get_by_name (Client *client, const char *name);
 
-// creates a new connection and registers it to the specified client;
+// creates a new connection and registers it to the specified client
 // the connection should be ready to be started
-// returns 0 on success, 1 on error
-extern int client_connection_create (Client *client, const char *name,
+// returns a new connection on success, NULL on error
+extern struct _Connection *client_connection_create (Client *client,
     const char *ip_address, u16 port, Protocol protocol, bool use_ipv6);
 
 // registers an existing connection to a client
@@ -97,7 +97,13 @@ extern int client_connection_register (Client *client, struct _Connection *conne
 // this is a blocking method, as it will wait until the connection has been successfull or a timeout
 // user must manually handle how he wants to receive / handle incomming packets and also send requests
 // returns 0 when the connection has been established, 1 on error or failed to connect
-extern unsigned int client_connect (Client *client, Connection *connection);
+extern unsigned int client_connect (Client *client, struct _Connection *connection);
+
+// connects a client to the host with the specified values in the connection
+// performs a first read to get the cerver info packet 
+// this is a blocking method, and works exactly the same as if only calling client_connect ()
+// returns 0 when the connection has been established, 1 on error or failed to connect
+extern unsigned int client_connect_to_cerver (Client *client, Connection *connection);
 
 // connects a client to the host with the specified values in the connection
 // it can be a cerver or not
@@ -105,7 +111,7 @@ extern unsigned int client_connect (Client *client, Connection *connection);
 // open a success connection, EVENT_CONNECTED will be triggered, otherwise, EVENT_CONNECTION_FAILED will be triggered
 // user must manually handle how he wants to receive / handle incomming packets and also send requests
 // returns 0 on success connection thread creation, 1 on error
-extern unsigned int client_connect_async (Client *client, Connection *connection);
+extern unsigned int client_connect_async (Client *client, struct _Connection *connection);
 
 /*** request ***/
 
@@ -116,7 +122,7 @@ extern unsigned int client_connect_async (Client *client, Connection *connection
 // this method only works if your response consists only of one packet
 // neither client nor the connection will be stopped after the request has ended, the request packet won't be deleted
 // retruns 0 when the response has been handled, 1 on error
-extern unsigned int client_request_to_cerver (Client *client, Connection *connection, Packet *request);
+extern unsigned int client_request_to_cerver (Client *client, struct _Connection *connection, struct _Packet *request);
 
 // when a client is already connected to the cerver, a request can be made to the cerver
 // the result will be placed inside the connection
@@ -124,7 +130,7 @@ extern unsigned int client_request_to_cerver (Client *client, Connection *connec
 // this method only works if your response consists only of one packet
 // neither client nor the connection will be stopped after the request has ended, the request packet won't be deleted
 // returns 0 on success request, 1 on error
-extern unsigned int client_request_to_cerver_async (Client *client, Connection *connection, Packet *request);
+extern unsigned int client_request_to_cerver_async (Client *client, struct _Connection *connection, struct _Packet *request);
 
 // this is a blocking method and ONLY works for cerver packets
 // connects the client connection and makes a first request to the cerver

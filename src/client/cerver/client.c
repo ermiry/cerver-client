@@ -239,18 +239,17 @@ Connection *client_connection_get_by_socket (Client *client, i32 sock_fd) {
 
 // creates a new connection and registers it to the specified client
 // the connection should be ready to be started
-// returns 0 on success, 1 on error
-int client_connection_create (Client *client,
+// returns a new connection on success, NULL on error
+Connection *client_connection_create (Client *client,
     const char *ip_address, u16 port, Protocol protocol, bool use_ipv6) {
 
-    int retval = 1;
+    Connection *connection = NULL;
 
     if (client) {
         if (ip_address) {
-            Connection *connection = connection_create (ip_address, port, protocol, use_ipv6);
+            connection = connection_create (ip_address, port, protocol, use_ipv6);
             if (connection) {
                 dlist_insert_after (client->connections, dlist_end (client->connections), connection);
-                retval = 0;
             }
 
             else client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create new connection!");
@@ -262,7 +261,7 @@ int client_connection_create (Client *client,
         }
     }
 
-    return retval;
+    return connection;
 
 }
 
@@ -302,6 +301,24 @@ unsigned int client_connect (Client *client, Connection *connection) {
 
             retval = 0;     // success - connected to cerver
         }
+    }
+
+    return retval;
+
+}
+
+// connects a client to the host with the specified values in the connection
+// performs a first read to get the cerver info packet 
+// this is a blocking method, and works exactly the same as if only calling client_connect ()
+// returns 0 when the connection has been established, 1 on error or failed to connect
+unsigned int client_connect_to_cerver (Client *client, Connection *connection) {
+
+    unsigned int retval = 1;
+
+    if (!client_connect (client, connection)) {
+        client_receive (client, connection);
+
+        retval = 0;
     }
 
     return retval;
@@ -370,12 +387,16 @@ unsigned int client_connect_async (Client *client, Connection *connection) {
 // retruns 0 when the response has been handled, 1 on error
 unsigned int client_request_to_cerver (Client *client, Connection *connection, Packet *request) {
 
-    void *retval = NULL;
+    unsigned int retval = 1;
 
     if (client && connection && request) {
         // send the request to the cerver
         packet_set_network_values (request, client, connection);
-        if (!packet_send (request, 0, NULL, false)) {
+
+        size_t sent = 0;
+        if (!packet_send (request, 0, &sent, false)) {
+            printf ("Request to cerver: %ld\n", sent);
+
             // receive the data directly
             connection->full_packet = false;
             while (!connection->full_packet) {
@@ -396,7 +417,7 @@ unsigned int client_request_to_cerver (Client *client, Connection *connection, P
 
 }
 
-static void *client_request_to_cerver_thread (ClientConnection *cc_ptr) {
+static void *client_request_to_cerver_thread (void *cc_ptr) {
 
     if (cc_ptr) {
         ClientConnection *cc = (ClientConnection *) cc_ptr;

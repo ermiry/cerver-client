@@ -229,7 +229,7 @@ static void client_packet_handler (void *data) {
 
 #pragma region receive
 
-static void *client_receive_handle_spare_packet (Client *client, Connection *connection, 
+static void client_receive_handle_spare_packet (Client *client, Connection *connection, 
     size_t buffer_size, char **end, size_t *buffer_pos) {
 
     if (connection->sock_receive->header) {
