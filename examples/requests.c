@@ -50,6 +50,7 @@ static int cerver_connect (const char *ip, unsigned int port) {
             if (connection) {
                 connection_set_name (connection, "main");
                 connection_set_max_sleep (connection, 30);
+                
                 if (!client_connect_to_cerver (client, connection)) {
                     client_log_msg (stdout, LOG_SUCCESS, LOG_NO_TYPE, "Connected to cerver!");
                     retval = 0;

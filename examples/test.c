@@ -19,26 +19,9 @@ typedef enum AppRequest {
 static Client *client = NULL;
 static Connection *connection = NULL;
 
-static void app_handler (void *packet_ptr) {
+static void app_handler (void *packet_ptr);
 
-	if (packet_ptr) {
-        Packet *packet = (Packet *) packet_ptr;
-        if (packet) {
-            if (packet->data_size >= sizeof (RequestData)) {
-                RequestData *req = (RequestData *) (packet->data);
-
-                switch (req->type) {
-                    case TEST_MSG: client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Got a test message from cerver!"); break;
-
-                    default: 
-                        client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown app request.");
-                        break;
-                }
-            }
-        }
-    }
-
-}
+#pragma region connect
 
 static int cerver_connect (const char *ip, unsigned int port) {
 
@@ -51,8 +34,9 @@ static int cerver_connect (const char *ip, unsigned int port) {
         if (client) {
             client_set_app_handlers (client, app_handler, NULL);
 
-            if (!client_connection_create (client, "main", ip, port, PROTOCOL_TCP, false)) {
-                connection = client_connection_get_by_name (client, "main");
+            connection = client_connection_create (client, ip, port, PROTOCOL_TCP, false);
+            if (connection) {
+                connection_set_name (connection, "main");
                 connection_set_max_sleep (connection, 30);
 
                 if (!client_connection_start (client, connection)) {
@@ -62,7 +46,7 @@ static int cerver_connect (const char *ip, unsigned int port) {
 
                 else {
                     client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to connect to cerver!");
-                } 
+                }
             }
 
             else {
@@ -88,6 +72,35 @@ static void cerver_disconnect (void) {
 
 }
 
+#pragma endregion
+
+#pragma region handler
+
+static void app_handler (void *packet_ptr) {
+
+	if (packet_ptr) {
+        Packet *packet = (Packet *) packet_ptr;
+        if (packet) {
+            if (packet->data_size >= sizeof (RequestData)) {
+                RequestData *req = (RequestData *) (packet->data);
+
+                switch (req->type) {
+                    case TEST_MSG: client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Got a test message from cerver!"); break;
+
+                    default: 
+                        client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown app request.");
+                        break;
+                }
+            }
+        }
+    }
+
+}
+
+#pragma endregion
+
+#pragma region request
+
 static int test_msg_send (void) {
 
     int retval = 1;
@@ -111,6 +124,10 @@ static int test_msg_send (void) {
     return retval;
 
 }
+
+#pragma endregion
+
+#pragma region main
 
 static void end (int dummy) {
 	
@@ -144,3 +161,5 @@ int main (int argc, const char **argv) {
     return 0;
 
 }
+
+#pragma endregion

@@ -31,6 +31,63 @@ typedef struct AppMessage {
 static Client *client = NULL;
 static Connection *connection = NULL;
 
+static void app_handler (void *packet_ptr);
+
+#pragma region connect
+
+static int cerver_connect (const char *ip, unsigned int port) {
+
+    int retval = 1;
+
+    if (ip) {
+        fprintf (stdout, "\nConnecting to cerver...\n");
+
+        client = client_create ();
+        if (client) {
+            client_set_app_handlers (client, app_handler, NULL);
+
+            connection = client_connection_create (client, ip, port, PROTOCOL_TCP, false);
+            if (connection) {
+                connection_set_name (connection, "main");
+                connection_set_max_sleep (connection, 30);
+                
+                if (!client_connection_start (client, connection)) {
+                    client_log_msg (stdout, LOG_SUCCESS, LOG_NO_TYPE, "Connected to cerver!");
+                    retval = 0;
+                }
+
+                else {
+                    client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to connect to cerver!");
+                }
+            }
+
+            else {
+                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create connection!");
+            }
+        }
+
+        else {
+            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create client!");
+        }
+    }
+
+    return retval;
+
+}
+
+static void cerver_disconnect (void) {
+
+    client_connection_end (client, connection);
+
+    // TODO: 26/01/2020 -- 21:31 -- possible seg fault when quitting client with active connection
+    client_teardown (client);
+
+}
+
+#pragma endregion
+
+#pragma region handler
+
 static void app_handler (void *packet_ptr) {
 
 	if (packet_ptr) {
@@ -60,53 +117,9 @@ static void app_handler (void *packet_ptr) {
 
 }
 
-static int cerver_connect (const char *ip, unsigned int port) {
+#pragma endregion
 
-    int retval = 1;
-
-    if (ip) {
-        fprintf (stdout, "\nConnecting to cerver...\n");
-
-        client = client_create ();
-        if (client) {
-            client_set_app_handlers (client, app_handler, NULL);
-
-            if (!client_connection_create (client, "main", ip, port, PROTOCOL_TCP, false)) {
-                connection = client_connection_get_by_name (client, "main");
-                connection_set_max_sleep (connection, 30);
-
-                if (!client_connection_start (client, connection)) {
-                    client_log_msg (stdout, LOG_SUCCESS, LOG_NO_TYPE, "Connected to cerver!");
-                    retval = 0;
-                }
-
-                else {
-                    client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to connect to cerver!");
-                } 
-            }
-
-            else {
-                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create connection!");
-            }
-        }
-
-        else {
-            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create client!");
-        }
-    }
-
-    return retval;
-
-}
-
-static void cerver_disconnect (void) {
-
-    client_connection_end (client, connection);
-
-    // TODO: 26/01/2020 -- 21:31 -- possible seg fault when quitting client with active connection
-    client_teardown (client);
-
-}
+#pragma region request
 
 static u8 max_handler_id = 3;
 static u8 handler_id = 0;
@@ -207,6 +220,10 @@ static int request_message (void) {
 }
 #pragma GCC diagnostic pop
 
+#pragma endregion
+
+#pragma region main
+
 static void end (int dummy) {
 	
 	cerver_disconnect ();
@@ -240,3 +257,5 @@ int main (int argc, const char **argv) {
     return 0;
 
 }
+
+#pragma endregion
