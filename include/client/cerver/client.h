@@ -132,17 +132,14 @@ extern unsigned int client_request_to_cerver (Client *client, struct _Connection
 // returns 0 on success request, 1 on error
 extern unsigned int client_request_to_cerver_async (Client *client, struct _Connection *connection, struct _Packet *request);
 
-// this is a blocking method and ONLY works for cerver packets
-// connects the client connection and makes a first request to the cerver
-// then listen for packets until the target one is received, 
-// then it returns the packet data as it is
-// returns 0 on success, 1 on error
-extern int client_connection_request_to_cerver (Client *client, struct _Connection *connection, 
-    struct _Packet *request_packet);
+/*** connection ***/
 
 // starts a client connection
+// connects the client / connection to the specified values (a cerver)
+// this method will ONLY block until it is connected to the cerver
+// upon a success connection, a new thread for receiving packages will be created
 // returns 0 on success, 1 on error
-extern int client_connection_start (Client *client, struct _Connection *connection);
+extern int client_connection_start (Client *client, Connection *connection);
 
 // terminates and destroy a connection registered to a client
 // returns 0 on success, 1 on error

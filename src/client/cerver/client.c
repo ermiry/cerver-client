@@ -476,53 +476,30 @@ unsigned int client_request_to_cerver_async (Client *client, Connection *connect
 
 #pragma endregion
 
-// this is a blocking method and ONLY works for cerver packets
-// connects the client connection and makes a first request to the cerver
-// then listen for packets until the target one is received, 
-// then it returns the packet data as it is
-// returns 0 on success, 1 on error
-int client_connection_request_to_cerver (Client *client, Connection *connection, Packet *request_packet) {
-
-    int retval = 1;
-
-    if (client && connection) {
-        connection->sock_receive = sock_receive_new ();
-        if (!connection_start (connection)) {
-            client_start (client);
-            // connection->active = true;
-
-            // send the request to the cerver
-            packet_set_network_values (request_packet, client, connection);
-            packet_send (request_packet, 0, NULL, false);
-            // packet_delete (request_packet);
-
-            // read incoming buffer from cerver
-            while (client->running && connection->connected) 
-                client_receive (client, connection);
-
-            retval = 0;
-        }
-    }
-
-    return retval;
-
-}
-
 // starts a client connection
+// connects the client / connection to the specified values (a cerver)
+// this method will ONLY block until it is connected to the cerver
+// upon a success connection, a new thread for receiving packages will be created
 // returns 0 on success, 1 on error
 int client_connection_start (Client *client, Connection *connection) {
 
     int retval = 1;
 
     if (client && connection) {
-        if (!connection_start (connection)) {
-            client_event_trigger (client, EVENT_CONNECTED);
-            connection->connected = true;
-            time (&connection->connected_timestamp);
-            thread_create_detachable ((void *(*)(void *)) connection_update, 
-                client_connection_aux_new (client, connection));
-            client_start (client);
-            retval = 0;
+        if (!client_connect (client, connection)) {
+            if (!thread_create_detachable ((void *(*)(void *)) connection_update,
+                client_connection_aux_new (client, connection))
+            ) {
+                #ifdef CLIENT_DEBUG
+                client_log_success ("client_connection_start () - created connection_update () thread!");
+                #endif
+
+                retval = 0;     // success
+            }
+
+            else {
+                client_log_error ("client_connection_start () - failed to create connection_update () thread!");
+            }
         }
 
         else {
@@ -599,9 +576,7 @@ void client_got_disconnected (Client *client) {
 
 }
 
-/*** Files ***/
-
-#pragma region Files
+#pragma region files
 
 // requests a file from the server
 // filename: the name of the file to request
@@ -644,9 +619,7 @@ u8 client_file_send (Client *client, Connection *connection, const char *filenam
 
 #pragma endregion
 
-/*** Game ***/
-
-#pragma region Game
+#pragma region game
 
 // requets the cerver to create a new lobby
 // game type: is the type of game to create the lobby, the configuration must exist in the cerver
@@ -759,6 +732,8 @@ u8 client_game_start_lobby (Client *client, Connection *connection,
     return retval;
 
 }
+
+#pragma endregion
 
 /*** aux ***/
 
