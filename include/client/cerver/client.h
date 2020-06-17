@@ -58,6 +58,8 @@ struct _Client {
 
 typedef struct _Client Client;
 
+#pragma region main
+
 // sets the client's name
 extern void client_set_name (Client *client, const char *name);
 
@@ -72,6 +74,10 @@ extern Client *client_create (void);
 
 // stops any activae connection and destroys a client
 extern u8 client_teardown (Client *client);
+
+#pragma endregion
+
+#pragma region connections
 
 // returns a connection assocaited with a socket
 extern struct _Connection *client_connection_get_by_socket (Client *client, i32 sock_fd);
@@ -93,7 +99,9 @@ extern int client_connection_register (Client *client, struct _Connection *conne
 // returns 0 on success, 1 on error or if the connection does not belong to the client
 extern int client_connection_unregister (Client *client, Connection *connection);
 
-/*** connect ***/
+#pragma endregion
+
+#pragma region connect
 
 // connects a client to the host with the specified values in the connection
 // it can be a cerver or not
@@ -116,7 +124,9 @@ extern unsigned int client_connect_to_cerver (Client *client, Connection *connec
 // returns 0 on success connection thread creation, 1 on error
 extern unsigned int client_connect_async (Client *client, struct _Connection *connection);
 
-/*** requests ***/
+#pragma endregion
+
+#pragma region requests
 
 // when a client is already connected to the cerver, a request can be made to the cerver
 // and the result will be returned
@@ -135,18 +145,34 @@ extern unsigned int client_request_to_cerver (Client *client, struct _Connection
 // returns 0 on success request, 1 on error
 extern unsigned int client_request_to_cerver_async (Client *client, struct _Connection *connection, struct _Packet *request);
 
-/*** connection ***/
+#pragma endregion
 
-// starts a client connection
-// connects the client / connection to the specified values (a cerver)
-// this method will ONLY block until it is connected to the cerver
-// upon a success connection, a new thread for receiving packages will be created
+#pragma region start
+
+// after a client connection successfully connects to a server, 
+// it will start the connection's update thread to enable the connection to
+// receive & handle packets in a dedicated thread
 // returns 0 on success, 1 on error
 extern int client_connection_start (Client *client, Connection *connection);
 
+// connects a client connection to a server
+// and after a success connection, it will start the connection (create update thread for receiving messages)
+// this is a blocking method, returns only after a success or failed connection
+// returns 0 on success, 1 on error
+extern int client_connect_and_start (Client *client, Connection *connection);
+
+// connects a client connection to a server in a new thread to avoid blocking the calling thread,
+// and after a success connection, it will start the connection (create update thread for receiving messages)
+// returns 0 on success creating connection thread, 1 on error
+extern u8 client_connect_and_start_async (Client *client, Connection *connection);
+
+#pragma endregion
+
+#pragma region end
+
 // terminates and destroy a connection registered to a client
 // returns 0 on success, 1 on error
-extern int client_connection_end (Client *client, struct _Connection *connection);
+extern int client_connection_end (Client *client, Connection *connection);
 
 // terminates all of the client connections and deletes them
 // return 0 on success, 1 on error
@@ -154,6 +180,8 @@ extern int client_disconnect (Client *client);
 
 // the client got disconnected from the cerver, so correctly clear our data
 extern void client_got_disconnected (Client *client);
+
+#pragma endregion
 
 /*** Files ***/
 
