@@ -413,36 +413,13 @@ void connection_update (void *ptr) {
 
 }
 
-// ends a connection
-void connection_end (Connection *connection) {
-
-    if (connection) {
-        if (connection->connected) {
-            // if we are connected to a cerver, send a disconnect packet
-            if (connection->cerver) {
-                Packet *packet = packet_generate_request (REQUEST_PACKET, CLIENT_CLOSE_CONNECTION, NULL, 0);
-                if (packet) {
-                    packet_set_network_values (packet, NULL, connection);
-                    packet_send (packet, 0, NULL, false);
-                    packet_delete (packet);
-                }
-            }
-
-            close (connection->sock_fd);
-            // connection->sock_fd = -1;
-            connection->connected = false;
-        }
-    }
-
-}
-
 // closes a connection directly
 void connection_close (Connection *connection) {
 
     if (connection) {
         if (connection->connected) {
             close (connection->sock_fd);
-            // connection->sock_fd = -1;
+            connection->sock_fd = -1;
             connection->connected = false;
         }
     }

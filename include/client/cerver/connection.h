@@ -141,9 +141,6 @@ typedef struct ConnectionCustomReceiveData {
 // starts listening and receiving data in the connection sock
 extern void connection_update (void *ptr);
 
-// ends a connection
-extern void connection_end (Connection *connection);
-
 // closes a connection directly
 extern void connection_close (Connection *connection);
 

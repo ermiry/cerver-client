@@ -621,6 +621,29 @@ u8 client_connect_and_start_async (Client *client, Connection *connection) {
 
 #pragma region end
 
+// ends a connection with a cerver by sending a disconnect packet and the closing the connection
+static void client_connection_terminate (Client *client, Connection *connection) {
+
+    if (connection) {
+        if (connection->connected) {
+            if (connection->cerver) {
+                // send a close connection packet
+                Packet *packet = packet_generate_request (REQUEST_PACKET, CLIENT_CLOSE_CONNECTION, NULL, 0);
+                if (packet) {
+                    packet_set_network_values (packet, client, connection);
+                    if (packet_send (packet, 0, NULL, false)) {
+                        client_log_error ("Failed to send CLIENT_CLOSE_CONNECTION!");
+                    }
+                    packet_delete (packet);
+                }
+            }
+
+            connection_close (connection);
+        } 
+    }
+
+}
+
 // terminates and destroy a connection registered to a client
 // returns 0 on success, 1 on error
 int client_connection_end (Client *client, Connection *connection) {
@@ -628,8 +651,7 @@ int client_connection_end (Client *client, Connection *connection) {
     int retval = 1;
 
     if (client && connection) {
-        connection_end (connection);
-
+        client_connection_terminate (client, connection);
         client_event_trigger (client, EVENT_CONNECTION_CLOSE);
 
         // connection_delete (dlist_remove_element (client->connections, 
@@ -652,7 +674,7 @@ int client_disconnect (Client *client) {
     if (client) {
         // end any ongoing connection
         for (ListElement *le = dlist_start (client->connections); le; le = le->next) {
-            connection_end ((Connection *) le->data);
+            client_connection_terminate (client, (Connection *) le->data);
         }
 
         dlist_reset (client->connections);
