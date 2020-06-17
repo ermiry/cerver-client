@@ -193,6 +193,12 @@ static u8 client_start (Client *client) {
         if (!client->running) {
             time (&client->time_started);
             client->running = true;
+
+            retval = 0;
+        }
+
+        else {
+            // client is already running because of an active connection
             retval = 0;
         }
     }

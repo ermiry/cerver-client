@@ -39,7 +39,7 @@ static int cerver_connect (const char *ip, unsigned int port) {
                 connection_set_name (connection, "main");
                 connection_set_max_sleep (connection, 30);
 
-                if (!client_connection_start (client, connection)) {
+                if (!client_connect_and_start (client, connection)) {
                     client_log_msg (stdout, LOG_SUCCESS, LOG_NO_TYPE, "Connected to cerver!");
                     retval = 0;
                 }
@@ -67,8 +67,9 @@ static void cerver_disconnect (void) {
 
     client_connection_end (client, connection);
 
-    // TODO: 26/01/2020 -- 21:31 -- possible seg fault when quitting client with active connection
-    client_teardown (client);
+    if (!client_teardown (client)) {
+        client_log_success ("client_teardown ()!");
+    }
 
 }
 
@@ -156,6 +157,13 @@ int main (int argc, const char **argv) {
 
             sleep (1);
         }
+
+        // for (unsigned int i = 0; i < 5; i++) {
+        //     test_msg_send ();
+        //     sleep (1);
+        // }
+
+        // cerver_disconnect ();
     }
 
     return 0;
