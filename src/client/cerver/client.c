@@ -272,8 +272,26 @@ int client_connection_register (Client *client, Connection *connection) {
     int retval = 1;
 
     if (client && connection) {
-        dlist_insert_after (client->connections, dlist_end (client->connections), connection);
-        retval = 0;
+        retval =  dlist_insert_after (
+            client->connections, 
+            dlist_end (client->connections), 
+            connection
+        );
+    }
+
+    return retval;
+
+}
+
+// unregister an exitsing connection from the client
+// returns 0 on success, 1 on error or if the connection does not belong to the client
+int client_connection_unregister (Client *client, Connection *connection) {
+
+    int retval = 1;
+    if (client && connection) {
+        if (dlist_remove (client->connections, connection, NULL)) {
+            retval = 0;
+        }
     }
 
     return retval;

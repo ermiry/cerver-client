@@ -90,6 +90,10 @@ extern struct _Connection *client_connection_create (Client *client,
 // retuns 0 on success, 1 on error
 extern int client_connection_register (Client *client, struct _Connection *connection);
 
+// unregister an exitsing connection from the client
+// returns 0 on success, 1 on error or if the connection does not belong to the client
+extern int client_connection_unregister (Client *client, Connection *connection);
+
 /*** connect ***/
 
 // connects a client to the host with the specified values in the connection
@@ -108,12 +112,12 @@ extern unsigned int client_connect_to_cerver (Client *client, Connection *connec
 // connects a client to the host with the specified values in the connection
 // it can be a cerver or not
 // this is NOT a blocking method, a new thread will be created to wait for a connection to be established
-// open a success connection, EVENT_CONNECTED will be triggered, otherwise, EVENT_CONNECTION_FAILED will be triggered
+// upon a success connection, EVENT_CONNECTED will be triggered, otherwise, EVENT_CONNECTION_FAILED will be triggered
 // user must manually handle how he wants to receive / handle incomming packets and also send requests
 // returns 0 on success connection thread creation, 1 on error
 extern unsigned int client_connect_async (Client *client, struct _Connection *connection);
 
-/*** request ***/
+/*** requests ***/
 
 // when a client is already connected to the cerver, a request can be made to the cerver
 // and the result will be returned
