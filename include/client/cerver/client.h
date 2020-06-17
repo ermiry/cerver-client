@@ -17,19 +17,24 @@ struct _Connection;
 struct _Packet;
 struct _PacketsPerType;
 
-typedef struct ClientStats {
+struct _ClientStats {
 
-    time_t threshold_time;                          // every time we want to reset cerver stats (like packets), defaults 24hrs
-    u64 n_packets_received;                         // total number of packets received (packet header + data)
-    u64 n_receives_done;                            // total amount of actual calls to recv ()
-    u64 total_bytes_received;                       // total amount of bytes received in the cerver
-    u64 n_packets_sent;                             // total number of packets sent
-    u64 total_bytes_sent;                           // total amount of bytes sent by the cerver
+    time_t threshold_time;                  // every time we want to reset the client's stats
+
+    u64 n_receives_done;                    // n calls to recv ()
+
+    u64 total_bytes_received;               // total amount of bytes received from this client
+    u64 total_bytes_sent;                   // total amount of bytes that have been sent to the client (all of its connections)
+
+    u64 n_packets_received;                 // total number of packets received from this client (packet header + data)
+    u64 n_packets_sent;                     // total number of packets sent to this client (all connections)
 
     struct _PacketsPerType *received_packets;
     struct _PacketsPerType *sent_packets;
 
-} ClientStats;
+};
+
+typedef struct _ClientStats ClientStats;
 
 extern void client_stats_print (struct _Client *client);
 

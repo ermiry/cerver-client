@@ -58,13 +58,16 @@ void client_stats_print (Client *client) {
 
     if (client) {
         if (client->stats) {
-            printf ("\nClient's stats: ");
-            printf ("\nThreshold time:            %ld\n", client->stats->threshold_time);
-            printf ("N packets received:        %ld\n", client->stats->n_packets_received);
+            printf ("\nClient's stats:\n");
+            printf ("Threshold time:            %ld\n", client->stats->threshold_time);
+
             printf ("N receives done:           %ld\n", client->stats->n_receives_done);
+
             printf ("Total bytes received:      %ld\n", client->stats->total_bytes_received);
-            printf ("N packets sent:            %ld\n", client->stats->n_packets_sent);
             printf ("Total bytes sent:          %ld\n", client->stats->total_bytes_sent);
+
+            printf ("N packets received:        %ld\n", client->stats->n_packets_received);
+            printf ("N packets sent:            %ld\n", client->stats->n_packets_sent);
 
             printf ("\nReceived packets:\n");
             packets_per_type_print (client->stats->received_packets);
@@ -705,7 +708,7 @@ void client_got_disconnected (Client *client) {
             connection_close ((Connection *) le->data);
         }
 
-        dlist_reset (client->connections);
+        // dlist_reset (client->connections);
 
         // reset client
         client->running = false;
