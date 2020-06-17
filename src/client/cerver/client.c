@@ -119,6 +119,16 @@ static void client_delete (Client *client) {
 
 }
 
+// sets the client's name
+void client_set_name (Client *client, const char *name) {
+
+    if (client) {
+        if (client->name) str_delete (client->name);
+        client->name = name ? str_new (name) : NULL;
+    }
+
+}
+
 // sets a cutom app packet hanlder and a custom app error packet handler
 void client_set_app_handlers (Client *client, Action app_handler, Action app_error_handler) {
 
@@ -147,6 +157,8 @@ static u8 client_init (Client *client) {
         client->stats = client_stats_new ();
 
         client->running = false;
+
+        retval = 0;
     }
 
     return retval;
@@ -156,7 +168,10 @@ static u8 client_init (Client *client) {
 Client *client_create (void) {
 
     Client *client = client_new ();
-    if (client) client_init (client);
+    if (client) {
+        client->name = str_new ("no-name");
+        client_init (client);
+    } 
 
     return client;
 

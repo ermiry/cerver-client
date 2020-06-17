@@ -35,6 +35,8 @@ extern void client_stats_print (struct _Client *client);
 
 struct _Client {
 
+    String *name;
+
     DoubleList *connections;
 
     bool running;                   // any connection is active
@@ -56,11 +58,8 @@ struct _Client {
 
 typedef struct _Client Client;
 
-// sets the client's poll timeout
-extern void client_set_poll_timeout (Client *client, u32 timeout);
-
-// sets the clients's thpool number of threads
-extern void client_set_thpool_n_threads (Client *client, u16 n_threads);
+// sets the client's name
+extern void client_set_name (Client *client, const char *name);
 
 // sets a cutom app packet hanlder and a custom app error packet handler
 extern void client_set_app_handlers (Client *client, Action app_handler, Action app_error_handler);
