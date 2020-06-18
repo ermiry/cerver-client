@@ -28,6 +28,8 @@ int client_disconnect (Client *client);
 int client_connection_end (Client *client, Connection *connection);
 Connection *client_connection_get_by_socket (Client *client, i32 sock_fd);
 
+#pragma region stats
+
 static ClientStats *client_stats_new (void) {
 
     ClientStats *client_stats = (ClientStats *) malloc (sizeof (ClientStats));
@@ -56,13 +58,16 @@ void client_stats_print (Client *client) {
 
     if (client) {
         if (client->stats) {
-            printf ("\nClient's stats: ");
-            printf ("\nThreshold time:            %ld\n", client->stats->threshold_time);
-            printf ("N packets received:        %ld\n", client->stats->n_packets_received);
+            printf ("\nClient's stats:\n");
+            printf ("Threshold time:            %ld\n", client->stats->threshold_time);
+
             printf ("N receives done:           %ld\n", client->stats->n_receives_done);
+
             printf ("Total bytes received:      %ld\n", client->stats->total_bytes_received);
-            printf ("N packets sent:            %ld\n", client->stats->n_packets_sent);
             printf ("Total bytes sent:          %ld\n", client->stats->total_bytes_sent);
+
+            printf ("N packets received:        %ld\n", client->stats->n_packets_received);
+            printf ("N packets sent:            %ld\n", client->stats->n_packets_sent);
 
             printf ("\nReceived packets:\n");
             packets_per_type_print (client->stats->received_packets);
@@ -83,6 +88,10 @@ void client_stats_print (Client *client) {
     }
 
 }
+
+#pragma endregion
+
+#pragma region main
 
 static Client *client_new (void) {
 
@@ -119,6 +128,16 @@ static void client_delete (Client *client) {
 
 }
 
+// sets the client's name
+void client_set_name (Client *client, const char *name) {
+
+    if (client) {
+        if (client->name) str_delete (client->name);
+        client->name = name ? str_new (name) : NULL;
+    }
+
+}
+
 // sets a cutom app packet hanlder and a custom app error packet handler
 void client_set_app_handlers (Client *client, Action app_handler, Action app_error_handler) {
 
@@ -147,6 +166,8 @@ static u8 client_init (Client *client) {
         client->stats = client_stats_new ();
 
         client->running = false;
+
+        retval = 0;
     }
 
     return retval;
@@ -156,7 +177,10 @@ static u8 client_init (Client *client) {
 Client *client_create (void) {
 
     Client *client = client_new ();
-    if (client) client_init (client);
+    if (client) {
+        client->name = str_new ("no-name");
+        client_init (client);
+    } 
 
     return client;
 
@@ -172,6 +196,12 @@ static u8 client_start (Client *client) {
         if (!client->running) {
             time (&client->time_started);
             client->running = true;
+
+            retval = 0;
+        }
+
+        else {
+            // client is already running because of an active connection
             retval = 0;
         }
     }
@@ -196,6 +226,10 @@ u8 client_teardown (Client *client) {
     return retval;
 
 }
+
+#pragma endregion
+
+#pragma region connections
 
 // returns a connection (registered to a client) by its name
 Connection *client_connection_get_by_name (Client *client, const char *name) {
@@ -272,13 +306,33 @@ int client_connection_register (Client *client, Connection *connection) {
     int retval = 1;
 
     if (client && connection) {
-        dlist_insert_after (client->connections, dlist_end (client->connections), connection);
-        retval = 0;
+        retval =  dlist_insert_after (
+            client->connections, 
+            dlist_end (client->connections), 
+            connection
+        );
     }
 
     return retval;
 
 }
+
+// unregister an exitsing connection from the client
+// returns 0 on success, 1 on error or if the connection does not belong to the client
+int client_connection_unregister (Client *client, Connection *connection) {
+
+    int retval = 1;
+    if (client && connection) {
+        if (dlist_remove (client->connections, connection, NULL)) {
+            retval = 0;
+        }
+    }
+
+    return retval;
+
+}
+
+#pragma endregion
 
 #pragma region connect
 
@@ -395,7 +449,7 @@ unsigned int client_request_to_cerver (Client *client, Connection *connection, P
 
         size_t sent = 0;
         if (!packet_send (request, 0, &sent, false)) {
-            printf ("Request to cerver: %ld\n", sent);
+            // printf ("Request to cerver: %ld\n", sent);
 
             // receive the data directly
             connection->full_packet = false;
@@ -476,38 +530,126 @@ unsigned int client_request_to_cerver_async (Client *client, Connection *connect
 
 #pragma endregion
 
-// starts a client connection
-// connects the client / connection to the specified values (a cerver)
-// this method will ONLY block until it is connected to the cerver
-// upon a success connection, a new thread for receiving packages will be created
+#pragma region start
+
+// after a client connection successfully connects to a server, 
+// it will start the connection's update thread to enable the connection to
+// receive & handle packets in a dedicated thread
 // returns 0 on success, 1 on error
 int client_connection_start (Client *client, Connection *connection) {
 
     int retval = 1;
 
     if (client && connection) {
-        if (!client_connect (client, connection)) {
-            if (!thread_create_detachable ((void *(*)(void *)) connection_update,
-                client_connection_aux_new (client, connection))
-            ) {
-                #ifdef CLIENT_DEBUG
-                client_log_success ("client_connection_start () - created connection_update () thread!");
-                #endif
+        if (connection->connected) {
+            if (!client_start (client)) {
+                if (!thread_create_detachable (
+                    (void *(*)(void *)) connection_update,
+                    client_connection_aux_new (client, connection)
+                )) {
+                    retval = 0;         // success
+                }
 
-                retval = 0;     // success
+                else {
+                    char *s = c_string_create ("client_connection_start () - Failed to create update thread for client %s", 
+                        client->name->str);
+                    if (s) {
+                        client_log_error (s);
+                        free (s);
+                    }
+                }
             }
 
             else {
-                client_log_error ("client_connection_start () - failed to create connection_update () thread!");
+                char *s = c_string_create ("client_connection_start () - Failed to start client %s", 
+                    client->name->str);
+                if (s) {
+                    client_log_error (s);
+                    free (s);
+                }
+            }
+        }
+    }
+
+    return retval;
+
+}
+
+// connects a client connection to a server
+// and after a success connection, it will start the connection (create update thread for receiving messages)
+// this is a blocking method, returns only after a success or failed connection
+// returns 0 on success, 1 on error
+int client_connect_and_start (Client *client, Connection *connection) {
+
+    int retval = 1;
+
+    if (client && connection) {
+        if (!client_connect (client, connection)) {
+            if (!client_connection_start (client, connection)) {
+                retval = 0;
             }
         }
 
         else {
-            client_event_trigger (client, EVENT_CONNECTION_FAILED);
-        } 
+            char *s = c_string_create ("client_connect_and_start () - Client %s failed to connect", 
+                client->name->str);
+            if (s) {
+                client_log_error (s);
+                free (s);
+            }
+        }
     }
 
     return retval;
+
+}
+
+static void client_connection_start_wrapper (void *data_ptr) {
+
+    if (data_ptr) {
+        ClientConnection *cc = (ClientConnection *) data_ptr;
+        client_connect_and_start (cc->client, cc->connection);
+        client_connection_aux_delete (cc);
+    }
+
+}
+
+// connects a client connection to a server in a new thread to avoid blocking the calling thread,
+// and after a success connection, it will start the connection (create update thread for receiving messages)
+// returns 0 on success creating connection thread, 1 on error
+u8 client_connect_and_start_async (Client *client, Connection *connection) {
+
+    return (client && connection) ? thread_create_detachable (
+        (void *(*)(void *)) client_connection_start_wrapper,
+        client_connection_aux_new (client, connection)
+    ) : 1;
+
+}
+
+#pragma endregion
+
+#pragma region end
+
+// ends a connection with a cerver by sending a disconnect packet and the closing the connection
+static void client_connection_terminate (Client *client, Connection *connection) {
+
+    if (connection) {
+        if (connection->connected) {
+            if (connection->cerver) {
+                // send a close connection packet
+                Packet *packet = packet_generate_request (REQUEST_PACKET, CLIENT_CLOSE_CONNECTION, NULL, 0);
+                if (packet) {
+                    packet_set_network_values (packet, client, connection);
+                    if (packet_send (packet, 0, NULL, false)) {
+                        client_log_error ("Failed to send CLIENT_CLOSE_CONNECTION!");
+                    }
+                    packet_delete (packet);
+                }
+            }
+
+            connection_close (connection);
+        } 
+    }
 
 }
 
@@ -518,8 +660,7 @@ int client_connection_end (Client *client, Connection *connection) {
     int retval = 1;
 
     if (client && connection) {
-        connection_end (connection);
-
+        client_connection_terminate (client, connection);
         client_event_trigger (client, EVENT_CONNECTION_CLOSE);
 
         // connection_delete (dlist_remove_element (client->connections, 
@@ -542,7 +683,7 @@ int client_disconnect (Client *client) {
     if (client) {
         // end any ongoing connection
         for (ListElement *le = dlist_start (client->connections); le; le = le->next) {
-            connection_end ((Connection *) le->data);
+            client_connection_terminate (client, (Connection *) le->data);
         }
 
         dlist_reset (client->connections);
@@ -567,7 +708,7 @@ void client_got_disconnected (Client *client) {
             connection_close ((Connection *) le->data);
         }
 
-        dlist_reset (client->connections);
+        // dlist_reset (client->connections);
 
         // reset client
         client->running = false;
@@ -575,6 +716,8 @@ void client_got_disconnected (Client *client) {
     }
 
 }
+
+#pragma endregion
 
 #pragma region files
 

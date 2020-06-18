@@ -51,7 +51,7 @@ static int cerver_connect (const char *ip, unsigned int port) {
                 connection_set_name (connection, "main");
                 connection_set_max_sleep (connection, 30);
                 
-                if (!client_connection_start (client, connection)) {
+                if (!client_connect_and_start (client, connection)) {
                     client_log_msg (stdout, LOG_SUCCESS, LOG_NO_TYPE, "Connected to cerver!");
                     retval = 0;
                 }
@@ -79,7 +79,6 @@ static void cerver_disconnect (void) {
 
     client_connection_end (client, connection);
 
-    // TODO: 26/01/2020 -- 21:31 -- possible seg fault when quitting client with active connection
     client_teardown (client);
 
 }
@@ -130,41 +129,43 @@ static int test_msg_send (void) {
 
     int retval = 1;
 
-    // manually create a packet to send
-    Packet *packet = packet_new ();
-    if (packet) {
-        size_t packet_len = sizeof (PacketHeader) + sizeof (RequestData);
-        packet->packet = malloc (packet_len);
-        packet->packet_size = packet_len;
+    if ((client->running) && (connection->connected)) {
+        // manually create a packet to send
+        Packet *packet = packet_new ();
+        if (packet) {
+            size_t packet_len = sizeof (PacketHeader) + sizeof (RequestData);
+            packet->packet = malloc (packet_len);
+            packet->packet_size = packet_len;
 
-        char *end = (char *) packet->packet;
-        PacketHeader *header = (PacketHeader *) end;
-        header->protocol_id = packets_get_protocol_id ();
-        header->protocol_version = packets_get_protocol_version ();
-        header->packet_type = APP_PACKET;
-        header->packet_size = packet_len;
+            char *end = (char *) packet->packet;
+            PacketHeader *header = (PacketHeader *) end;
+            header->protocol_id = packets_get_protocol_id ();
+            header->protocol_version = packets_get_protocol_version ();
+            header->packet_type = APP_PACKET;
+            header->packet_size = packet_len;
 
-        header->handler_id = handler_id;
-        handler_id += 1;
-        if (handler_id > max_handler_id) handler_id = 0;
+            header->handler_id = handler_id;
+            handler_id += 1;
+            if (handler_id > max_handler_id) handler_id = 0;
 
-        end += sizeof (PacketHeader);
-        RequestData *req_data = (RequestData *) end;
-        req_data->type = TEST_MSG;
+            end += sizeof (PacketHeader);
+            RequestData *req_data = (RequestData *) end;
+            req_data->type = TEST_MSG;
 
-        packet_set_network_values (packet, client, connection);
+            packet_set_network_values (packet, client, connection);
 
-        size_t sent = 0;
-        if (packet_send (packet, 0, &sent, false)) {
-            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send test to cerver");
+            size_t sent = 0;
+            if (packet_send (packet, 0, &sent, false)) {
+                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send test to cerver");
+            }
+
+            else {
+                printf ("Test sent to cerver: %ld\n", sent);
+                retval = 0;
+            } 
+            
+            packet_delete (packet);
         }
-
-        else {
-            printf ("Test sent to cerver: %ld\n", sent);
-            retval = 0;
-        } 
-        
-        packet_delete (packet);
     }
 
     return retval;
@@ -178,41 +179,43 @@ static int request_message (void) {
 
     int retval = 1;
 
-    // manually create a packet to send
-    Packet *packet = packet_new ();
-    if (packet) {
-        size_t packet_len = sizeof (PacketHeader) + sizeof (RequestData);
-        packet->packet = malloc (packet_len);
-        packet->packet_size = packet_len;
+    if ((client->running) && (connection->connected)) {
+        // manually create a packet to send
+        Packet *packet = packet_new ();
+        if (packet) {
+            size_t packet_len = sizeof (PacketHeader) + sizeof (RequestData);
+            packet->packet = malloc (packet_len);
+            packet->packet_size = packet_len;
 
-        char *end = (char *) packet->packet;
-        PacketHeader *header = (PacketHeader *) end;
-        header->protocol_id = packets_get_protocol_id ();
-        header->protocol_version = packets_get_protocol_version ();
-        header->packet_type = APP_PACKET;
-        header->packet_size = packet_len;
+            char *end = (char *) packet->packet;
+            PacketHeader *header = (PacketHeader *) end;
+            header->protocol_id = packets_get_protocol_id ();
+            header->protocol_version = packets_get_protocol_version ();
+            header->packet_type = APP_PACKET;
+            header->packet_size = packet_len;
 
-        header->handler_id = handler_id;
-        handler_id += 1;
-        if (handler_id > max_handler_id) handler_id = 0;
+            header->handler_id = handler_id;
+            handler_id += 1;
+            if (handler_id > max_handler_id) handler_id = 0;
 
-        end += sizeof (PacketHeader);
-        RequestData *req_data = (RequestData *) end;
-        req_data->type = GET_MSG;
+            end += sizeof (PacketHeader);
+            RequestData *req_data = (RequestData *) end;
+            req_data->type = GET_MSG;
 
-        packet_set_network_values (packet, client, connection);
+            packet_set_network_values (packet, client, connection);
 
-        size_t sent = 0;
-        if (packet_send (packet, 0, &sent, false)) {
-            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send message request to cerver");
-        }
+            size_t sent = 0;
+            if (packet_send (packet, 0, &sent, false)) {
+                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send message request to cerver");
+            }
 
-        else {
-            printf ("Request sent to cerver: %ld\n", sent);
-            retval = 0;
-        } 
-        
-        packet_delete (packet);
+            else {
+                printf ("Request sent to cerver: %ld\n", sent);
+                retval = 0;
+            } 
+            
+            packet_delete (packet);
+        }   
     }
 
     return retval;
@@ -227,6 +230,10 @@ static int request_message (void) {
 static void end (int dummy) {
 	
 	cerver_disconnect ();
+
+    printf ("\n");
+    client_log_success ("Done!");
+    printf ("\n");
 
 	exit (0);
 

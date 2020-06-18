@@ -46,7 +46,7 @@ static int cerver_connect (const char *ip, unsigned int port) {
                 connection_set_name (connection, "main");
                 connection_set_max_sleep (connection, 30);
 
-                if (!client_connection_start (client, connection)) {
+                if (!client_connect_and_start (client, connection)) {
                     client_log_msg (stdout, LOG_SUCCESS, LOG_NO_TYPE, "Connected to cerver!");
                     retval = 0;
                 }
@@ -74,7 +74,6 @@ static void cerver_disconnect (void) {
 
     client_connection_end (client, connection);
 
-    // TODO: 26/01/2020 -- 21:31 -- possible seg fault when quitting client with active connection
     client_teardown (client);
 
 }
@@ -154,20 +153,22 @@ static int test_app_msg_send (void) {
 
     int retval = 1;
 
-    Packet *packet = packet_generate_request (APP_PACKET, TEST_MSG, NULL, 0);
-    if (packet) {
-        packet_set_network_values (packet, client, connection);
-        size_t sent = 0;
-        if (packet_send (packet, 0, &sent, false)) {
-            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send test to cerver");
+    if ((client->running) && (connection->connected)) {
+        Packet *packet = packet_generate_request (APP_PACKET, TEST_MSG, NULL, 0);
+        if (packet) {
+            packet_set_network_values (packet, client, connection);
+            size_t sent = 0;
+            if (packet_send (packet, 0, &sent, false)) {
+                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send test to cerver");
+            }
+
+            else {
+                printf ("APP_PACKET sent to cerver: %ld\n", sent);
+                retval = 0;
+            } 
+
+            packet_delete (packet);
         }
-
-        else {
-            printf ("APP_PACKET sent to cerver: %ld\n", sent);
-            retval = 0;
-        } 
-
-        packet_delete (packet);
     }
 
     return retval;
@@ -178,20 +179,22 @@ static int test_app_error_msg_send (void) {
 
     int retval = 1;
 
-    Packet *packet = packet_generate_request (APP_ERROR_PACKET, TEST_MSG, NULL, 0);
-    if (packet) {
-        packet_set_network_values (packet, client, connection);
-        size_t sent = 0;
-        if (packet_send (packet, 0, &sent, false)) {
-            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send test to cerver");
+    if ((client->running) && (connection->connected)) {
+        Packet *packet = packet_generate_request (APP_ERROR_PACKET, TEST_MSG, NULL, 0);
+        if (packet) {
+            packet_set_network_values (packet, client, connection);
+            size_t sent = 0;
+            if (packet_send (packet, 0, &sent, false)) {
+                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send test to cerver");
+            }
+
+            else {
+                printf ("APP_ERROR_PACKET sent to cerver: %ld\n", sent);
+                retval = 0;
+            } 
+
+            packet_delete (packet);
         }
-
-        else {
-            printf ("APP_ERROR_PACKET sent to cerver: %ld\n", sent);
-            retval = 0;
-        } 
-
-        packet_delete (packet);
     }
 
     return retval;
@@ -202,20 +205,22 @@ static int test_custom_msg_send (void) {
 
     int retval = 1;
 
-    Packet *packet = packet_generate_request (CUSTOM_PACKET, TEST_MSG, NULL, 0);
-    if (packet) {
-        packet_set_network_values (packet, client, connection);
-        size_t sent = 0;
-        if (packet_send (packet, 0, &sent, false)) {
-            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send test to cerver");
+    if ((client->running) && (connection->connected)) {
+        Packet *packet = packet_generate_request (CUSTOM_PACKET, TEST_MSG, NULL, 0);
+        if (packet) {
+            packet_set_network_values (packet, client, connection);
+            size_t sent = 0;
+            if (packet_send (packet, 0, &sent, false)) {
+                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send test to cerver");
+            }
+
+            else {
+                printf ("CUSTOM_PACKET sent to cerver: %ld\n", sent);
+                retval = 0;
+            } 
+
+            packet_delete (packet);
         }
-
-        else {
-            printf ("CUSTOM_PACKET sent to cerver: %ld\n", sent);
-            retval = 0;
-        } 
-
-        packet_delete (packet);
     }
 
     return retval;
@@ -229,6 +234,10 @@ static int test_custom_msg_send (void) {
 static void end (int dummy) {
 	
 	cerver_disconnect ();
+
+    printf ("\n");
+    client_log_success ("Done!");
+    printf ("\n");
 
 	exit (0);
 

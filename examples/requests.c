@@ -165,6 +165,10 @@ static void end (int dummy) {
 	
 	cerver_disconnect ();
 
+    printf ("\n");
+    client_log_success ("Done!");
+    printf ("\n");
+
 	exit (0);
 
 }
