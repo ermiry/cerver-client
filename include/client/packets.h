@@ -1,5 +1,5 @@
-#ifndef _CERVER_PACKETS_H_
-#define _CERVER_PACKETS_H_
+#ifndef _CLIENT_PACKETS_H_
+#define _CLIENT_PACKETS_H_
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -7,9 +7,9 @@
 #include "client/types/types.h"
 #include "client/types/string.h"
 
-#include "client/cerver/network.h"
-#include "client/cerver/cerver.h"
-#include "client/cerver/client.h"
+#include "client/network.h"
+#include "client/cerver.h"
+#include "client/client.h"
 
 struct _Cerver;
 struct _Client;
@@ -17,8 +17,13 @@ struct _Connection;
 
 typedef u32 ProtocolID;
 
+// gets the current protocol id set in your application
 extern ProtocolID packets_get_protocol_id (void);
 
+// Sets the protocol id that this cerver will use for its packets. 
+// The protocol id is a unique number that you can set to only accept packets that are comming from your application
+// If the protocol id coming from the cerver don't match your application's, it will be considered a bad packet
+// This value is only cheked if you enable packet checking for your client
 extern void packets_set_protocol_id (ProtocolID protocol_id);
 
 typedef struct ProtocolVersion {
@@ -28,8 +33,13 @@ typedef struct ProtocolVersion {
 	
 } ProtocolVersion;
 
+// gets the current version set in your application
 extern ProtocolVersion packets_get_protocol_version (void);
 
+// Sets the protocol version for the cerver. 
+// The version is an identifier to help you manage different versions of your deployed applications
+// If the versions of your packet don't match, it will be considered a bad packet
+// This value is only cheked if you enable packet checking for your client
 extern void packets_set_protocol_version (ProtocolVersion version);
 
 // these indicate what type of packet we are sending/recieving
@@ -236,7 +246,7 @@ extern Packet *packet_generate_request (PacketType packet_type, u32 req_type,
 extern u8 packet_send (const Packet *packet, int flags, size_t *total_sent, bool raw);
 
 // check if packet has a compatible protocol id and a version
-// returns 0 on success, 1 on error
-extern u8 packet_check (Packet *packet);
+// returns false on a bad packet
+extern bool packet_check (Packet *packet);
 
 #endif

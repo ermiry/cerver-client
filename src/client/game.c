@@ -8,9 +8,9 @@
 
 #include "client/collections/dlist.h"
 
-#include "client/cerver/packets.h"
-#include "client/cerver/events.h"
-#include "client/cerver/game.h"
+#include "client/packets.h"
+#include "client/events.h"
+#include "client/game.h"
 
 #include "client/utils/log.h"
 

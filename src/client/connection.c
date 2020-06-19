@@ -5,12 +5,12 @@
 #include "client/types/types.h"
 #include "client/types/string.h"
 
-#include "client/cerver/network.h"
-#include "client/cerver/cerver.h"
-#include "client/cerver/client.h"
-#include "client/cerver/connection.h"
-#include "client/cerver/handler.h"
-#include "client/cerver/packets.h"
+#include "client/network.h"
+#include "client/cerver.h"
+#include "client/client.h"
+#include "client/connection.h"
+#include "client/handler.h"
+#include "client/packets.h"
 
 #include "client/threads/thread.h"
 
@@ -139,9 +139,9 @@ Connection *connection_create_empty (void) {
 }
 
 // compares two connections by their names
-int connection_comparator_by_name (void *one, void *two) {
+int connection_comparator_by_name (const void *a, const void *b) {
 
-    return str_compare (((Connection *) one)->name, ((Connection *) two)->name);
+    return str_compare (((Connection *) a)->name, ((Connection *) b)->name);
 
 }
 

@@ -6,19 +6,19 @@
 
 #include "client/types/types.h"
 
-#include "client/cerver/network.h"
-#include "client/cerver/packets.h"
-#include "client/cerver/events.h"
-#include "client/cerver/errors.h"
-#include "client/cerver/client.h"
-#include "client/cerver/cerver.h"
-#include "client/cerver/connection.h"
-#include "client/cerver/handler.h"
-#include "client/cerver/game.h"
+#include "client/collections/dlist.h"
+
+#include "client/network.h"
+#include "client/packets.h"
+#include "client/events.h"
+#include "client/errors.h"
+#include "client/client.h"
+#include "client/cerver.h"
+#include "client/connection.h"
+#include "client/handler.h"
+#include "client/game.h"
 
 #include "client/threads/thread.h"
-
-#include "client/collections/dlist.h"
 
 #include "client/utils/log.h"
 #include "client/utils/utils.h"
@@ -137,7 +137,12 @@ static void client_packet_handler (void *data) {
         Packet *packet = (Packet *) data;
         packet->client->stats->n_packets_received += 1;
 
-        // if (!packet_check (packet)) {
+        bool good = true;
+        if (packet->client->check_packets) {
+            good = packet_check (packet);
+        }
+
+        if (good) {
             switch (packet->header->packet_type) {
                 // handles cerver type packets
                 case CERVER_PACKET:
@@ -218,7 +223,7 @@ static void client_packet_handler (void *data) {
                     #endif
                     break;
             }
-        // }
+        }
 
         packet_delete (packet);
     }

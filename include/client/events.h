@@ -1,11 +1,11 @@
-#ifndef _CERVER_CLIENT_EVENTS_H_
-#define _CERVER_CLIENT_EVENTS_H_
+#ifndef _CLIENT_EVENTS_H_
+#define _CLIENT_EVENTS_H_
 
 #include <stdbool.h>
 
 #include "client/types/types.h"
 
-#include "client/cerver/client.h"
+#include "client/client.h"
 
 struct _Client;
 

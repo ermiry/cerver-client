@@ -7,17 +7,17 @@
 #include "client/types/types.h"
 #include "client/types/string.h"
 
-#include "client/cerver/network.h"
-#include "client/cerver/packets.h"
-#include "client/cerver/events.h"
-#include "client/cerver/errors.h"
-#include "client/cerver/client.h"
-#include "client/cerver/handler.h"
-#include "client/cerver/cerver.h"
-#include "client/cerver/connection.h"
-#include "client/cerver/game.h"
-
 #include "client/collections/dlist.h"
+
+#include "client/network.h"
+#include "client/packets.h"
+#include "client/events.h"
+#include "client/errors.h"
+#include "client/client.h"
+#include "client/handler.h"
+#include "client/cerver.h"
+#include "client/connection.h"
+#include "client/game.h"
 
 #include "client/threads/thread.h"
 
@@ -107,6 +107,8 @@ static Client *client_new (void) {
         client->app_error_packet_handler = NULL;
         client->custom_packet_handler = NULL;
 
+        client->check_packets = false;
+
         client->stats = NULL;
     }
 
@@ -152,6 +154,19 @@ void client_set_app_handlers (Client *client, Action app_handler, Action app_err
 void client_set_custom_handler (Client *client, Action custom_handler) {
 
     if (client) client->custom_packet_handler = custom_handler;
+
+}
+
+// set whether to check or not incoming packets
+// check packet's header protocol id & version compatibility
+// if packets do not pass the checks, won't be handled and will be inmediately destroyed
+// packets size must be cheked in individual methods (handlers)
+// by default, this option is turned off
+void client_set_check_packets (Client *client, bool check_packets) {
+
+    if (client) {
+        client->check_packets = check_packets;
+    }
 
 }
 
@@ -412,7 +427,8 @@ unsigned int client_connect_async (Client *client, Connection *connection) {
     if (client && connection) {
         ClientConnection *cc = client_connection_aux_new (client, connection);
         if (cc) {
-            if (!thread_create_detachable (client_connect_thread, cc)) {
+            pthread_t thread_id = 0;
+            if (!thread_create_detachable (&thread_id, client_connect_thread, cc)) {
                 retval = 0;         // success
             }
 
@@ -505,7 +521,8 @@ unsigned int client_request_to_cerver_async (Client *client, Connection *connect
             ClientConnection *cc = client_connection_aux_new (client, connection);
             if (cc) {
                 // create a new thread to receive & handle the response
-                if (!thread_create_detachable (client_request_to_cerver_thread, cc)) {
+                pthread_t thread_id = 0;
+                if (!thread_create_detachable (&thread_id, client_request_to_cerver_thread, cc)) {
                     retval = 0;         // success
                 }
 
@@ -543,7 +560,9 @@ int client_connection_start (Client *client, Connection *connection) {
     if (client && connection) {
         if (connection->connected) {
             if (!client_start (client)) {
+                pthread_t thread_id = 0;
                 if (!thread_create_detachable (
+                    &thread_id,
                     (void *(*)(void *)) connection_update,
                     client_connection_aux_new (client, connection)
                 )) {
@@ -619,7 +638,9 @@ static void client_connection_start_wrapper (void *data_ptr) {
 // returns 0 on success creating connection thread, 1 on error
 u8 client_connect_and_start_async (Client *client, Connection *connection) {
 
+    pthread_t thread_id = 0;
     return (client && connection) ? thread_create_detachable (
+        &thread_id,
         (void *(*)(void *)) client_connection_start_wrapper,
         client_connection_aux_new (client, connection)
     ) : 1;

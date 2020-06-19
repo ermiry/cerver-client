@@ -1,5 +1,5 @@
-#ifndef _UTILS_BASE64_H_
-#define _UTILS_BASE64_H_
+#ifndef _CLIENT_UTILS_BASE64_H_
+#define _CLIENT_UTILS_BASE64_H_
 
 #include <stddef.h>
 

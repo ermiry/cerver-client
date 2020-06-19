@@ -1,5 +1,5 @@
-#ifndef _CENGINE_OS_H_
-#define _CENGINE_OS_H_
+#ifndef _CLIENT_OS_H_
+#define _CLIENT_OS_H_
 
     #ifdef          __linux__
     #define     OS_LINUX

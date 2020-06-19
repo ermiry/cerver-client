@@ -6,9 +6,9 @@
 #include "client/types/types.h"
 #include "client/types/string.h"
 
-#include "client/cerver/cerver.h"
-#include "client/cerver/connection.h"
-#include "client/cerver/packets.h"
+#include "client/cerver.h"
+#include "client/connection.h"
+#include "client/packets.h"
 
 #include "client/utils/utils.h"
 #include "client/utils/log.h"
