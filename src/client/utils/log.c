@@ -7,7 +7,7 @@
 #include "client/utils/utils.h"
 #include "client/utils/log.h"
 
-static char *log_get_msg_type (LogMsgType type) {
+static char *client_get_msg_type (LogMsgType type) {
 
 	char temp[16] = { 0 };
 

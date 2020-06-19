@@ -137,7 +137,12 @@ static void client_packet_handler (void *data) {
         Packet *packet = (Packet *) data;
         packet->client->stats->n_packets_received += 1;
 
-        // if (!packet_check (packet)) {
+        bool good = true;
+        if (packet->client->check_packets) {
+            good = packet_check (packet);
+        }
+
+        if (good) {
             switch (packet->header->packet_type) {
                 // handles cerver type packets
                 case CERVER_PACKET:
@@ -218,7 +223,7 @@ static void client_packet_handler (void *data) {
                     #endif
                     break;
             }
-        // }
+        }
 
         packet_delete (packet);
     }
