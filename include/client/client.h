@@ -1,16 +1,16 @@
-#ifndef _CERVER_CLIENT_H_
-#define _CERVER_CLIENT_H_
+#ifndef _CLIENT_H_
+#define _CLIENT_H_
 
 #include <stdbool.h>
 
 #include "client/types/types.h"
 #include "client/collections/dlist.h"
 
-#include "client/cerver/network.h"
-#include "client/cerver/events.h"
-#include "client/cerver/errors.h"
-#include "client/cerver/connection.h"
-#include "client/cerver/packets.h"
+#include "client/network.h"
+#include "client/events.h"
+#include "client/errors.h"
+#include "client/connection.h"
+#include "client/packets.h"
 
 struct _Client;
 struct _Connection;

@@ -1,5 +1,5 @@
-#ifndef _CERVER_PACKETS_H_
-#define _CERVER_PACKETS_H_
+#ifndef _CLIENT_PACKETS_H_
+#define _CLIENT_PACKETS_H_
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -7,9 +7,9 @@
 #include "client/types/types.h"
 #include "client/types/string.h"
 
-#include "client/cerver/network.h"
-#include "client/cerver/cerver.h"
-#include "client/cerver/client.h"
+#include "client/network.h"
+#include "client/cerver.h"
+#include "client/client.h"
 
 struct _Cerver;
 struct _Client;

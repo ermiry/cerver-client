@@ -1,12 +1,12 @@
-#ifndef _CERVER_CLIENT_GAME_H_
-#define _CERVER_CLIENT_GAME_H_
+#ifndef _CLIENT_GAME_H_
+#define _CLIENT_GAME_H_
 
 #include "client/types/types.h"
 #include "client/types/string.h"
 
 #include "client/collections/dlist.h"
 
-#include "client/cerver/packets.h"
+#include "client/packets.h"
 
 typedef struct GameSettings {
 

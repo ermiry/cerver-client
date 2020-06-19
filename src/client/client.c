@@ -7,17 +7,17 @@
 #include "client/types/types.h"
 #include "client/types/string.h"
 
-#include "client/cerver/network.h"
-#include "client/cerver/packets.h"
-#include "client/cerver/events.h"
-#include "client/cerver/errors.h"
-#include "client/cerver/client.h"
-#include "client/cerver/handler.h"
-#include "client/cerver/cerver.h"
-#include "client/cerver/connection.h"
-#include "client/cerver/game.h"
-
 #include "client/collections/dlist.h"
+
+#include "client/network.h"
+#include "client/packets.h"
+#include "client/events.h"
+#include "client/errors.h"
+#include "client/client.h"
+#include "client/handler.h"
+#include "client/cerver.h"
+#include "client/connection.h"
+#include "client/game.h"
 
 #include "client/threads/thread.h"
 

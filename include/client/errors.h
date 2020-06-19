@@ -1,9 +1,9 @@
-#ifndef _CERVER_CLIENT_ERRORS_H_
-#define _CERVER_CLIENT_ERRORS_H_
+#ifndef _CLIENT_ERRORS_H_
+#define _CLIENT_ERRORS_H_
 
 #include "client/types/string.h"
 
-#include "client/cerver/packets.h"
+#include "client/packets.h"
 
 struct _Packet;
 

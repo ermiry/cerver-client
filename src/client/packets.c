@@ -9,10 +9,10 @@
 #include "client/types/types.h"
 #include "client/types/string.h"
 
-#include "client/cerver/network.h"
-#include "client/cerver/packets.h"
-#include "client/cerver/cerver.h"
-#include "client/cerver/client.h"
+#include "client/network.h"
+#include "client/packets.h"
+#include "client/cerver.h"
+#include "client/client.h"
 
 #ifdef PACKETS_DEBUG
 #include "client/utils/log.h"

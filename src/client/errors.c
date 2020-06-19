@@ -4,8 +4,8 @@
 #include "client/types/types.h"
 #include "client/types/string.h"
 
-#include "client/cerver/errors.h"
-#include "client/cerver/packets.h"
+#include "client/errors.h"
+#include "client/packets.h"
 
 #include "client/utils/log.h"
 

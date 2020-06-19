@@ -1,5 +1,5 @@
-#ifndef _CERVER_ADMIN_H_
-#define _CERVER_ADMIN_H_
+#ifndef _CLIENT_ADMIN_H_
+#define _CLIENT_ADMIN_H_
 
 #include "client/types/string.h"
 

@@ -4,12 +4,12 @@
 
 #include "client/types/types.h"
 
-#include "client/cerver/client.h"
-#include "client/cerver/events.h"
+#include "client/collections/dlist.h"
+
+#include "client/client.h"
+#include "client/events.h"
 
 #include "client/threads/thread.h"
-
-#include "client/collections/dlist.h"
 
 static ClientEventData *client_event_data_new (ClientEvent *event) {
 

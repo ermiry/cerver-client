@@ -1,13 +1,13 @@
-#ifndef _CEVER_CLIENT_CONNECTION_H_
-#define _CEVER_CLIENT_CONNECTION_H_
+#ifndef _CLIENT_CONNECTION_H_
+#define _CLIENT_CONNECTION_H_
 
 #include "client/types/types.h"
 #include "client/types/string.h"
 
-#include "client/cerver/network.h"
-#include "client/cerver/cerver.h"
-#include "client/cerver/handler.h"
-#include "client/cerver/packets.h"
+#include "client/network.h"
+#include "client/cerver.h"
+#include "client/handler.h"
+#include "client/packets.h"
 
 // used for connection with exponential backoff (secs)
 #define DEFAULT_CONNECTION_MAX_SLEEP                60 
