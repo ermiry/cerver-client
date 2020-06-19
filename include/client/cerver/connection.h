@@ -88,7 +88,7 @@ extern void connection_delete (void *ptr);
 extern Connection *connection_create_empty (void);
 
 // compares two connections by their names
-extern int connection_comparator_by_name (void *one, void *two);
+extern int connection_comparator_by_name (const void *a, const void *b);
 
 // compare two connections by their socket fds
 extern int connection_comparator_by_sock_fd (const void *a, const void *b);
