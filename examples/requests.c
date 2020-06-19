@@ -7,8 +7,8 @@
 
 #include "client/types/types.h"
 
-#include "client/cerver/client.h"
-#include "client/cerver/packets.h"
+#include "client/client.h"
+#include "client/packets.h"
 
 #include "client/utils/log.h"
 
