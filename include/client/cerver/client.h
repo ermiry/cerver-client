@@ -54,6 +54,8 @@ struct _Client {
     Action app_error_packet_handler;
     Action custom_packet_handler;
 
+    bool check_packets;                     // enable / disbale packet checking
+
     time_t time_started;
     u64 uptime;
 
@@ -73,6 +75,13 @@ extern void client_set_app_handlers (Client *client, Action app_handler, Action 
 
 // sets a custom packet handler
 extern void client_set_custom_handler (Client *client, Action custom_handler);
+
+// set whether to check or not incoming packets
+// check packet's header protocol id & version compatibility
+// if packets do not pass the checks, won't be handled and will be inmediately destroyed
+// packets size must be cheked in individual methods (handlers)
+// by default, this option is turned off
+extern void client_set_check_packets (Client *client, bool check_packets);
 
 // creates a new client, whcih may be used to create connections
 extern Client *client_create (void);

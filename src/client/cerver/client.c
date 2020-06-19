@@ -107,6 +107,8 @@ static Client *client_new (void) {
         client->app_error_packet_handler = NULL;
         client->custom_packet_handler = NULL;
 
+        client->check_packets = false;
+
         client->stats = NULL;
     }
 
@@ -152,6 +154,19 @@ void client_set_app_handlers (Client *client, Action app_handler, Action app_err
 void client_set_custom_handler (Client *client, Action custom_handler) {
 
     if (client) client->custom_packet_handler = custom_handler;
+
+}
+
+// set whether to check or not incoming packets
+// check packet's header protocol id & version compatibility
+// if packets do not pass the checks, won't be handled and will be inmediately destroyed
+// packets size must be cheked in individual methods (handlers)
+// by default, this option is turned off
+void client_set_check_packets (Client *client, bool check_packets) {
+
+    if (client) {
+        client->check_packets = check_packets;
+    }
 
 }
 
