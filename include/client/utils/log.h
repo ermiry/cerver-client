@@ -1,5 +1,5 @@
-#ifndef _CENGINE_LOG_H_
-#define _CENGINE_LOG_H_
+#ifndef _CLIENT_LOG_H_
+#define _CLIENT_LOG_H_
 
 #include <stdio.h>
 
@@ -13,16 +13,22 @@
 
 typedef enum LogMsgType {
 
-	LOG_NO_TYPE = 0,
+	LOG_NO_TYPE             = 0,
 
-    LOG_ERROR = 1,
-    LOG_WARNING,
-    LOG_SUCCESS,
-    LOG_DEBUG,
+	LOG_ERROR               = 1,
+	LOG_WARNING             = 2,
+	LOG_SUCCESS             = 3,
+	LOG_DEBUG               = 4,
+	LOG_TEST                = 5,
 
-    LOG_CLIENT,
+	LOG_CERVER,
+	LOG_CLIENT,
 
-    LOG_TEST,
+	LOG_REQ,
+	LOG_PACKET,
+	LOG_FILE,
+	LOG_GAME,
+	LOG_PLAYER,
 
 } LogMsgType;
 
