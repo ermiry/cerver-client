@@ -1,5 +1,5 @@
-#ifndef _SHA_256_H_
-#define _SHA_256_H_
+#ifndef _CLIENT_UTILS_SHA_256_H_
+#define _CLIENT_UTILS_SHA_256_H_
 
 #include <stdlib.h>
 #include <stdint.h>
