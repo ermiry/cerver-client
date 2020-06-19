@@ -427,7 +427,8 @@ unsigned int client_connect_async (Client *client, Connection *connection) {
     if (client && connection) {
         ClientConnection *cc = client_connection_aux_new (client, connection);
         if (cc) {
-            if (!thread_create_detachable (client_connect_thread, cc)) {
+            pthread_t thread_id = 0;
+            if (!thread_create_detachable (&thread_id, client_connect_thread, cc)) {
                 retval = 0;         // success
             }
 
@@ -520,7 +521,8 @@ unsigned int client_request_to_cerver_async (Client *client, Connection *connect
             ClientConnection *cc = client_connection_aux_new (client, connection);
             if (cc) {
                 // create a new thread to receive & handle the response
-                if (!thread_create_detachable (client_request_to_cerver_thread, cc)) {
+                pthread_t thread_id = 0;
+                if (!thread_create_detachable (&thread_id, client_request_to_cerver_thread, cc)) {
                     retval = 0;         // success
                 }
 
@@ -558,7 +560,9 @@ int client_connection_start (Client *client, Connection *connection) {
     if (client && connection) {
         if (connection->connected) {
             if (!client_start (client)) {
+                pthread_t thread_id = 0;
                 if (!thread_create_detachable (
+                    &thread_id,
                     (void *(*)(void *)) connection_update,
                     client_connection_aux_new (client, connection)
                 )) {
@@ -634,7 +638,9 @@ static void client_connection_start_wrapper (void *data_ptr) {
 // returns 0 on success creating connection thread, 1 on error
 u8 client_connect_and_start_async (Client *client, Connection *connection) {
 
+    pthread_t thread_id = 0;
     return (client && connection) ? thread_create_detachable (
+        &thread_id,
         (void *(*)(void *)) client_connection_start_wrapper,
         client_connection_aux_new (client, connection)
     ) : 1;

@@ -189,8 +189,12 @@ void client_event_trigger (Client *client, ClientEventType event_type) {
             // trigger the action
             if (event->action) {
                 if (event->create_thread) {
-                    thread_create_detachable ((void *(*)(void *)) event->action, 
-                        client_event_data_new (event));
+                    pthread_t thread_id = 0;
+                    thread_create_detachable (
+                        &thread_id,
+                        (void *(*)(void *)) event->action, 
+                        client_event_data_new (event)
+                    );
                 }
 
                 else {
