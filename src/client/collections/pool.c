@@ -92,9 +92,9 @@ void pool_clear (Pool *pool) {
 
 }
 
-int pool_push (Pool *pool, void *data) {
+unsigned int pool_push (Pool *pool, void *data) {
 
-    int retval = 1;
+    unsigned int retval = 1;
 
     if (pool && data) {
         retval = dlist_insert_after (

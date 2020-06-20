@@ -35,7 +35,7 @@ extern void pool_clear (Pool *pool);
 
 // inserts the new data at the end of the pool
 // returns 0 on success, 1 on error
-extern int pool_push (Pool *pool, void *data);
+extern unsigned int pool_push (Pool *pool, void *data);
 
 // returns the data that is first in the pool
 extern void *pool_pop (Pool *pool);
