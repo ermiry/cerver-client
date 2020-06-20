@@ -97,9 +97,9 @@ typedef struct _json_object_entry {
     
 } json_object_entry;
 
-typedef struct _json_value {
+struct _json_value {
 
-   struct _json_value * parent;
+   struct _json_value *parent;
 
    json_type type;
 
@@ -156,7 +156,9 @@ typedef struct _json_value {
 
    #endif
 
-} json_value;
+};
+
+typedef struct _json_value json_value;
        
 json_value * json_parse (const json_char * json,
                          size_t length);
