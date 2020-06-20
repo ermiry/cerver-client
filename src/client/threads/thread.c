@@ -7,6 +7,9 @@
 #include <sys/prctl.h>
 
 #include "client/types/types.h"
+
+#include "client/threads/thread.h"
+
 #include "client/utils/log.h"
 
 // creates a custom detachable thread (will go away on its own upon completion)

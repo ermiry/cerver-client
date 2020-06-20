@@ -1,18 +1,7 @@
-#ifndef _CENGINE_THREAD_H_
-#define _CENGINE_THREAD_H_
+#ifndef _CLIENT_THREADS_H_
+#define _CLIENT_THREADS_H_
 
-#include <SDL2/SDL.h>
-
-#include "client/os.h"
-
-#if defined OS_LINUX
-    #include <pthread.h>
-#endif
-
-#include "client/types/types.h"
-#include "client/types/string.h"
-
-#include "client/collections/dlist.h"
+#include <pthread.h>
 
 #define THREAD_OK   0
 
