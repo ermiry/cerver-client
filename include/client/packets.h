@@ -104,6 +104,7 @@ struct _PacketHeader {
 
 typedef struct _PacketHeader PacketHeader;
 
+// prints an already existing PacketHeader. Mostly used for debugging
 extern void packet_header_print (PacketHeader *header);
 
 // allocates space for the dest packet header and copies the data from source
@@ -192,15 +193,17 @@ struct _Packet {
 
 typedef struct _Packet Packet;
 
+// allocates a new empty packet
 extern Packet *packet_new (void);
 
+// correctly deletes a packet and all of its data
 extern void packet_delete (void *ptr);
 
-// create a new packet with the option to pass values directly
+// creates a new packet with the option to pass values directly
 // data is copied into packet buffer and can be safely freed
 extern Packet *packet_create (PacketType type, void *data, size_t data_size);
 
-// sets the pakcet destinatary is directed to and the protocol to use
+// sets the packet destinatary to whom this packet is going to be sent
 extern void packet_set_network_values (Packet *packet, 
     struct _Client *client, struct _Connection *connection);
 
@@ -213,15 +216,18 @@ extern u8 packet_set_data (Packet *packet, void *data, size_t data_size);
 // if the packet is empty, creates a new buffer
 // it creates a new copy of the data and the original can be safely freed
 // this does not work if the data has been set using a reference
+// returns 0 on success, 1 on error
 extern u8 packet_append_data (Packet *packet, void *data, size_t data_size);
 
 // sets a reference to a data buffer to send
 // data will not be copied into the packet and will not be freed after use
 // this method is usefull for example if you just want to send a raw json packet to a non-cerver
 // use this method with packet_send () with the raw flag on
+// returns 0 on success, 1 on error
 extern u8 packet_set_data_ref (Packet *packet, void *data, size_t data_size);
 
-// sets a the packet's packet using by copying the passed data
+// sets a packet's packet by copying the passed data, so you will be able to free your data
+// this data is expected to already contain a header, otherwise, send with raw flag
 // deletes the previuos packet's packet
 // returns 0 on succes, 1 on error
 extern u8 packet_set_packet (Packet *packet, void *data, size_t data_size);
@@ -229,14 +235,17 @@ extern u8 packet_set_packet (Packet *packet, void *data, size_t data_size);
 // sets a reference to a data buffer to send as the packet
 // data will not be copied into the packet and will not be freed after use
 // usefull when you need to generate your own cerver type packet by hand
+// returns 0 on success, 1 on error
 extern u8 packet_set_packet_ref (Packet *packet, void *data, size_t packet_size);
 
 // prepares the packet to be ready to be sent
 // WARNING: dont call this method if you have set the packet directly
+// returns 0 on success, 1 on error
 extern u8 packet_generate (Packet *packet);
 
 // generates a simple request packet of the requested type reday to be sent, 
 // and with option to pass some data
+// returns a newly allocated packet that should be deleted after use
 extern Packet *packet_generate_request (PacketType packet_type, u32 req_type, 
     void *data, size_t data_size);
 
@@ -244,6 +253,12 @@ extern Packet *packet_generate_request (PacketType packet_type, u32 req_type,
 // raw flag to send a raw packet (only the data that was set to the packet, without any header)
 // returns 0 on success, 1 on error
 extern u8 packet_send (const Packet *packet, int flags, size_t *total_sent, bool raw);
+
+// sends a packet directly to the socket
+// raw flag to send a raw packet (only the data that was set to the packet, without any header)
+// returns 0 on success, 1 on error
+extern u8 packet_send_to_sock_fd (const Packet *packet, const i32 sock_fd, 
+    int flags, size_t *total_sent, bool raw);
 
 // check if packet has a compatible protocol id and a version
 // returns false on a bad packet
