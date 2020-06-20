@@ -1,5 +1,5 @@
-#ifndef _CENGINE_TYPES_STRING_H_
-#define _CENGINE_TYPES_STRING_H_
+#ifndef _CLIENT_TYPES_STRING_H_
+#define _CLIENT_TYPES_STRING_H_
 
 #include "client/types/types.h"
 
