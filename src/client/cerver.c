@@ -227,7 +227,7 @@ static u8 cerver_check_info (Cerver *cerver, Connection *connection) {
 
         else {
             #ifdef CLIENT_DEBUG
-            client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Cerver does not requires authentication.");
+            client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Cerver does NOT require authentication.");
             #endif
         }
         
@@ -249,7 +249,7 @@ void cerver_packet_handler (Packet *packet) {
             switch (req->type) {
                 case CERVER_INFO: {
                     #ifdef CLIENT_DEBUG
-                    client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Recieved a cerver info packet.");
+                    client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Received a cerver info packet.");
                     #endif
                     packet->connection->cerver = cerver_deserialize ((SCerver *) (end += sizeof (RequestData)));
                     if (cerver_check_info (packet->connection->cerver, packet->connection))
