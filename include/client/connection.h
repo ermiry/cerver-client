@@ -5,6 +5,7 @@
 #include "client/types/string.h"
 
 #include "client/network.h"
+#include "client/socket.h"
 #include "client/cerver.h"
 #include "client/handler.h"
 #include "client/packets.h"
@@ -12,6 +13,8 @@
 // used for connection with exponential backoff (secs)
 #define DEFAULT_CONNECTION_MAX_SLEEP                60 
 #define DEFAULT_CONNECTION_PROTOCOL                 PROTOCOL_TCP
+
+#define DEFAULT_CONNECTION_UPDATE_SLEEP             200000
 
 struct _Cerver;
 struct _Client;
@@ -39,7 +42,8 @@ struct _Connection {
 
     String *name;
 
-    i32 sock_fd;
+    // i32 sock_fd;
+    Socket *socket;
     u16 port; 
     Protocol protocol;
     bool use_ipv6;  
@@ -57,6 +61,9 @@ struct _Connection {
 
     u32 receive_packet_buffer_size;         // 01/01/2020 - read packets into a buffer of this size in client_receive ()
     struct _SockReceive *sock_receive;      // 01/01/2020 - used for inter-cerver communications
+
+    pthread_t update_thread_id;
+    u32 update_sleep;
 
     // 10/06/2020 - used for direct requests to cerver
     bool full_packet;
@@ -102,6 +109,10 @@ extern void connection_set_max_sleep (Connection *connection, u32 max_sleep);
 // read packets into a buffer of this size in client_receive ()
 // by default the value RECEIVE_PACKET_BUFFER_SIZE is used
 extern void connection_set_receive_buffer_size (Connection *connection, u32 size);
+
+// sets the waiting time (sleep) in micro secs between each call to recv () in connection_update () thread
+// the dault value is 200000 (DEFAULT_CONNECTION_UPDATE_SLEEP)
+extern void connection_set_update_sleep (Connection *connection, u32 sleep);
 
 // sets the connection received data
 // 01/01/2020 - a place to safely store the request response, like when using client_connection_request_to_cerver ()

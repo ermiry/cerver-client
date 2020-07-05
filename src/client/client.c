@@ -275,7 +275,7 @@ Connection *client_connection_get_by_socket (Client *client, i32 sock_fd) {
         Connection *connection = NULL;
         for (ListElement *le = dlist_start (client->connections); le; le = le->next) {
             connection = (Connection *) le->data;
-            if (connection->sock_fd == sock_fd) {
+            if (connection->socket->sock_fd == sock_fd) {
                 retval = connection;
                 break;
             }

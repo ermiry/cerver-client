@@ -89,17 +89,17 @@ static void client_auth_packet_handler (Packet *packet) {
 
             switch (req->type) {
                 // 24/01/2020 -- cerver requested authentication, if not, we will be disconnected
-                case REQ_AUTH_CLIENT:
+                case AUTH_PACKET_TYPE_REQUEST_AUTH:
                     // TODO: 24/01/2020 -- 17:03
                     break;
 
                 // we recieve a token from the cerver to use in sessions
-                case CLIENT_AUTH_DATA:
+                case AUTH_PACKET_TYPE_CLIENT_AUTH:
                     // TODO: 24/01/2020 -- 17:03
                     break;
 
                 // we have successfully authenticated with the server
-                case SUCCESS_AUTH:
+                case AUTH_PACKET_TYPE_SUCCESS:
                     client_event_trigger (packet->client, EVENT_SUCCESS_AUTH);
                     break;
 
@@ -460,13 +460,13 @@ void client_receive (Client *client, Connection *connection) {
     if (client && connection) {
         char *packet_buffer = (char *) calloc (connection->receive_packet_buffer_size, sizeof (char));
         if (packet_buffer) {
-            ssize_t rc = recv (connection->sock_fd, packet_buffer, connection->receive_packet_buffer_size, 0);
+            ssize_t rc = recv (connection->socket->sock_fd, packet_buffer, connection->receive_packet_buffer_size, 0);
 
             switch (rc) {
                 case -1: {
                     if (errno != EWOULDBLOCK) {
                         #ifdef CLIENT_DEBUG 
-                        char *s = c_string_create ("client_receive () - rc < 0 - sock fd: %d", connection->sock_fd);
+                        char *s = c_string_create ("client_receive () - rc < 0 - sock fd: %d", connection->socket->sock_fd);
                         if (s) {
                             client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, s);
                             free (s);
@@ -483,7 +483,7 @@ void client_receive (Client *client, Connection *connection) {
                     // but in dgram it might mean something?
                     #ifdef CLIENT_DEBUG
                     char *s = c_string_create ("client_receive () - rc == 0 - sock fd: %d",
-                        connection->sock_fd);
+                        connection->socket->sock_fd);
                     if (s) {
                         client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, s);
                         free (s);
