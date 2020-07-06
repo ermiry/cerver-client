@@ -97,17 +97,23 @@ static Client *client_new (void) {
 
     Client *client = (Client *) malloc (sizeof (Client));
     if (client) {
-        memset (client, 0, sizeof (Client));
+        client->name = NULL;
+
+        client->connections = NULL;
 
         client->running = false;
-        client->connections = NULL;
-        client->registered_actions = NULL;
+
+        client->registered_events = NULL;
+        client->registered_errors = NULL;
 
         client->app_packet_handler = NULL;
         client->app_error_packet_handler = NULL;
         client->custom_packet_handler = NULL;
 
         client->check_packets = false;
+
+        client->time_started = 0;
+        client->uptime = 0;
 
         client->stats = NULL;
     }
@@ -122,6 +128,8 @@ static void client_delete (Client *client) {
         dlist_delete (client->connections);
 
         client_events_end (client);
+
+        client_errors_end (client);
 
         client_stats_delete (client->stats);
 
@@ -177,7 +185,10 @@ static u8 client_init (Client *client) {
 
     if (client) {
         client->connections = dlist_init (connection_delete, connection_comparator_by_sock_fd);
+
         client_events_init (client);
+        client_errors_init (client);
+
         client->stats = client_stats_new ();
 
         client->running = false;
@@ -362,7 +373,7 @@ unsigned int client_connect (Client *client, Connection *connection) {
 
     if (client && connection) {
         if (!connection_start (connection)) {
-            client_event_trigger (client, EVENT_CONNECTED);
+            client_event_trigger (client, connection, EVENT_CONNECTED);
             connection->connected = true;
             time (&connection->connected_timestamp);
             
@@ -400,7 +411,7 @@ static void *client_connect_thread (void *client_connection_ptr) {
         ClientConnection *cc = (ClientConnection *) client_connection_ptr;
 
         if (!connection_start (cc->connection)) {
-            client_event_trigger (cc->client, EVENT_CONNECTED);
+            client_event_trigger (cc->client, cc->connection, EVENT_CONNECTED);
             cc->connection->connected = true;
             time (&cc->connection->connected_timestamp);
             
@@ -682,11 +693,7 @@ int client_connection_end (Client *client, Connection *connection) {
 
     if (client && connection) {
         client_connection_terminate (client, connection);
-        client_event_trigger (client, EVENT_CONNECTION_CLOSE);
-
-        // connection_delete (dlist_remove_element (client->connections, 
-        //     dlist_get_element (client->connections, connection, NULL)));
-        connection_delete (dlist_remove (client->connections, connection, NULL));
+        client_event_trigger (client, connection, EVENT_CONNECTION_CLOSE);
 
         retval = 0;
     }

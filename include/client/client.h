@@ -46,15 +46,15 @@ struct _Client {
 
     bool running;                   // any connection is active
 
-    // all the actions that have been registered to a client
-    DoubleList *registered_actions;
+    DoubleList *registered_events;
+    DoubleList *registered_errors;
 
     // custom packet handlers
     Action app_packet_handler;
     Action app_error_packet_handler;
     Action custom_packet_handler;
 
-    bool check_packets;                     // enable / disbale packet checking
+    bool check_packets;              // enable / disbale packet checking
 
     time_t time_started;
     u64 uptime;
