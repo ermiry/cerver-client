@@ -14,20 +14,20 @@ struct _Packet;
 
 typedef enum ClientErrorType {
 
-	ERR_NONE                    = 0,
+	CLIENT_ERR_NONE                    = 0,
 
 	// internal server error, like no memory
-	ERR_CERVER_ERROR            = 1,   
+	CLIENT_ERR_CERVER_ERROR            = 1,   
 
-	ERR_CREATE_LOBBY            = 2,
-	ERR_JOIN_LOBBY              = 3,
-	ERR_LEAVE_LOBBY             = 4,
-	ERR_FIND_LOBBY              = 5,
+	CLIENT_ERR_CREATE_LOBBY            = 2,
+	CLIENT_ERR_JOIN_LOBBY              = 3,
+	CLIENT_ERR_LEAVE_LOBBY             = 4,
+	CLIENT_ERR_FIND_LOBBY              = 5,
 
-	ERR_GAME_INIT               = 6,
-	ERR_GAME_START              = 7,
+	CLIENT_ERR_GAME_INIT               = 6,
+	CLIENT_ERR_GAME_START              = 7,
 
-	ERR_FAILED_AUTH             = 8,
+	CLIENT_ERR_FAILED_AUTH             = 8,
 
 } ClientErrorType;
 
@@ -51,6 +51,14 @@ typedef struct ClientError {
 extern u8 client_error_register (struct _Client *client, ClientErrorType error_type,
 	Action action, void *action_args, Action delete_action_args, 
     bool create_thread, bool drop_after_trigger);
+
+// unregisters the action associated with the error types
+// deletes the action args using the delete_action_args () if NOT NULL
+// returns 0 on success, 1 on error
+extern u8 client_error_unregister (struct _Client *client, ClientErrorType error_type);
+
+// triggers all the actions that are registred to an error
+extern void client_error_trigger (struct _Client *client, struct _Connection *connection, ClientErrorType error_type);
 
 #pragma region data
 

@@ -17,7 +17,7 @@
 #include "client/utils/utils.h"
 #include "client/utils/log.h"
 
-void client_error_unregister (Client *client, ClientErrorType error_type);
+u8 client_error_unregister (Client *client, ClientErrorType error_type);
 
 #pragma region data
 
@@ -62,7 +62,7 @@ static ClientError *client_error_new (void) {
 
 	ClientError *client_error = (ClientError *) malloc (sizeof (ClientError));
 	if (client_error) {
-		client_error->type = ERR_NONE;
+		client_error->type = CLIENT_ERR_NONE;
 
 		client_error->create_thread = false;
 		client_error->drop_after_trigger = false;
@@ -91,6 +91,35 @@ static void client_error_delete (void *client_error_ptr) {
 
 }
 
+static ClientError *client_error_get (Client *client, ClientErrorType error_type, 
+    ListElement **le_ptr) {
+
+    if (client) {
+        if (client->registered_errors) {
+            ClientError *error = NULL;
+            for (ListElement *le = dlist_start (client->registered_errors); le; le = le->next) {
+                error = (ClientError *) le->data;
+                if (error->type == error_type) {
+                    if (le_ptr) *le_ptr = le;
+                    return error;
+                } 
+            }
+        }
+    }
+
+    return NULL;
+
+}
+
+static void client_error_pop (DoubleList *list, ListElement *le) {
+
+    if (le) {
+        void *data = dlist_remove_element (list, le);
+        if (data) client_error_delete (data);
+    }
+
+}
+
 // registers an action to be triggered when the specified error occurs
 // if there is an existing action registered to an error, it will be overrided
 // a newly allocated ClientErrorData structure will be passed to your method 
@@ -116,7 +145,7 @@ u8 client_error_register (Client *client, ClientErrorType error_type,
 				error->delete_action_args = delete_action_args;
 
 				// search if there is an action already registred for that error and remove it
-				client_error_unregister (client, error_type);
+				(void) client_error_unregister (client, error_type);
 
 				if (!dlist_insert_after (
 					client->registered_errors,
@@ -133,10 +162,72 @@ u8 client_error_register (Client *client, ClientErrorType error_type,
 
 }
 
+// unregisters the action associated with the error types
+// deletes the action args using the delete_action_args () if NOT NULL
+// returns 0 on success, 1 on error
+u8 client_error_unregister (Client *client, ClientErrorType error_type) {
+
+	u8 retval = 1;
+
+    if (client) {
+        if (client->registered_errors) {
+            ClientError *error = NULL;
+            for (ListElement *le = dlist_start (client->registered_errors); le; le = le->next) {
+                error = (ClientError *) le->data;
+                if (error->type == error_type) {
+                    client_error_delete (dlist_remove_element (client->registered_errors, le));
+					retval = 0;
+
+                    break;
+                }
+            }
+        }
+    }
+
+	return retval;
+
+}
+
+// triggers all the actions that are registred to an error
+void client_error_trigger (Client *client, Connection *connection, ClientErrorType error_type) {
+
+    if (client) {
+        ListElement *le = NULL;
+        ClientError *error = client_error_get (client, error_type, &le);
+        if (error) {
+            // trigger the action
+            if (error->action) {
+                if (error->create_thread) {
+                    pthread_t thread_id = 0;
+                    thread_create_detachable (
+                        &thread_id,
+                        (void *(*)(void *)) error->action, 
+                        client_error_data_create (
+                            client, connection,
+                            error
+                        )
+                    );
+                }
+
+                else {
+                    error->action (client_error_data_create (
+                        client, connection, 
+                        error
+                    ));
+                }
+                
+                if (error->drop_after_trigger) client_error_pop (client->registered_errors, le);
+            }
+        }
+    }
+
+}
+
 #pragma endregion
 
 #pragma region handler
 
+// FIXME:
 // handles error packets
 void error_packet_handler (Packet *packet) {
 
@@ -146,14 +237,14 @@ void error_packet_handler (Packet *packet) {
 			SError *s_error = (SError *) end;
 
 			switch (s_error->error_type) {
-				case ERR_CERVER_ERROR: break;
-				case ERR_CREATE_LOBBY: break;
-				case ERR_JOIN_LOBBY: break;
-				case ERR_LEAVE_LOBBY: break;
-				case ERR_FIND_LOBBY: break;
-				case ERR_GAME_INIT: break;
+				case CLIENT_ERR_CERVER_ERROR: break;
+				case CLIENT_ERR_CREATE_LOBBY: break;
+				case CLIENT_ERR_JOIN_LOBBY: break;
+				case CLIENT_ERR_LEAVE_LOBBY: break;
+				case CLIENT_ERR_FIND_LOBBY: break;
+				case CLIENT_ERR_GAME_INIT: break;
 
-				case ERR_FAILED_AUTH: {
+				case CLIENT_ERR_FAILED_AUTH: {
 					// #ifdef CLIENT_DEBUG
 					client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, 
 						c_string_create ("Failed to authenticate - %s", s_error->msg)); 
@@ -193,7 +284,7 @@ u8 client_errors_init (Client *client) {
 
 }
 
-void client_events_end (Client *client) { 
+void client_errors_end (Client *client) { 
 
     if (client) dlist_delete (client->registered_errors);
 
