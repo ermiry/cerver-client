@@ -373,7 +373,7 @@ unsigned int client_connect (Client *client, Connection *connection) {
 
     if (client && connection) {
         if (!connection_start (connection)) {
-            client_event_trigger (client, connection, EVENT_CONNECTED);
+            client_event_trigger (client, connection, CLIENT_EVENT_CONNECTED);
             connection->connected = true;
             time (&connection->connected_timestamp);
             
@@ -411,7 +411,7 @@ static void *client_connect_thread (void *client_connection_ptr) {
         ClientConnection *cc = (ClientConnection *) client_connection_ptr;
 
         if (!connection_start (cc->connection)) {
-            client_event_trigger (cc->client, cc->connection, EVENT_CONNECTED);
+            client_event_trigger (cc->client, cc->connection, CLIENT_EVENT_CONNECTED);
             cc->connection->connected = true;
             time (&cc->connection->connected_timestamp);
             
@@ -693,7 +693,7 @@ int client_connection_end (Client *client, Connection *connection) {
 
     if (client && connection) {
         client_connection_terminate (client, connection);
-        client_event_trigger (client, connection, EVENT_CONNECTION_CLOSE);
+        client_event_trigger (client, connection, CLIENT_EVENT_CONNECTION_CLOSE);
 
         retval = 0;
     }

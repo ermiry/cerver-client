@@ -313,7 +313,7 @@ void cerver_packet_handler (Packet *packet) {
                     client_log_msg (stdout, LOG_WARNING, LOG_NO_TYPE, "---> Server teardown! <---");
                     #endif
                     client_got_disconnected (packet->client);
-                    client_event_trigger (packet->client, EVENT_DISCONNECTED);
+                    client_event_trigger (packet->client, NULL, CLIENT_EVENT_DISCONNECTED);
                     break;
 
                 case CERVER_INFO_STATS:

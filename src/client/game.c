@@ -104,9 +104,9 @@ static void client_game_lobby_create (Packet *packet) {
             Lobby *lobby = lobby_deserialize (slobby);
 
             // trigger the event
-            client_event_set_response (packet->client, EVENT_LOBBY_CREATE, 
+            client_event_set_response (packet->client, CLIENT_EVENT_LOBBY_CREATE, 
                 lobby, lobby_delete);
-            client_event_trigger (packet->client, EVENT_LOBBY_CREATE);
+            client_event_trigger (packet->client, packet->connection, CLIENT_EVENT_LOBBY_CREATE);
         }
 
         else {
@@ -131,9 +131,9 @@ static void client_game_lobby_join (Packet *packet) {
             Lobby *lobby = lobby_deserialize (slobby);
 
             // trigger the event
-            client_event_set_response (packet->client, EVENT_LOBBY_JOIN, 
+            client_event_set_response (packet->client, CLIENT_EVENT_LOBBY_JOIN, 
                 lobby, lobby_delete);
-            client_event_trigger (packet->client, EVENT_LOBBY_JOIN);
+            client_event_trigger (packet->client, packet->connection, CLIENT_EVENT_LOBBY_JOIN);
         }
 
         else {
@@ -153,7 +153,7 @@ static void client_game_lobby_leave (Packet *packet) {
             // get the lobby data from the cerver
 
             // trigger the event
-            client_event_trigger (packet->client, EVENT_LOBBY_JOIN);
+            client_event_trigger (packet->client, packet->connection, CLIENT_EVENT_LOBBY_JOIN);
         }
     }
 
@@ -163,7 +163,7 @@ static void client_game_lobby_start (Packet *packet) {
 
     if (packet) {
         // trigger the event
-        client_event_trigger (packet->client, EVENT_LOBBY_START);
+        client_event_trigger (packet->client, packet->connection, CLIENT_EVENT_LOBBY_START);
     }
 
 }

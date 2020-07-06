@@ -62,13 +62,12 @@ static void client_client_packet_handler (Packet *packet) {
                 // the cerver close our connection
                 case CLIENT_CLOSE_CONNECTION:
                     client_connection_end (packet->client, packet->connection);
-                    client_event_trigger (packet->client, EVENT_DISCONNECTED);
                     break;
 
                 // the cerver has disconneted us
                 case CLIENT_DISCONNET:
                     client_got_disconnected (packet->client);
-                    client_event_trigger (packet->client, EVENT_DISCONNECTED);
+                    client_event_trigger (packet->client, NULL, CLIENT_EVENT_DISCONNECTED);
                     break;
 
                 default: 
@@ -100,7 +99,7 @@ static void client_auth_packet_handler (Packet *packet) {
 
                 // we have successfully authenticated with the server
                 case AUTH_PACKET_TYPE_SUCCESS:
-                    client_event_trigger (packet->client, EVENT_SUCCESS_AUTH);
+                    client_event_trigger (packet->client, packet->connection, CLIENT_EVENT_SUCCESS_AUTH);
                     break;
 
                 default: 
