@@ -12,6 +12,8 @@ struct _Connection;
 
 typedef enum ClientEventType {
 
+    EVENT_NONE                  = 0, 
+
     EVENT_CONNECTED,            // connected to cerver
     EVENT_DISCONNECTED,         // disconnected from the cerver, either by the cerver or by losing connection
 
@@ -26,7 +28,6 @@ typedef enum ClientEventType {
     EVENT_CERVER_GAME_STATS,    // received cerver game stats
 
     EVENT_SUCCESS_AUTH,         // auth with cerver has been successfull
-    EVENT_FAILED_AUTH,          // failed to authenticate to cerver
     EVENT_MAX_AUTH_TRIES,       // maxed out attempts to authenticate to cerver, so try again
 
     EVENT_LOBBY_CREATE,         // a new lobby was successfully created
@@ -39,7 +40,7 @@ typedef enum ClientEventType {
 
 typedef struct ClientEvent {
 
-    ClientEventType event_type;         // the event we are waiting to happen
+    ClientEventType type;         // the event we are waiting to happen
     bool create_thread;                 // create a detachable thread to run action
     bool drop_after_trigger;            // if we only want to trigger the event once
 
@@ -55,23 +56,29 @@ typedef struct ClientEvent {
 
 } ClientEvent;
 
-// register to trigger an action when the specified event occurs
+// registers an action to be triggered when the specified event occurs
 // if there is an existing action registered to an event, it will be overrided
-extern void client_event_register (struct _Client *client, ClientEventType event_type, 
+// a newly allocated ClientEventData structure will be passed to your method 
+// that should be free using the client_event_data_delete () method
+// returns 0 on success, 1 on error
+extern u8 client_event_register (struct _Client *client, ClientEventType event_type, 
     Action action, void *action_args, Action delete_action_args, 
     bool create_thread, bool drop_after_trigger);
 
+// unregister the action associated with an event
+// deletes the action args using the delete_action_args () if NOT NULL
+// returns 0 on success, 1 on error
+extern u8 client_event_unregister (struct _Client *client, ClientEventType event_type);
+
 extern void client_event_set_response (struct _Client *client, ClientEventType event_type,
     void *response_data, Action delete_response_data);
-
-// unregister the action associated with an event
-extern void client_event_unregister (struct _Client *client, ClientEventType event_type);
 
 // triggers all the actions that are registred to an event
 extern void client_event_trigger (struct _Client *client, struct _Connection *connection, ClientEventType event_type);
 
 #pragma region data
 
+// structure that is passed to the user registered method
 typedef struct ClientEventData {
 
     struct _Client *client;
