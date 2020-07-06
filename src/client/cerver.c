@@ -151,6 +151,80 @@ static Cerver *cerver_deserialize (SCerver *scerver) {
 
 }
 
+static void cerver_cehck_info_handle_auth (Cerver *cerver, Connection *connection) {
+
+    if (cerver && connection) {
+        if (cerver->auth_required) {
+            #ifdef CLIENT_DEBUG
+            client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Cerver requires authentication.");
+            #endif
+            if (connection->auth_data) {
+                #ifdef CLIENT_DEBUG
+                client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Sending auth data to cerver...");
+                #endif
+
+                if (!connection->auth_packet) {
+                    if (!connection_generate_auth_packet (connection)) {
+                        char *status = c_string_create ("cerver_check_info () - Generated connection %s auth packet!",
+                            connection->name->str);
+                        if (status) {
+                            client_log_success (status);
+                            free (status);
+                        }
+                    }
+
+                    else {
+                        char *status = c_string_create ("cerver_check_info () - Failed to generate connection %s auth packet!",
+                            connection->name->str);
+                        if (status) {
+                            client_log_error (status);
+                            free (status);
+                        }
+                    }
+                }
+
+                if (connection->auth_packet) {
+                    packet_set_network_values (connection->auth_packet, NULL, connection);
+
+                    if (!packet_send (connection->auth_packet, 0, NULL, false)) {
+                        char *s = c_string_create ("cerver_check_info () - Sent connection %s auth packet!",
+                            connection->name->str);
+                        if (s) {
+                            client_log_success (s);
+                            free (s);
+                        }
+                    }
+
+                    else {
+                        char *s = c_string_create ("cerver_check_info () - Failed to send connection %s auth packet!",
+                            connection->name->str);
+                        if (s) {
+                            client_log_error (s);
+                            free (s);
+                        }
+                    }
+                }
+            }
+
+            else {
+                char *s = c_string_create ("Connection %s does NOT have an auth packet!",
+                    connection->name->str);
+                if (s) {
+                    client_log_error (s);
+                    free (s);
+                }
+            }
+        }
+
+        else {
+            #ifdef CLIENT_DEBUG
+            client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Cerver does NOT require authentication.");
+            #endif
+        }
+    }
+
+}
+
 // compare the info the server sent us with the one we expected 
 // and ajust our connection values if necessary
 static u8 cerver_check_info (Cerver *cerver, Connection *connection) {
@@ -188,49 +262,26 @@ static u8 cerver_check_info (Cerver *cerver, Connection *connection) {
         #ifdef CLIENT_DEBUG
         switch (cerver->type) {
             case CUSTOM_CERVER:
-                client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Cerver is of type: custom cerver");
+                client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Cerver type: CUSTOM");
                 break;
             case FILE_CERVER:
-                client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Cerver is of type: file cerver");
+                client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Cerver type: FILE");
                 break;
             case WEB_CERVER:
-                client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Cerver is of type: web cerver");
+                client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Cerver type: WEB");
                 break;
             case GAME_CERVER:
-                client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Cerver is of type: game cerver");
+                client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Cerver type: GAME");
                 break;
 
             default: 
-                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Cerver is of unknown type."); 
+                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Cerver type: UNKNOWN"); 
                 break;
         }
         #endif
 
-        if (cerver->auth_required) {
-            #ifdef CLIENT_DEBUG
-            client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Cerver requires authentication.");
-            #endif
-            if (connection->auth_data) {
-                #ifdef CLIENT_DEBUG
-                client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Sending auth data to cerver...");
-                #endif
+        cerver_cehck_info_handle_auth (cerver, connection);
 
-                if (!connection->auth_packet) connection_generate_auth_packet (connection);
-
-                if (packet_send (connection->auth_packet, 0, NULL, false)) {
-                    client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send connection auth packet!");
-                }
-
-                retval = 0;
-            }
-        }
-
-        else {
-            #ifdef CLIENT_DEBUG
-            client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Cerver does NOT require authentication.");
-            #endif
-        }
-        
         retval = 0;
     }
 
