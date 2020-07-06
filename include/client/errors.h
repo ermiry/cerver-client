@@ -9,18 +9,20 @@ struct _Packet;
 
 typedef enum ErrorType {
 
+    ERR_NONE                    = 0,
+
     // internal server error, like no memory
-    ERR_SERVER_ERROR            = 0,   
+    ERR_CERVER_ERROR            = 1,   
 
-    ERR_CREATE_LOBBY            = 1,
-    ERR_JOIN_LOBBY              = 2,
-    ERR_LEAVE_LOBBY             = 3,
-    ERR_FIND_LOBBY              = 4,
+    ERR_CREATE_LOBBY            = 2,
+    ERR_JOIN_LOBBY              = 3,
+    ERR_LEAVE_LOBBY             = 4,
+    ERR_FIND_LOBBY              = 5,
 
-    ERR_GAME_INIT               = 5,
-    ERR_GAME_START              = 6,
+    ERR_GAME_INIT               = 6,
+    ERR_GAME_START              = 7,
 
-    ERR_FAILED_AUTH             = 7,
+    ERR_FAILED_AUTH             = 8,
 
 } ErrorType;
 
@@ -43,7 +45,8 @@ extern void error_packet_handler (struct _Packet *packet);
 // serialized error data
 typedef struct SError {
 
-    ErrorType error_type;
+    time_t timestamp;
+    u32 error_type;
     char msg[64];
 
 } SError;
