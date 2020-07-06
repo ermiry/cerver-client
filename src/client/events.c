@@ -67,7 +67,7 @@ static ClientEvent *client_event_new (void) {
 
     ClientEvent *event = (ClientEvent *) malloc (sizeof (ClientEvent));
     if (event) {
-        event->type = EVENT_NONE;
+        event->type = CLIENT_EVENT_NONE;
 
         event->create_thread = false;
         event->drop_after_trigger = false;

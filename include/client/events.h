@@ -12,29 +12,29 @@ struct _Connection;
 
 typedef enum ClientEventType {
 
-    EVENT_NONE                  = 0, 
+    CLIENT_EVENT_NONE                  = 0, 
 
-    EVENT_CONNECTED,            // connected to cerver
-    EVENT_DISCONNECTED,         // disconnected from the cerver, either by the cerver or by losing connection
+    CLIENT_EVENT_CONNECTED,            // connected to cerver
+    CLIENT_EVENT_DISCONNECTED,         // disconnected from the cerver, either by the cerver or by losing connection
 
-    EVENT_CONNECTION_FAILED,    // failed to connect to cerver
-    EVENT_CONNECTION_CLOSE,     // this happens when a call to a recv () methods returns <= 0, the connection is clossed directly by client
+    CLIENT_EVENT_CONNECTION_FAILED,    // failed to connect to cerver
+    CLIENT_EVENT_CONNECTION_CLOSE,     // this happens when a call to a recv () methods returns <= 0, the connection is clossed directly by client
 
-    EVENT_CONNECTION_DATA,      // data has been received, only triggered from client request methods
+    CLIENT_EVENT_CONNECTION_DATA,      // data has been received, only triggered from client request methods
 
-    EVENT_CERVER_INFO,          // received cerver info from the cerver
-    EVENT_CERVER_TEARDOWN,      // the cerver is going to teardown (disconnect happens automatically)
-    EVENT_CERVER_STATS,         // received cerver stats
-    EVENT_CERVER_GAME_STATS,    // received cerver game stats
+    CLIENT_EVENT_CERVER_INFO,          // received cerver info from the cerver
+    CLIENT_EVENT_CERVER_TEARDOWN,      // the cerver is going to teardown (disconnect happens automatically)
+    CLIENT_EVENT_CERVER_STATS,         // received cerver stats
+    CLIENT_EVENT_CERVER_GAME_STATS,    // received cerver game stats
 
-    EVENT_SUCCESS_AUTH,         // auth with cerver has been successfull
-    EVENT_MAX_AUTH_TRIES,       // maxed out attempts to authenticate to cerver, so try again
+    CLIENT_EVENT_SUCCESS_AUTH,         // auth with cerver has been successfull
+    CLIENT_EVENT_MAX_AUTH_TRIES,       // maxed out attempts to authenticate to cerver, so try again
 
-    EVENT_LOBBY_CREATE,         // a new lobby was successfully created
-    EVENT_LOBBY_JOIN,           // correctly joined a new lobby
-    EVENT_LOBBY_LEAVE,          // successfully exited a lobby
+    CLIENT_EVENT_LOBBY_CREATE,         // a new lobby was successfully created
+    CLIENT_EVENT_LOBBY_JOIN,           // correctly joined a new lobby
+    CLIENT_EVENT_LOBBY_LEAVE,          // successfully exited a lobby
 
-    EVENT_LOBBY_START,          // the game in the lobby has started
+    CLIENT_EVENT_LOBBY_START,          // the game in the lobby has started
 
 } ClientEventType;
 
