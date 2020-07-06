@@ -29,6 +29,8 @@ static ClientErrorData *client_error_data_new (void) {
 		error_data->connection = NULL;
 
 		error_data->action_args = NULL;
+
+		error_data->error_message = NULL;
 	}
 
 	return error_data;
@@ -37,17 +39,25 @@ static ClientErrorData *client_error_data_new (void) {
 
 void client_error_data_delete (ClientErrorData *error_data) {
 
-	if (error_data) free (error_data);
+	if (error_data) {
+		str_delete (error_data->error_message);
+
+		free (error_data);
+	}
 
 }
 
-static ClientErrorData *client_error_data_create (Client *client, Connection *connection, void *args) {
+static ClientErrorData *client_error_data_create (Client *client, Connection *connection, void *args,
+	const char *error_message) {
 
 	ClientErrorData *error_data = client_error_data_new ();
 	if (error_data) {
 		error_data->client = client;
 		error_data->connection = connection;
+
 		error_data->action_args = args;
+
+		error_data->error_message = error_message ? str_new (error_message) : NULL;
 	}
 
 	return error_data;
@@ -189,7 +199,11 @@ u8 client_error_unregister (Client *client, ClientErrorType error_type) {
 }
 
 // triggers all the actions that are registred to an error
-void client_error_trigger (Client *client, Connection *connection, ClientErrorType error_type) {
+// returns 0 on success, 1 on error
+u8 client_error_trigger (ClientErrorType error_type, Client *client, Connection *connection, 
+	const char *error_message) {
+
+	u8 retval = 1;
 
     if (client) {
         ListElement *le = NULL;
@@ -199,12 +213,13 @@ void client_error_trigger (Client *client, Connection *connection, ClientErrorTy
             if (error->action) {
                 if (error->create_thread) {
                     pthread_t thread_id = 0;
-                    thread_create_detachable (
+                    retval = thread_create_detachable (
                         &thread_id,
                         (void *(*)(void *)) error->action, 
                         client_error_data_create (
                             client, connection,
-                            error
+                            error,
+							error_message
                         )
                     );
                 }
@@ -212,8 +227,11 @@ void client_error_trigger (Client *client, Connection *connection, ClientErrorTy
                 else {
                     error->action (client_error_data_create (
                         client, connection, 
-                        error
+                        error,
+						error_message
                     ));
+
+					retval = 0;
                 }
                 
                 if (error->drop_after_trigger) client_error_pop (client->registered_errors, le);
@@ -221,13 +239,14 @@ void client_error_trigger (Client *client, Connection *connection, ClientErrorTy
         }
     }
 
+	return retval;
+
 }
 
 #pragma endregion
 
 #pragma region handler
 
-// FIXME:
 // handles error packets
 void error_packet_handler (Packet *packet) {
 
@@ -237,29 +256,75 @@ void error_packet_handler (Packet *packet) {
 			SError *s_error = (SError *) end;
 
 			switch (s_error->error_type) {
-				case CLIENT_ERR_CERVER_ERROR: break;
-				case CLIENT_ERR_CREATE_LOBBY: break;
-				case CLIENT_ERR_JOIN_LOBBY: break;
-				case CLIENT_ERR_LEAVE_LOBBY: break;
-				case CLIENT_ERR_FIND_LOBBY: break;
-				case CLIENT_ERR_GAME_INIT: break;
-
-				case CLIENT_ERR_FAILED_AUTH: {
-					// #ifdef CLIENT_DEBUG
-					client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, 
-						c_string_create ("Failed to authenticate - %s", s_error->msg)); 
-					// #endif
-					// last_error.type = ERR_FAILED_AUTH;
-					// memset (last_error.msg, 0, sizeof (last_error.msg));
-					// strcpy (last_error.msg, error->msg);
-					// if (pack_info->client->errorType == ERR_FAILED_AUTH)
-						// pack_info->client->errorAction (pack_info->client->errorArgs);
-				}
-					
+				case CLIENT_ERR_CERVER_ERROR: 
+					client_error_trigger (
+						CLIENT_ERR_CERVER_ERROR,
+						packet->client, packet->connection,
+						s_error->msg
+					); 
 				break;
 
+				case CLIENT_ERR_FAILED_AUTH: {
+					if (client_error_trigger (
+						CLIENT_ERR_FAILED_AUTH,
+						packet->client, packet->connection,
+						s_error->msg
+					)) {
+						// not error action is registered to handle the error
+						char *status = c_string_create ("Failed to authenticate - %s", s_error->msg);
+						if (status) {
+							client_log_error (status);
+							free (status);
+						}
+					}
+				} break;
+
+				case CLIENT_ERR_CREATE_LOBBY:
+					client_error_trigger (
+						CLIENT_ERR_CREATE_LOBBY,
+						packet->client, packet->connection,
+						s_error->msg
+					); 
+					break;
+				case CLIENT_ERR_JOIN_LOBBY:
+					client_error_trigger (
+						CLIENT_ERR_JOIN_LOBBY,
+						packet->client, packet->connection,
+						s_error->msg
+					); 
+					break;
+				case CLIENT_ERR_LEAVE_LOBBY: 
+					client_error_trigger (
+						CLIENT_ERR_LEAVE_LOBBY,
+						packet->client, packet->connection,
+						s_error->msg
+					); 
+					break;
+				case CLIENT_ERR_FIND_LOBBY: 
+					client_error_trigger (
+						CLIENT_ERR_FIND_LOBBY,
+						packet->client, packet->connection,
+						s_error->msg
+					); 
+					break;
+
+				case CLIENT_ERR_GAME_INIT: 
+					client_error_trigger (
+						CLIENT_ERR_GAME_INIT,
+						packet->client, packet->connection,
+						s_error->msg
+					); 
+					break;
+				case CLIENT_ERR_GAME_START: 
+					client_error_trigger (
+						CLIENT_ERR_GAME_START,
+						packet->client, packet->connection,
+						s_error->msg
+					); 
+					break;
+
 				default: 
-					client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Unknown error received from server."); 
+					client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Unknown error received from cerver!"); 
 					break;
 			}
 		}

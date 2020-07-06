@@ -17,17 +17,17 @@ typedef enum ClientErrorType {
 	CLIENT_ERR_NONE                    = 0,
 
 	// internal server error, like no memory
-	CLIENT_ERR_CERVER_ERROR            = 1,   
+	CLIENT_ERR_CERVER_ERROR            = 1, 
 
-	CLIENT_ERR_CREATE_LOBBY            = 2,
-	CLIENT_ERR_JOIN_LOBBY              = 3,
-	CLIENT_ERR_LEAVE_LOBBY             = 4,
-	CLIENT_ERR_FIND_LOBBY              = 5,
+	CLIENT_ERR_FAILED_AUTH             = 2,  
 
-	CLIENT_ERR_GAME_INIT               = 6,
-	CLIENT_ERR_GAME_START              = 7,
+	CLIENT_ERR_CREATE_LOBBY            = 3,
+	CLIENT_ERR_JOIN_LOBBY              = 4,
+	CLIENT_ERR_LEAVE_LOBBY             = 5,
+	CLIENT_ERR_FIND_LOBBY              = 6,
 
-	CLIENT_ERR_FAILED_AUTH             = 8,
+	CLIENT_ERR_GAME_INIT               = 7,
+	CLIENT_ERR_GAME_START              = 8,
 
 } ClientErrorType;
 
@@ -58,7 +58,10 @@ extern u8 client_error_register (struct _Client *client, ClientErrorType error_t
 extern u8 client_error_unregister (struct _Client *client, ClientErrorType error_type);
 
 // triggers all the actions that are registred to an error
-extern void client_error_trigger (struct _Client *client, struct _Connection *connection, ClientErrorType error_type);
+// returns 0 on success, 1 on error
+extern u8 client_error_trigger (ClientErrorType error_type, 
+	struct _Client *client, struct _Connection *connection, 
+	const char *error_message);
 
 #pragma region data
 
@@ -69,6 +72,8 @@ typedef struct ClientErrorData {
     struct _Connection *connection;
 
     void *action_args;                  // the action arguments set by the user
+
+	String *error_message;
 
 } ClientErrorData;
 
