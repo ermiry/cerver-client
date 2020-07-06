@@ -7,18 +7,25 @@
 #include "client/collections/dlist.h"
 
 #include "client/client.h"
+#include "client/connection.h"
 #include "client/events.h"
 
 #include "client/threads/thread.h"
 
-static ClientEventData *client_event_data_new (ClientEvent *event) {
+#pragma region data
+
+static ClientEventData *client_event_data_new (void) {
 
     ClientEventData *event_data = (ClientEventData *) malloc (sizeof (ClientEventData));
     if (event_data) {
-        event_data->response_data = event->response_data;
-        event_data->delete_response_data = event->delete_response_data;
-        event_data->action_args = event->action_args;
-        event_data->delete_action_args = event->delete_action_args;
+        event_data->client = NULL;
+        event_data->connection = NULL;
+
+        event_data->response_data = NULL;
+        event_data->delete_response_data = NULL;
+
+        event_data->action_args = NULL;
+        event_data->delete_action_args = NULL;
     }
 
     return event_data;
@@ -30,6 +37,29 @@ void client_event_data_delete (ClientEventData *event_data) {
     if (event_data) free (event_data);
 
 }
+
+static ClientEventData *client_event_data_create (Client *client, Connection *connection, 
+    ClientEvent *event) {
+
+    ClientEventData *event_data = client_event_data_new ();
+    if (event_data) {
+        event_data->client = client;
+        event_data->connection = connection;
+
+        event_data->response_data = event->response_data;
+        event_data->delete_response_data = event->delete_response_data;
+
+        event_data->action_args = event->action_args;
+        event_data->delete_action_args = event->delete_action_args;
+    }
+
+    return event_data;
+
+}
+
+#pragma endregion
+
+#pragma region event
 
 static ClientEvent *client_event_new (void) {
 
@@ -77,25 +107,6 @@ static void client_event_pop (DoubleList *list, ListElement *le) {
         void *data = dlist_remove_element (list, le);
         if (data) free (data);
     }
-
-}
-
-u8 client_events_init (Client *client) {
-
-    u8 retval = 1;
-
-    if (client) {
-        client->registered_actions = dlist_init (client_event_delete, NULL);
-        retval = client->registered_actions ? 0 : 1;
-    }
-
-    return retval;
-
-}
-
-void client_events_end (Client *client) { 
-
-    if (client) dlist_delete (client->registered_actions);
 
 }
 
@@ -180,7 +191,7 @@ void client_event_set_response (Client *client, ClientEventType event_type,
 } 
 
 // triggers all the actions that are registred to an event
-void client_event_trigger (Client *client, ClientEventType event_type) {
+void client_event_trigger (Client *client, Connection *connection, ClientEventType event_type) {
 
     if (client) {
         ListElement *le = NULL;
@@ -193,12 +204,18 @@ void client_event_trigger (Client *client, ClientEventType event_type) {
                     thread_create_detachable (
                         &thread_id,
                         (void *(*)(void *)) event->action, 
-                        client_event_data_new (event)
+                        client_event_data_create (
+                            client, connection,
+                            event
+                        )
                     );
                 }
 
                 else {
-                    event->action (client_event_data_new (event));
+                    event->action (client_event_data_create (
+                        client, connection, 
+                        event
+                    ));
                 }
                 
                 if (event->drop_after_trigger) client_event_pop (client->registered_actions, le);
@@ -207,3 +224,28 @@ void client_event_trigger (Client *client, ClientEventType event_type) {
     }
 
 }
+
+#pragma endregion
+
+#pragma region main
+
+u8 client_events_init (Client *client) {
+
+    u8 retval = 1;
+
+    if (client) {
+        client->registered_actions = dlist_init (client_event_delete, NULL);
+        retval = client->registered_actions ? 0 : 1;
+    }
+
+    return retval;
+
+}
+
+void client_events_end (Client *client) { 
+
+    if (client) dlist_delete (client->registered_actions);
+
+}
+
+#pragma endregion

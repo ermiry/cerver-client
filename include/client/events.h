@@ -8,6 +8,7 @@
 #include "client/client.h"
 
 struct _Client;
+struct _Connection;
 
 typedef enum ClientEventType {
 
@@ -54,10 +55,6 @@ typedef struct ClientEvent {
 
 } ClientEvent;
 
-extern u8 client_events_init (struct _Client *client);
-
-extern void client_events_end (struct _Client *client);
-
 // register to trigger an action when the specified event occurs
 // if there is an existing action registered to an event, it will be overrided
 extern void client_event_register (struct _Client *client, ClientEventType event_type, 
@@ -71,9 +68,14 @@ extern void client_event_set_response (struct _Client *client, ClientEventType e
 extern void client_event_unregister (struct _Client *client, ClientEventType event_type);
 
 // triggers all the actions that are registred to an event
-extern void client_event_trigger (struct _Client *client, ClientEventType event_type);
+extern void client_event_trigger (struct _Client *client, struct _Connection *connection, ClientEventType event_type);
+
+#pragma region data
 
 typedef struct ClientEventData {
+
+    struct _Client *client;
+    struct _Connection *connection;
 
     void *response_data;                // data that came with the response   
     Action delete_response_data;  
@@ -84,5 +86,15 @@ typedef struct ClientEventData {
 } ClientEventData;
 
 extern void client_event_data_delete (ClientEventData *event_data);
+
+#pragma endregion
+
+#pragma region main
+
+extern u8 client_events_init (struct _Client *client);
+
+extern void client_events_end (struct _Client *client);
+
+#pragma endregion
 
 #endif
