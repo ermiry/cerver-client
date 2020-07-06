@@ -33,7 +33,7 @@ typedef enum ClientErrorType {
 
 typedef struct ClientError {
 
-	ClientErrorType error_type;
+	ClientErrorType type;
 	bool create_thread;                 // create a detachable thread to run action
     bool drop_after_trigger;            // if we only want to trigger the event once
 
@@ -42,6 +42,15 @@ typedef struct ClientError {
     Action delete_action_args;          // how to get rid of the data
 
 } ClientError;
+
+// registers an action to be triggered when the specified error occurs
+// if there is an existing action registered to an error, it will be overrided
+// a newly allocated ClientErrorData structure will be passed to your method 
+// that should be free using the client_error_data_delete () method
+// returns 0 on success, 1 on error
+extern u8 client_error_register (struct _Client *client, ClientErrorType error_type,
+	Action action, void *action_args, Action delete_action_args, 
+    bool create_thread, bool drop_after_trigger);
 
 #pragma region data
 
@@ -63,6 +72,14 @@ extern void client_error_data_delete (ClientErrorData *error_data);
 
 // handles error packets
 extern void error_packet_handler (struct _Packet *packet);
+
+#pragma endregion
+
+#pragma region main
+
+extern u8 client_errors_init (struct _Client *client);
+
+extern void client_errors_end (struct _Client *client);
 
 #pragma endregion
 

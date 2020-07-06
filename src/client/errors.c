@@ -17,6 +17,8 @@
 #include "client/utils/utils.h"
 #include "client/utils/log.h"
 
+void client_error_unregister (Client *client, ClientErrorType error_type);
+
 #pragma region data
 
 static ClientErrorData *client_error_data_new (void) {
@@ -49,6 +51,85 @@ static ClientErrorData *client_error_data_create (Client *client, Connection *co
 	}
 
 	return error_data;
+
+}
+
+#pragma endregion
+
+#pragma region errors
+
+static ClientError *client_error_new (void) {
+
+	ClientError *client_error = (ClientError *) malloc (sizeof (ClientError));
+	if (client_error) {
+		client_error->type = ERR_NONE;
+
+		client_error->create_thread = false;
+		client_error->drop_after_trigger = false;
+
+		client_error->action = NULL;
+		client_error->action_args = NULL;
+		client_error->delete_action_args = NULL;
+	}
+
+	return client_error;
+
+}
+
+static void client_error_delete (void *client_error_ptr) {
+
+	if (client_error_ptr) {
+		ClientError *client_error = (ClientError *) client_error_ptr;
+
+		if (client_error->action_args) {
+			if (client_error->delete_action_args) 
+				client_error->delete_action_args (client_error->action_args);
+		}
+
+		free (client_error_ptr);
+	}
+
+}
+
+// registers an action to be triggered when the specified error occurs
+// if there is an existing action registered to an error, it will be overrided
+// a newly allocated ClientErrorData structure will be passed to your method 
+// that should be free using the client_error_data_delete () method
+// returns 0 on success, 1 on error
+u8 client_error_register (Client *client, ClientErrorType error_type,
+	Action action, void *action_args, Action delete_action_args, 
+    bool create_thread, bool drop_after_trigger) {
+
+	u8 retval = 1;
+
+	if (client) {
+		if (client->registered_errors) {
+			ClientError *error = client_error_new ();
+			if (error) {
+				error->type = error_type;
+
+				error->create_thread = create_thread;
+				error->drop_after_trigger = drop_after_trigger;
+
+				error->action = action;
+				error->action_args = action_args;
+				error->delete_action_args = delete_action_args;
+
+				// search if there is an action already registred for that error and remove it
+				client_error_unregister (client, error_type);
+
+				if (!dlist_insert_after (
+					client->registered_errors,
+					dlist_end (client->registered_errors),
+					error
+				)) {
+					retval = 0;
+				}
+			}
+		}
+	}
+
+	return retval;
 
 }
 
@@ -92,6 +173,29 @@ void error_packet_handler (Packet *packet) {
 			}
 		}
 	}
+
+}
+
+#pragma endregion
+
+#pragma region main
+
+u8 client_errors_init (Client *client) {
+
+    u8 retval = 1;
+
+    if (client) {
+        client->registered_errors = dlist_init (client_error_delete, NULL);
+        retval = client->registered_errors ? 0 : 1;
+    }
+
+    return retval;
+
+}
+
+void client_events_end (Client *client) { 
+
+    if (client) dlist_delete (client->registered_errors);
 
 }
 
