@@ -77,6 +77,7 @@ struct _Connection {
     Action custom_receive;                  // custom receive method to handle incomming packets in the connection
     void *custom_receive_args;              // arguments to be passed to the custom receive method
 
+    bool authenticated;                     // the connection has been authenticated to the cerver
     void *auth_data;                        // maybe auth credentials
     size_t auth_data_size;
     Action delete_auth_data;                // destroys the auth data when the connection ends

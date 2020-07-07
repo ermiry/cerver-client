@@ -97,6 +97,7 @@ Connection *connection_new (void) {
         connection->custom_receive = NULL;
         connection->custom_receive_args = NULL;
 
+        connection->authenticated = false;
         connection->auth_data = NULL;
         connection->auth_data_size = 0;
         connection->delete_auth_data = NULL;

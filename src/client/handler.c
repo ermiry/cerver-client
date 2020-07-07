@@ -99,6 +99,7 @@ static void client_auth_packet_handler (Packet *packet) {
 
                 // we have successfully authenticated with the server
                 case AUTH_PACKET_TYPE_SUCCESS:
+                    packet->connection->authenticated = true;
                     client_event_trigger (packet->client, packet->connection, CLIENT_EVENT_SUCCESS_AUTH);
                     break;
 
