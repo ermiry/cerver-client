@@ -4,6 +4,8 @@
 #include <stdbool.h>
 
 #include "client/types/types.h"
+#include "client/types/string.h"
+
 #include "client/collections/dlist.h"
 
 #include "client/network.h"
@@ -59,6 +61,8 @@ struct _Client {
     time_t time_started;
     u64 uptime;
 
+    String *session_id;
+
     ClientStats *stats;
 
 };
@@ -82,6 +86,10 @@ extern void client_set_custom_handler (Client *client, Action custom_handler);
 // packets size must be cheked in individual methods (handlers)
 // by default, this option is turned off
 extern void client_set_check_packets (Client *client, bool check_packets);
+
+// sets the client's session id
+// returns 0 on succes, 1 on error
+extern u8 client_set_session_id (Client *client, const char *session_id);
 
 // creates a new client, whcih may be used to create connections
 extern Client *client_create (void);
@@ -252,15 +260,19 @@ extern ClientConnection *client_connection_aux_new (Client *client, struct _Conn
 
 extern void client_connection_aux_delete (void *ptr);
 
-/*** Serialization ***/
+#pragma region serialization
 
-// session id - token
-struct _Token {
+#define TOKEN_SIZE         64
 
-    char token[65];
+// serialized session id - token
+struct _SToken {
+
+    char token[TOKEN_SIZE];
 
 };
 
-typedef struct _Token Token;
+typedef struct _SToken SToken;
+
+#pragma endregion
 
 #endif

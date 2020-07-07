@@ -79,6 +79,56 @@ static void client_client_packet_handler (Packet *packet) {
 
 }
 
+// get the token from the packet data
+// returns 0 on succes, 1 on error
+static u8 auth_strip_token (Packet *packet, Client *client) {
+
+    u8 retval = 1;
+
+    if (packet) {
+        // check we have a big enough packet
+        if (packet->data_size > sizeof (RequestData)) {
+            char *end = (char *) packet->data;
+
+            end += sizeof (RequestData);
+
+            // check if we have a token
+            if (packet->data_size == (sizeof (RequestData) + sizeof (SToken))) {
+                SToken *s_token = (SToken *) (end);
+                retval = client_set_session_id (client, s_token->token);
+            }
+        }
+    }
+
+    return retval;
+
+}
+
+static void client_auth_success_handler (Packet *packet) {
+
+    if (packet) {
+        packet->connection->authenticated = true;
+
+        if (packet->connection->cerver) {
+            if (packet->connection->cerver->uses_sessions) {
+                if (!auth_strip_token (packet, packet->client)) {
+                    #ifdef AUTH_DEBUG
+                    char *status = c_string_create ("Got client's <%s> session id <%s>",
+                        packet->client->name->str, packet->client->session_id->str);
+                    if (status) {
+                        client_log_debug (status);
+                        free (status);
+                    }
+                    #endif
+                }
+            }
+        }
+
+        client_event_trigger (packet->client, packet->connection, CLIENT_EVENT_SUCCESS_AUTH);
+    }
+
+}
+
 static void client_auth_packet_handler (Packet *packet) {
 
     if (packet) {
@@ -89,18 +139,15 @@ static void client_auth_packet_handler (Packet *packet) {
             switch (req->type) {
                 // 24/01/2020 -- cerver requested authentication, if not, we will be disconnected
                 case AUTH_PACKET_TYPE_REQUEST_AUTH:
-                    // TODO: 24/01/2020 -- 17:03
                     break;
 
                 // we recieve a token from the cerver to use in sessions
                 case AUTH_PACKET_TYPE_CLIENT_AUTH:
-                    // TODO: 24/01/2020 -- 17:03
                     break;
 
                 // we have successfully authenticated with the server
                 case AUTH_PACKET_TYPE_SUCCESS:
-                    packet->connection->authenticated = true;
-                    client_event_trigger (packet->client, packet->connection, CLIENT_EVENT_SUCCESS_AUTH);
+                    client_auth_success_handler (packet);
                     break;
 
                 default: 

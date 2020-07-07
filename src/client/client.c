@@ -115,6 +115,8 @@ static Client *client_new (void) {
         client->time_started = 0;
         client->uptime = 0;
 
+        client->session_id = NULL;
+
         client->stats = NULL;
     }
 
@@ -130,6 +132,8 @@ static void client_delete (Client *client) {
         client_events_end (client);
 
         client_errors_end (client);
+
+        str_delete (client->session_id);
 
         client_stats_delete (client->stats);
 
@@ -175,6 +179,23 @@ void client_set_check_packets (Client *client, bool check_packets) {
     if (client) {
         client->check_packets = check_packets;
     }
+
+}
+
+// sets the client's session id
+// returns 0 on succes, 1 on error
+u8 client_set_session_id (Client *client, const char *session_id) {
+
+    u8 retval = 1;
+
+    if (client) {
+        str_delete (client->session_id);
+        client->session_id = session_id ? str_new (session_id) : NULL;
+
+        retval = 0;
+    }
+
+    return retval;
 
 }
 
@@ -692,10 +713,12 @@ int client_connection_end (Client *client, Connection *connection) {
     int retval = 1;
 
     if (client && connection) {
-        client_connection_terminate (client, connection);
-        client_event_trigger (client, connection, CLIENT_EVENT_CONNECTION_CLOSE);
+        if (connection->connected) {
+            client_connection_terminate (client, connection);
+            client_event_trigger (client, connection, CLIENT_EVENT_CONNECTION_CLOSE);
 
-        retval = 0;
+            retval = 0;
+        }
     }
 
     return retval;
