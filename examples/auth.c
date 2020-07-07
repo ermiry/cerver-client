@@ -10,7 +10,9 @@
 #include "client/client.h"
 #include "client/packets.h"
 #include "client/events.h"
+#include "client/errors.h"
 
+#include "client/utils/utils.h"
 #include "client/utils/log.h"
 
 typedef enum AppRequest {
@@ -54,9 +56,37 @@ void credentials_delete (void *credentials_ptr) { if (credentials_ptr) free (cre
 static void client_event_connection_close (void *client_event_data_ptr) {
 
 	if (client_event_data_ptr) {
-		// ClientEventData *client_event_data = (ClientEventData *) client_event_data_ptr;
+		ClientEventData *client_event_data = (ClientEventData *) client_event_data_ptr;
 
-		client_log_warning ("client_event_connection_close () - connection has been closed!");
+		if (client_event_data->connection) {
+			char *status = c_string_create ("client_event_connection_close () - connection <%s> has been closed!",
+				client_event_data->connection->name->str);
+			if (status) {
+				client_log_warning (status);
+				free (status);
+			}
+		}
+
+		client_event_data_delete (client_event_data);
+	}
+
+}
+
+static void client_error_failed_auth (void *client_error_data_ptr) {
+
+	if (client_error_data_ptr) {
+		ClientErrorData *client_error_data = (ClientErrorData *) client_error_data_ptr;
+
+		if (client_error_data->connection) {
+			char *status = c_string_create ("client_error_failed_auth () - connection <%s> failed to authenticate!",
+				client_error_data->connection->name->str);
+			if (status) {
+				client_log_error (status);
+				free (status);
+			}
+		}
+
+		client_error_data_delete (client_error_data);
 	}
 
 }
@@ -64,9 +94,18 @@ static void client_event_connection_close (void *client_event_data_ptr) {
 static void client_event_success_auth (void *client_event_data_ptr) {
 
 	if (client_event_data_ptr) {
-		// ClientEventData *client_event_data = (ClientEventData *) client_event_data_ptr;
+		ClientEventData *client_event_data = (ClientEventData *) client_event_data_ptr;
 
-		client_log_success ("client_event_success_auth () - connection has been authenticated!");
+		if (client_event_data->connection) {
+			char *status = c_string_create ("client_event_success_auth () - connection <%s> has been authenticated!",
+				client_event_data->connection->name->str);
+			if (status) {
+				client_log_success (status);
+				free (status);
+			}
+		}
+
+		client_event_data_delete (client_event_data);
 	}
 
 }
@@ -84,14 +123,21 @@ static int cerver_connect (const char *ip, unsigned int port) {
 
 			client_event_register (
 				client, 
-				EVENT_CONNECTION_CLOSE, 
+				CLIENT_EVENT_CONNECTION_CLOSE, 
 				client_event_connection_close, NULL, NULL, 
+				false, false
+			);
+
+			client_error_register (
+				client,
+				CLIENT_ERR_FAILED_AUTH,
+				client_error_failed_auth, NULL, NULL,
 				false, false
 			);
 
 			client_event_register (
 				client,
-				EVENT_SUCCESS_AUTH,
+				CLIENT_EVENT_SUCCESS_AUTH,
 				client_event_success_auth, NULL, NULL,
 				false, false
 			);
@@ -227,19 +273,12 @@ int main (int argc, const char **argv) {
 	if (!cerver_connect ("127.0.0.1", 8007)) {
 		while (1) {
 			// send a test message every second
-			// test_msg_send ();
-			// test_msg_send ();
-			// test_msg_send ();
+			// if (connection->authenticated) {
+				test_msg_send ();
+			// }
 
 			sleep (1);
 		}
-
-		// for (unsigned int i = 0; i < 5; i++) {
-		//     test_msg_send ();
-		//     sleep (1);
-		// }
-
-		// cerver_disconnect ();
 	}
 
 	return 0;
