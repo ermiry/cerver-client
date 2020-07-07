@@ -93,13 +93,11 @@ static void client_event_delete (void *ptr) {
         if (event->response_data) {
             if (event->delete_response_data) 
                 event->delete_response_data (event->response_data);
-            // else free (event->response_data);
         }
         
         if (event->action_args) {
             if (event->delete_action_args)
                 event->delete_action_args (event->action_args);
-            // else free (event->action_args);
         }
 
         free (event);
