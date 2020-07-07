@@ -155,9 +155,9 @@ static void cerver_cehck_info_handle_auth (Cerver *cerver, Connection *connectio
 
     if (cerver && connection) {
         if (cerver->auth_required) {
-            #ifdef CLIENT_DEBUG
+            // #ifdef CLIENT_DEBUG
             client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Cerver requires authentication.");
-            #endif
+            // #endif
             if (connection->auth_data) {
                 #ifdef CLIENT_DEBUG
                 client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Sending auth data to cerver...");
@@ -204,6 +204,10 @@ static void cerver_cehck_info_handle_auth (Cerver *cerver, Connection *connectio
                         }
                     }
                 }
+
+                if (cerver->uses_sessions) {
+                    client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Cerver supports sessions.");
+                }
             }
 
             else {
@@ -232,6 +236,8 @@ static u8 cerver_check_info (Cerver *cerver, Connection *connection) {
     u8 retval = 1;
 
     if (cerver && connection) {
+        connection->cerver = cerver;
+
         #ifdef CLIENT_DEBUG
         char *s = c_string_create ("Connected to cerver %s.", cerver->name->str);
         if (s) {
@@ -302,8 +308,8 @@ void cerver_packet_handler (Packet *packet) {
                     #ifdef CLIENT_DEBUG
                     client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Received a cerver info packet.");
                     #endif
-                    packet->connection->cerver = cerver_deserialize ((SCerver *) (end += sizeof (RequestData)));
-                    if (cerver_check_info (packet->connection->cerver, packet->connection))
+                    Cerver *cerver = cerver_deserialize ((SCerver *) (end += sizeof (RequestData)));
+                    if (cerver_check_info (cerver, packet->connection))
                         client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to correctly check cerver info!");
                 } break;
 
