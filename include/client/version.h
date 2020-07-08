@@ -1,10 +1,10 @@
 #ifndef _CLIENT_VERSION_H_
 #define _CLIENT_VERSION_H_
 
-#define CLIENT_VERSION                      "1.2.3rc-1"
-#define CLIENT_VERSION_NAME                 "Release 1.2.3rc-1"
-#define CLIENT_VERSION_DATE			        "25/06/2020"
-#define CLIENT_VERSION_TIME			        "23:39 CST"
+#define CLIENT_VERSION                      "1.3rc-1"
+#define CLIENT_VERSION_NAME                 "Release 1.3rc-1"
+#define CLIENT_VERSION_DATE			        "07/07/2020"
+#define CLIENT_VERSION_TIME			        "20:40 CST"
 #define CLIENT_VERSION_AUTHOR			    "Erick Salas"
 
 // print full cerver client version information 
