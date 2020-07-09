@@ -202,14 +202,14 @@ static u8 cerver_connect_with_session_id (void) {
 
 		// set the recived session id as the connection's auth data
 		if (client->session_id) {
-			// SToken *s_token = (SToken *) malloc (sizeof (SToken));
-			// strncpy (s_token->token, client->session_id->str, TOKEN_SIZE);
+			SToken *s_token = (SToken *) malloc (sizeof (SToken));
+			strncpy (s_token->token, client->session_id->str, TOKEN_SIZE);
 
-			// connection_set_auth_data (
-			// 	connection_with_session_id, 
-			// 	s_token, sizeof (SToken), 
-			// 	NULL
-			// );
+			connection_set_auth_data (
+				connection_with_session_id, 
+				s_token, sizeof (SToken), 
+				NULL
+			);
 
 			if (!client_connect_and_start (client, connection_with_session_id)) {
 				client_log_msg (stdout, LOG_SUCCESS, LOG_NO_TYPE, "Connected to cerver!");
