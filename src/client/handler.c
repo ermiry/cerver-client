@@ -31,6 +31,11 @@ SockReceive *sock_receive_new (void) {
     if (sr) {
         sr->spare_packet = NULL;
         sr->missing_packet = 0;
+
+        sr->header = NULL;
+        sr->header_end = NULL;
+        sr->remaining_header = 0;
+        sr->complete_header = false;
     } 
 
     return sr;
@@ -462,8 +467,12 @@ static void client_receive_handle_buffer (Client *client, Connection *connection
                 else {
                     // handle part of a new header
                     // #ifdef CERVER_DEBUG
-                    // cerver_log_debug ("Handle part of a new header...");
+                    // client_log_debug ("Handle part of a new header...");
                     // #endif
+
+                    // printf ("buffer size: %ld\n", buffer_size);
+                    // printf ("buffer pos: %ld\n", buffer_pos);
+                    // printf ("remaining_buffer_size: %ld\n", remaining_buffer_size);
 
                     // copy the piece of possible header that was cut of between recv ()
                     sock_receive->header = malloc (sizeof (PacketHeader));
