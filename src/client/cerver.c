@@ -151,7 +151,7 @@ static Cerver *cerver_deserialize (SCerver *scerver) {
 
 }
 
-static void cerver_cehck_info_handle_auth (Cerver *cerver, Connection *connection) {
+static void cerver_check_info_handle_auth (Cerver *cerver, Connection *connection) {
 
     if (cerver && connection) {
         if (cerver->auth_required) {
@@ -286,7 +286,7 @@ static u8 cerver_check_info (Cerver *cerver, Connection *connection) {
         }
         #endif
 
-        cerver_cehck_info_handle_auth (cerver, connection);
+        cerver_check_info_handle_auth (cerver, connection);
 
         retval = 0;
     }
