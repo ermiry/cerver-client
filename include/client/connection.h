@@ -1,6 +1,8 @@
 #ifndef _CLIENT_CONNECTION_H_
 #define _CLIENT_CONNECTION_H_
 
+#include <stdbool.h>
+
 #include "client/types/types.h"
 #include "client/types/string.h"
 
@@ -81,6 +83,7 @@ struct _Connection {
     void *auth_data;                        // maybe auth credentials
     size_t auth_data_size;
     Action delete_auth_data;                // destroys the auth data when the connection ends
+    bool admin_auth;                        // attempt to connect as an admin
     struct _Packet *auth_packet;
 
     ConnectionStats *stats;
@@ -126,7 +129,9 @@ extern void connection_set_custom_receive (Connection *connection, Action custom
 // sets the connection auth data to send whenever the cerver requires authentication 
 // and a method to destroy it once the connection has ended,
 // if delete_auth_data is NULL, the auth data won't be deleted
-extern void connection_set_auth_data (Connection *connection, void *auth_data, size_t auth_data_size, Action delete_auth_data);
+extern void connection_set_auth_data (Connection *connection, 
+    void *auth_data, size_t auth_data_size, Action delete_auth_data,
+    bool admin_auth);
 
 // removes the connection auth data using the connection's delete_auth_data method
 // if not such method, the data won't be deleted

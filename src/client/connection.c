@@ -237,7 +237,9 @@ void connection_set_custom_receive (Connection *connection, Action custom_receiv
 // sets the connection auth data to send whenever the cerver requires authentication 
 // and a method to destroy it once the connection has ended,
 // if delete_auth_data is NULL, the auth data won't be deleted
-void connection_set_auth_data (Connection *connection, void *auth_data, size_t auth_data_size, Action delete_auth_data) {
+void connection_set_auth_data (Connection *connection, 
+    void *auth_data, size_t auth_data_size, Action delete_auth_data,
+    bool admin_auth) {
 
     if (connection && auth_data) {
         connection_remove_auth_data (connection);
@@ -245,6 +247,7 @@ void connection_set_auth_data (Connection *connection, void *auth_data, size_t a
         connection->auth_data = auth_data;
         connection->auth_data_size = auth_data_size;
         connection->delete_auth_data = delete_auth_data;
+        connection->admin_auth = admin_auth;
     } 
 
 }
@@ -282,7 +285,8 @@ u8 connection_generate_auth_packet (Connection *connection) {
     if (connection) {
         if (connection->auth_data) {
             connection->auth_packet = packet_generate_request (
-                AUTH_PACKET, AUTH_PACKET_TYPE_CLIENT_AUTH, 
+                AUTH_PACKET, 
+                connection->admin_auth ? AUTH_PACKET_TYPE_ADMIN_AUTH : AUTH_PACKET_TYPE_CLIENT_AUTH, 
                 connection->auth_data, connection->auth_data_size
             );
 
