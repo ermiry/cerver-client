@@ -163,7 +163,8 @@ static int cerver_connect (void) {
 			connection_set_auth_data (
 				connection, 
 				credentials, sizeof (Credentials), 
-				credentials_delete
+				credentials_delete,
+				false
 			);
 
 			if (!client_connect_and_start (client, connection)) {
@@ -208,7 +209,8 @@ static u8 cerver_connect_with_session_id (void) {
 			connection_set_auth_data (
 				connection_with_session_id, 
 				s_token, sizeof (SToken), 
-				NULL
+				NULL,
+				false
 			);
 
 			if (!client_connect_and_start (client, connection_with_session_id)) {

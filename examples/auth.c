@@ -152,7 +152,8 @@ static int cerver_connect (const char *ip, unsigned int port) {
 				connection_set_auth_data (
 					connection, 
 					credentials, sizeof (Credentials), 
-					credentials_delete
+					credentials_delete,
+					false
 				);
 
 				if (!client_connect_and_start (client, connection)) {
