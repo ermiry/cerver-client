@@ -337,7 +337,7 @@ int main (int argc, const char **argv) {
 
 			if (connection_with_session_id) {
 				if (connection_with_session_id->authenticated) {
-					// test_msg_send (connection_with_session_id);
+					test_msg_send (connection_with_session_id);
 				}
 			}
 
