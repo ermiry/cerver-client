@@ -13,7 +13,7 @@
 #include "client/utils/utils.h"
 #include "client/utils/log.h"
 
-#pragma region cerver stats
+#pragma region stats
 
 static CerverStats *cerver_stats_new (void) {
 
@@ -43,11 +43,11 @@ void cerver_stats_print (Cerver *cerver) {
 
     if (cerver) {
         if (cerver->stats) {
-            printf ("\nCerver's %s stats: ", cerver->name->str);
-            printf ("\nThreshold time:            %ld\n", cerver->stats->threshold_time);
+            printf ("\nCerver's %s stats: \n", cerver->name->str);
+            printf ("Threshold time:                %ld\n", cerver->stats->threshold_time);
 
             if (cerver->auth_required) {
-                printf ("\nClient packets received:       %ld\n", cerver->stats->client_n_packets_received);
+                printf ("Client packets received:       %ld\n", cerver->stats->client_n_packets_received);
                 printf ("Client receives done:          %ld\n", cerver->stats->client_receives_done);
                 printf ("Client bytes received:         %ld\n\n", cerver->stats->client_bytes_received);
 
@@ -56,16 +56,20 @@ void cerver_stats_print (Cerver *cerver) {
                 printf ("On hold bytes received:         %ld\n\n", cerver->stats->on_hold_bytes_received);
             }
 
+            printf ("\n");
             printf ("Total packets received:        %ld\n", cerver->stats->total_n_packets_received);
             printf ("Total receives done:           %ld\n", cerver->stats->total_n_receives_done);
             printf ("Total bytes received:          %ld\n\n", cerver->stats->total_bytes_received);
 
+            printf ("\n");
             printf ("N packets sent:                %ld\n", cerver->stats->n_packets_sent);
             printf ("Total bytes sent:              %ld\n", cerver->stats->total_bytes_sent);
 
-            printf ("\nCurrent active client connections:         %ld\n", cerver->stats->current_active_client_connections);
+            printf ("\n");
+            printf ("Current active client connections:         %ld\n", cerver->stats->current_active_client_connections);
             printf ("Current connected clients:                 %ld\n", cerver->stats->current_n_connected_clients);
             printf ("Current on hold connections:               %ld\n", cerver->stats->current_n_hold_connections);
+            printf ("Total on hold connections:                 %ld\n", cerver->stats->total_on_hold_connections);
             printf ("Total clients:                             %ld\n", cerver->stats->total_n_clients);
             printf ("Unique clients:                            %ld\n", cerver->stats->unique_clients);
             printf ("Total client connections:                  %ld\n", cerver->stats->total_client_connections);
@@ -81,14 +85,14 @@ void cerver_stats_print (Cerver *cerver) {
             char *status = c_string_create ("Cerver %s does not have a reference to cerver stats!",
                 cerver->name->str);
             if (status) {
-                client_log_msg (stderr, LOG_ERROR, LOG_ERROR, status);
+                client_log_msg (stderr, LOG_ERROR, LOG_CERVER, status);
                 free (status);
             }
         }
     }
 
     else {
-        client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, 
+        client_log_msg (stderr, LOG_WARNING, LOG_CERVER, 
             "Cant print stats of a NULL cerver!");
     }
 
@@ -102,9 +106,7 @@ Cerver *cerver_new (void) {
     if (cerver) {
         memset (cerver, 0, sizeof (Cerver));
 
-        cerver->ip = NULL;
         cerver->name = NULL;
-        cerver->token = NULL;
         cerver->stats = NULL;
     }
 
@@ -118,7 +120,6 @@ void cerver_delete (void *ptr) {
         Cerver *cerver = (Cerver *) ptr;
 
         str_delete (cerver->name);
-        str_delete (cerver->ip);
 
         cerver_stats_delete (cerver->stats);
 
@@ -319,7 +320,7 @@ void cerver_packet_handler (Packet *packet) {
                     client_log_msg (stdout, LOG_WARNING, LOG_NO_TYPE, "---> Server teardown! <---");
                     #endif
                     client_got_disconnected (packet->client);
-                    client_event_trigger (packet->client, NULL, CLIENT_EVENT_DISCONNECTED);
+                    client_event_trigger (CLIENT_EVENT_DISCONNECTED, packet->client, NULL);
                     break;
 
                 case CERVER_INFO_STATS:
