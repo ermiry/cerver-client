@@ -141,7 +141,7 @@ static int cerver_connect (void) {
 
 		client_error_register (
 			client,
-			CLIENT_ERR_FAILED_AUTH,
+			CLIENT_ERROR_FAILED_AUTH,
 			client_error_failed_auth, NULL, NULL,
 			false, false
 		);

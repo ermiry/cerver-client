@@ -72,7 +72,7 @@ static void client_client_packet_handler (Packet *packet) {
                 // the cerver has disconneted us
                 case CLIENT_DISCONNET:
                     client_got_disconnected (packet->client);
-                    client_event_trigger (packet->client, NULL, CLIENT_EVENT_DISCONNECTED);
+                    client_event_trigger (CLIENT_EVENT_DISCONNECTED, packet->client, NULL);
                     break;
 
                 default: 
@@ -129,7 +129,7 @@ static void client_auth_success_handler (Packet *packet) {
             }
         }
 
-        client_event_trigger (packet->client, packet->connection, CLIENT_EVENT_SUCCESS_AUTH);
+        client_event_trigger (CLIENT_EVENT_SUCCESS_AUTH, packet->client, packet->connection);
     }
 
 }
