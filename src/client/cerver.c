@@ -13,6 +13,8 @@
 #include "client/utils/utils.h"
 #include "client/utils/log.h"
 
+static Cerver *cerver_deserialize (SCerver *scerver);
+
 #pragma region stats
 
 static CerverStats *cerver_stats_new (void) {
@@ -100,6 +102,8 @@ void cerver_stats_print (Cerver *cerver) {
 
 #pragma endregion
 
+#pragma region cerver
+
 Cerver *cerver_new (void) {
 
     Cerver *cerver = (Cerver *) malloc (sizeof (Cerver));
@@ -107,6 +111,8 @@ Cerver *cerver_new (void) {
         memset (cerver, 0, sizeof (Cerver));
 
         cerver->name = NULL;
+        cerver->welcome = NULL;
+
         cerver->stats = NULL;
     }
 
@@ -120,35 +126,12 @@ void cerver_delete (void *ptr) {
         Cerver *cerver = (Cerver *) ptr;
 
         str_delete (cerver->name);
+        str_delete (cerver->welcome);
 
         cerver_stats_delete (cerver->stats);
 
         free (cerver);
     }
-
-}
-
-static Cerver *cerver_deserialize (SCerver *scerver) {
-    
-    Cerver *cerver = NULL;
-
-    if (scerver) {
-        cerver = cerver_new ();
-        if (cerver) {
-            cerver->use_ipv6 = scerver->use_ipv6;
-            cerver->protocol = scerver->protocol;
-            cerver->port = scerver->port;
-
-            cerver->name = str_new (scerver->name);
-            cerver->type = scerver->type;
-            cerver->auth_required = scerver->auth_required;
-            cerver->uses_sessions = scerver->uses_sessions;
-
-            cerver->stats = cerver_stats_new ();
-        }
-    }
-
-    return cerver;
 
 }
 
@@ -245,6 +228,10 @@ static u8 cerver_check_info (Cerver *cerver, Connection *connection) {
             client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, s);
             free (s);
         }
+
+        if (cerver->welcome) {
+            printf ("%s\n", cerver->welcome->str);
+        }
         
         switch (cerver->protocol) {
             case PROTOCOL_TCP: 
@@ -296,6 +283,10 @@ static u8 cerver_check_info (Cerver *cerver, Connection *connection) {
 
 }
 
+#pragma endregion
+
+#pragma region handler
+
 // handles cerver type packets
 void cerver_packet_handler (Packet *packet) {
 
@@ -343,3 +334,36 @@ void cerver_packet_handler (Packet *packet) {
     }
 
 }
+
+#pragma endregion
+
+#pragma region serialization
+
+static Cerver *cerver_deserialize (SCerver *scerver) {
+    
+    Cerver *cerver = NULL;
+
+    if (scerver) {
+        cerver = cerver_new ();
+        if (cerver) {
+            cerver->type = scerver->type;
+
+            cerver->name = str_new (scerver->name);
+            if (strlen (scerver->welcome)) cerver->welcome = str_new (scerver->welcome);
+
+            cerver->use_ipv6 = scerver->use_ipv6;
+            cerver->protocol = scerver->protocol;
+            cerver->port = scerver->port;
+
+            cerver->auth_required = scerver->auth_required;
+            cerver->uses_sessions = scerver->uses_sessions;
+
+            cerver->stats = cerver_stats_new ();
+        }
+    }
+
+    return cerver;
+
+}
+
+#pragma endregion

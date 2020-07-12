@@ -65,7 +65,9 @@ extern void cerver_stats_print (struct _Cerver *cerver);
 struct _Cerver {
     
     CerverType type;
+
     String *name;
+    String *welcome;
 
     bool use_ipv6;
     Protocol protocol;
@@ -95,17 +97,22 @@ extern void cerver_packet_handler (struct _Packet *packet);
 
 #define S_CERVER_NAME_LENGTH            64
 
+#define S_CERVER_NAME_LENGTH                64
+#define S_CERVER_WELCOME_LENGTH             128
+
 // serialized cerver structure
 typedef struct SCerver {
+
+    CerverType type;
+
+    char name[S_CERVER_NAME_LENGTH];
+    char welcome[S_CERVER_WELCOME_LENGTH];
 
     bool use_ipv6;  
     Protocol protocol;
     u16 port; 
 
-    char name[S_CERVER_NAME_LENGTH];
-    CerverType type;
     bool auth_required;
-
     bool uses_sessions;
 
 } SCerver;
