@@ -7,6 +7,8 @@
 
 #include "client/version.h"
 
+#include "client/types/string.h"
+
 #include "client/client.h"
 #include "client/packets.h"
 
@@ -152,23 +154,35 @@ static void app_handler (void *packet_ptr) {
 
 #pragma region request
 
-static int test_msg_send (void) {
+static unsigned int send_packet (Packet *packet) {
 
-	int retval = 1;
+	unsigned int retval = 1;
+
+	if (packet) {
+		packet_set_network_values (packet, client, connection);
+		size_t sent = 0;
+		if (packet_send (packet, 0, &sent, false)) {
+			client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send packet!");
+		}
+
+		else {
+			printf ("Sent to cerver: %ld\n", sent);
+			retval = 0;
+		}
+	}
+
+	return retval;
+
+}
+
+static unsigned int test_msg_send (void) {
+
+	unsigned int retval = 1;
 
 	if ((client->running) && (connection->connected)) {
 		Packet *packet = packet_generate_request (APP_PACKET, TEST_MSG, NULL, 0);
 		if (packet) {
-			packet_set_network_values (packet, client, connection);
-			size_t sent = 0;
-			if (packet_send (packet, 0, &sent, false)) {
-				client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send test to cerver");
-			}
-
-			else {
-				printf ("Test sent to cerver: %ld\n", sent);
-				retval = 0;
-			} 
+			retval = send_packet (packet);
 
 			packet_delete (packet);
 		}
@@ -178,9 +192,51 @@ static int test_msg_send (void) {
 
 }
 
-static int app_msg_send_generate_request (const char *message) {
+static unsigned int app_msg_send_generate_manual (const char *message) {
 
-	int retval = 1;
+	unsigned int retval = 1;
+
+	if (message) {
+		Packet *req = packet_new ();
+		if (req) {
+			size_t packet_len = sizeof (PacketHeader) + sizeof (RequestData) + sizeof (AppData);
+			req->packet = malloc (packet_len);
+			req->packet_size = packet_len;
+
+			char *end = (char *) req->packet;
+			PacketHeader *header = (PacketHeader *) end;
+			header->protocol_id = packets_get_protocol_id ();
+			header->protocol_version = packets_get_protocol_version ();
+			header->packet_type = APP_PACKET;
+			header->packet_size = packet_len;
+
+			end += sizeof (PacketHeader);
+			RequestData *req_data = (RequestData *) end;
+			req_data->type = APP_MSG;
+
+			end += sizeof (RequestData);
+			AppData *app_data = (AppData *) end;
+			memset (app_data, 0, sizeof (AppData));
+			time (&app_data->timestamp);
+
+			if (message) {
+				app_data->message_len = strlen (message);
+				strncpy (app_data->message, message, APP_MESSAGE_LEN);
+			}
+
+			send_packet (req);
+
+			packet_delete (req);
+		}
+	}
+
+	return retval;
+
+}
+
+static unsigned int app_msg_send_generate_request (const char *message) {
+
+	unsigned int retval = 1;
 
 	if ((client->running) && (connection->connected)) {
 		AppData *app_data = app_data_create (message);
@@ -191,16 +247,7 @@ static int app_msg_send_generate_request (const char *message) {
 			);
 
 			if (packet) {
-				packet_set_network_values (packet, client, connection);
-				size_t sent = 0;
-				if (packet_send (packet, 0, &sent, false)) {
-					client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "app_msg_send_generate_request () - failed to send!");
-				}
-
-				else {
-					printf ("app_msg_send_generate_request () - sent to cerver: %ld\n", sent);
-					retval = 0;
-				} 
+				retval = send_packet (packet);
 
 				packet_delete (packet);
 			}
@@ -243,15 +290,27 @@ int main (int argc, const char **argv) {
 	client_log_debug ("Packets Example");
 	printf ("\n");
 
-	if (!cerver_connect ("127.0.0.1", 8007)) {
-		while (1) {
-			// send a test message every second
-			test_msg_send ();
-			app_msg_send_generate_request ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.");
+	String *message = str_new ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.");
 
-			sleep (1);
-		}
+	if (!cerver_connect ("127.0.0.1", 8007)) {
+		sleep (1);
+
+		printf ("test_msg_send ()\n");
+		test_msg_send ();
+		printf ("\n");
+
+		printf ("app_msg_send_generate_manual ()\n");
+		app_msg_send_generate_manual (message->str);
+		printf ("\n");
+
+		printf ("app_msg_send_generate_request ()\n");
+		app_msg_send_generate_request (message->str);
+		printf ("\n");
+
+		cerver_disconnect ();
 	}
+
+	str_delete (message);
 
 	return 0;
 
