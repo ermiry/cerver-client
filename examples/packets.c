@@ -264,6 +264,57 @@ static unsigned int app_msg_send_generate_request (const char *message) {
 
 }
 
+static unsigned int app_msg_send_generate_split (const char *message) {
+
+	unsigned int retval = 1;
+
+	if (message) {
+		Packet *packet = packet_new ();
+		if (packet) {	
+			size_t data_size = sizeof (RequestData) + sizeof (AppData);
+			size_t packet_len = sizeof (PacketHeader) + data_size;
+
+			packet->header = packet_header_new ();
+			packet->header->protocol_id = packets_get_protocol_id ();
+			packet->header->protocol_version = packets_get_protocol_version ();
+			packet->header->packet_type = APP_PACKET;
+			packet->header->packet_size = packet_len;
+
+			packet->data = malloc (data_size);
+			packet->data_size = data_size;
+			char *end = packet->data;
+			RequestData *req_data = (RequestData *) end;
+			req_data->type = APP_MSG;
+
+			end += sizeof (RequestData);
+			AppData *app_data = (AppData *) end;
+			memset (app_data, 0, sizeof (AppData));
+			time (&app_data->timestamp);
+
+			if (message) {
+				app_data->message_len = strlen (message);
+				strncpy (app_data->message, message, APP_MESSAGE_LEN);
+			}
+
+			packet_set_network_values (packet, client, connection);
+			size_t sent = 0;
+			if (packet_send_split (packet, 0, &sent)) {
+				client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send packet!");
+			}
+
+			else {
+				printf ("Sent to cerver: %ld\n", sent);
+				retval = 0;
+			}
+
+			packet_delete (packet);
+		}
+	}
+
+	return retval;
+
+}
+
 #pragma endregion
 
 #pragma region main
@@ -305,6 +356,10 @@ int main (int argc, const char **argv) {
 
 		printf ("app_msg_send_generate_request ()\n");
 		app_msg_send_generate_request (message->str);
+		printf ("\n");
+
+		printf ("app_msg_send_generate_split ()\n");
+		app_msg_send_generate_split (message->str);
 		printf ("\n");
 
 		cerver_disconnect ();
