@@ -274,9 +274,9 @@ int main (int argc, const char **argv) {
 	if (!cerver_connect ("127.0.0.1", 8007)) {
 		while (1) {
 			// send a test message every second
-			// if (connection->authenticated) {
+			if (connection->authenticated) {
 				test_msg_send ();
-			// }
+			}
 
 			sleep (1);
 		}
