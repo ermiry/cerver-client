@@ -216,6 +216,7 @@ struct _Packet {
     // serilized data
     size_t data_size;
     void *data;
+    char *data_ptr;
     char *data_end;
     bool data_ref;
 
