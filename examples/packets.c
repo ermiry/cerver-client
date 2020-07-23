@@ -23,10 +23,17 @@ static void app_handler (void *packet_ptr);
 
 #define APP_MESSAGE_LEN			512
 
+#define MESSAGE_0				"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+#define MESSAGE_1				"Sagittis nisl rhoncus mattis rhoncus urna. Vitae congue eu consequat ac felis donec et odio. "
+#define MESSAGE_2				"Commodo sed egestas egestas fringilla phasellus. Tellus id interdum velit laoreet id donec ultrices tincidunt. Porttitor massa id neque aliquam vestibulum morbi blandit cursus."
+#define MESSAGE_3				"Malesuada pellentesque elit eget gravida cum. Pharetra vel turpis nunc eget lorem dolor sed viverra."
+#define MESSAGE_4				"Justo donec enim diam vulputate. Dui nunc mattis enim ut. Quis vel eros donec ac odio tempor. Lorem ipsum dolor sit amet consectetur."
+
 typedef enum AppRequest {
 
 	TEST_MSG		= 0,
 	APP_MSG			= 1,
+	MULTI_MSG		= 2,
 
 } AppRequest;
 
@@ -148,6 +155,9 @@ static void app_handler (void *packet_ptr) {
 #pragma endregion
 
 #pragma region request
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
 
 static unsigned int send_packet (Packet *packet) {
 
@@ -304,6 +314,88 @@ static unsigned int app_msg_send_generate_split (const char *message) {
 
 }
 
+static unsigned int app_msg_send_generate_pieces (void) {
+
+	unsigned int retval = 1;
+
+	Packet *packet = packet_new ();
+	if (packet) {
+		u32 n_messages = 5;
+		size_t data_size = sizeof (AppData) * n_messages;
+		size_t packet_len = sizeof (PacketHeader) + data_size;
+
+		packet->header = packet_header_new ();
+		packet->header->packet_type = APP_PACKET;
+		packet->header->packet_size = packet_len;
+
+		packet->header->request_type = MULTI_MSG;
+
+		void **messages = calloc (n_messages, sizeof (AppData));
+		size_t *sizes = (size_t *) calloc (n_messages, sizeof (size_t));
+		if (messages && sizes) {
+			for (u32 i = 0; i < n_messages; i++) {
+				messages[i] = malloc (sizeof (AppData));
+				sizes[i] = sizeof (AppData);
+			}
+
+			AppData *app_data = NULL;
+
+			app_data = (AppData *) messages[0];
+			memset (app_data, 0, sizeof (AppData));
+			time (&app_data->timestamp);
+			app_data->message_len = strlen (MESSAGE_0);
+			strncpy (app_data->message, MESSAGE_0, APP_MESSAGE_LEN);
+
+			app_data = (AppData *) messages[1];
+			memset (app_data, 0, sizeof (AppData));
+			time (&app_data->timestamp);
+			app_data->message_len = strlen (MESSAGE_1);
+			strncpy (app_data->message, MESSAGE_1, APP_MESSAGE_LEN);
+
+			app_data = (AppData *) messages[2];
+			memset (app_data, 0, sizeof (AppData));
+			time (&app_data->timestamp);
+			app_data->message_len = strlen (MESSAGE_2);
+			strncpy (app_data->message, MESSAGE_2, APP_MESSAGE_LEN);
+
+			app_data = (AppData *) messages[3];
+			memset (app_data, 0, sizeof (AppData));
+			time (&app_data->timestamp);
+			app_data->message_len = strlen (MESSAGE_3);
+			strncpy (app_data->message, MESSAGE_3, APP_MESSAGE_LEN);
+
+			app_data = (AppData *) messages[4];
+			memset (app_data, 0, sizeof (AppData));
+			time (&app_data->timestamp);
+			app_data->message_len = strlen (MESSAGE_4);
+			strncpy (app_data->message, MESSAGE_4, APP_MESSAGE_LEN);
+
+			packet_set_network_values (packet, client, connection);
+			size_t sent = 0;
+			if (packet_send_pieces (packet, messages, sizes, n_messages, 0, &sent)) {
+				client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send packet!");
+			}
+
+			else {
+				printf ("Sent to cerver: %ld / %ld\n", sent, packet_len);
+				retval = 0;
+			}
+
+			for (u32 i = 0; i < n_messages; i++) free (messages[i]);
+			free (messages);
+
+			free (sizes);
+		}
+
+		packet_delete (packet);
+	}
+
+	return retval;
+
+}
+
+#pragma GCC diagnostic pop
+
 #pragma endregion
 
 #pragma region main
@@ -335,21 +427,31 @@ int main (int argc, const char **argv) {
 	if (!cerver_connect ("127.0.0.1", 8007)) {
 		sleep (1);
 
-		printf ("test_msg_send ()\n");
-		test_msg_send ();
-		printf ("\n");
+		// while (1) {
+			printf ("test_msg_send ()\n");
+			test_msg_send ();
+			printf ("\n");
 
-		printf ("app_msg_send_generate_manual ()\n");
-		app_msg_send_generate_manual (message->str);
-		printf ("\n");
+			printf ("app_msg_send_generate_manual ()\n");
+			app_msg_send_generate_manual (message->str);
+			printf ("\n");
 
-		printf ("app_msg_send_generate_request ()\n");
-		app_msg_send_generate_request (message->str);
-		printf ("\n");
+			printf ("app_msg_send_generate_request ()\n");
+			app_msg_send_generate_request (message->str);
+			printf ("\n");
 
-		printf ("app_msg_send_generate_split ()\n");
-		app_msg_send_generate_split (message->str);
-		printf ("\n");
+			printf ("app_msg_send_generate_split ()\n");
+			app_msg_send_generate_split (message->str);
+			printf ("\n");
+
+			printf ("app_msg_send_generate_pieces ()\n");
+			app_msg_send_generate_pieces ();
+			printf ("\n");
+
+			sleep (1);
+		// }
+
+		sleep (1);
 
 		cerver_disconnect ();
 	}
