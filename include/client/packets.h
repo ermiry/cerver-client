@@ -104,11 +104,13 @@ struct _PacketHeader {
 
 	ProtocolID protocol_id;
 	ProtocolVersion protocol_version;
+
 	PacketType packet_type;
 	size_t packet_size;
 
-	// 11/05/2020 -- select which app packet handler to use
 	u8 handler_id;
+	
+	u32 request_type;
 
 };
 
@@ -182,14 +184,6 @@ typedef enum GamePacketType {
 	GAME_SEND_MSG               = 8,
 
 } GamePacketType;
-
-struct _RequestData {
-
-	u32 type;
-
-};
-
-typedef struct _RequestData RequestData;
 
 struct _Packet {
 
