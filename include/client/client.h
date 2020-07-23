@@ -121,6 +121,9 @@ extern int client_connection_register (Client *client, struct _Connection *conne
 // returns 0 on success, 1 on error or if the connection does not belong to the client
 extern int client_connection_unregister (Client *client, struct _Connection *connection);
 
+// performs a receive in the connection's socket to get a complete packet & handle it
+extern void client_connection_get_next_packet (Client *client, struct _Connection *connection);
+
 #pragma endregion
 
 #pragma region connect

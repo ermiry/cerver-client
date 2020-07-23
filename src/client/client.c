@@ -379,6 +379,18 @@ int client_connection_unregister (Client *client, Connection *connection) {
 
 }
 
+// performs a receive in the connection's socket to get a complete packet & handle it
+void client_connection_get_next_packet (Client *client, Connection *connection) {
+
+    if (client && connection) {
+        connection->full_packet = false;
+        while (!connection->full_packet) {
+            client_receive (client, connection);
+        }
+    }
+
+}
+
 #pragma endregion
 
 #pragma region connect
@@ -498,10 +510,7 @@ unsigned int client_request_to_cerver (Client *client, Connection *connection, P
             // printf ("Request to cerver: %ld\n", sent);
 
             // receive the data directly
-            connection->full_packet = false;
-            while (!connection->full_packet) {
-                client_receive (client, connection);
-            }
+            client_connection_get_next_packet (client, connection);
 
             retval = 0;
         }
