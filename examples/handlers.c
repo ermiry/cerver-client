@@ -86,19 +86,15 @@ static void my_app_handler (void *data) {
 
 	if (data) {
 		Packet *packet = (Packet *) data;
-		if (packet->data_size >= sizeof (RequestData)) {
-			RequestData *req = (RequestData *) (packet->data);
+		switch (packet->header->request_type) {
+            case TEST_MSG: 
+                client_log_debug ("Got a APP_PACKET test!");
+                break;
 
-			switch (req->type) {
-				case TEST_MSG: 
-					client_log_debug ("Got a APP_PACKET test!");
-					break;
-
-				default: 
-					client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown APP_PACKET request.");
-					break;
-			}
-		}
+            default: 
+                client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown APP_PACKET request.");
+                break;
+        }
 	}
 
 }
@@ -107,19 +103,15 @@ static void my_app_error_handler (void *data) {
 
 	if (data) {
 		Packet *packet = (Packet *) data;
-		if (packet->data_size >= sizeof (RequestData)) {
-			RequestData *req = (RequestData *) (packet->data);
+		switch (packet->header->request_type) {
+            case TEST_MSG: 
+                client_log_debug ("Got a APP_ERROR_PACKET test!");
+                break;
 
-			switch (req->type) {
-				case TEST_MSG: 
-					client_log_debug ("Got a APP_ERROR_PACKET test!");
-					break;
-
-				default: 
-					client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown APP_ERROR_PACKET request.");
-					break;
-			}
-		}
+            default: 
+                client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown APP_ERROR_PACKET request.");
+                break;
+        }
 	}
 
 }
@@ -128,19 +120,15 @@ static void my_custom_handler (void *data) {
 
 	if (data) {
 		Packet *packet = (Packet *) data;
-		if (packet->data_size >= sizeof (RequestData)) {
-			RequestData *req = (RequestData *) (packet->data);
+		switch (packet->header->request_type) {
+            case TEST_MSG: 
+                client_log_debug ("Got a CUSTOM_PACKET test!");
+                break;
 
-			switch (req->type) {
-				case TEST_MSG: 
-					client_log_debug ("Got a CUSTOM_PACKET test!");
-					break;
-
-				default: 
-					client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown CUSTOM_PACKET request.");
-					break;
-			}
-		}
+            default: 
+                client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown CUSTOM_PACKET request.");
+                break;
+        }
 	}
 
 }

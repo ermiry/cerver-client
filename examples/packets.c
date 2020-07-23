@@ -133,18 +133,13 @@ static void app_handler (void *packet_ptr) {
 
 	if (packet_ptr) {
 		Packet *packet = (Packet *) packet_ptr;
-		if (packet) {
-			if (packet->data_size >= sizeof (RequestData)) {
-				RequestData *req = (RequestData *) (packet->data);
+		
+		switch (packet->header->request_type) {
+			case TEST_MSG: client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Got a test message from cerver!"); break;
 
-				switch (req->type) {
-					case TEST_MSG: client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Got a test message from cerver!"); break;
-
-					default: 
-						client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown app request.");
-						break;
-				}
-			}
+			default: 
+				client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown app request.");
+				break;
 		}
 	}
 
@@ -199,7 +194,7 @@ static unsigned int app_msg_send_generate_manual (const char *message) {
 	if (message) {
 		Packet *req = packet_new ();
 		if (req) {
-			size_t packet_len = sizeof (PacketHeader) + sizeof (RequestData) + sizeof (AppData);
+			size_t packet_len = sizeof (PacketHeader) + sizeof (AppData);
 			req->packet = malloc (packet_len);
 			req->packet_size = packet_len;
 
@@ -210,11 +205,10 @@ static unsigned int app_msg_send_generate_manual (const char *message) {
 			header->packet_type = APP_PACKET;
 			header->packet_size = packet_len;
 
-			end += sizeof (PacketHeader);
-			RequestData *req_data = (RequestData *) end;
-			req_data->type = APP_MSG;
+			header->request_type = APP_MSG;
 
-			end += sizeof (RequestData);
+			end += sizeof (PacketHeader);
+
 			AppData *app_data = (AppData *) end;
 			memset (app_data, 0, sizeof (AppData));
 			time (&app_data->timestamp);
@@ -271,7 +265,7 @@ static unsigned int app_msg_send_generate_split (const char *message) {
 	if (message) {
 		Packet *packet = packet_new ();
 		if (packet) {	
-			size_t data_size = sizeof (RequestData) + sizeof (AppData);
+			size_t data_size = sizeof (AppData);
 			size_t packet_len = sizeof (PacketHeader) + data_size;
 
 			packet->header = packet_header_new ();
@@ -280,13 +274,12 @@ static unsigned int app_msg_send_generate_split (const char *message) {
 			packet->header->packet_type = APP_PACKET;
 			packet->header->packet_size = packet_len;
 
+			packet->header->request_type = APP_MSG;
+
 			packet->data = malloc (data_size);
 			packet->data_size = data_size;
+			
 			char *end = packet->data;
-			RequestData *req_data = (RequestData *) end;
-			req_data->type = APP_MSG;
-
-			end += sizeof (RequestData);
 			AppData *app_data = (AppData *) end;
 			memset (app_data, 0, sizeof (AppData));
 			time (&app_data->timestamp);

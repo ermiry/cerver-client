@@ -255,18 +255,13 @@ static void app_handler (void *packet_ptr) {
 
 	if (packet_ptr) {
 		Packet *packet = (Packet *) packet_ptr;
-		if (packet) {
-			if (packet->data_size >= sizeof (RequestData)) {
-				RequestData *req = (RequestData *) (packet->data);
 
-				switch (req->type) {
-					case TEST_MSG: client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Got a test message from cerver!"); break;
+		switch (packet->header->request_type) {
+			case TEST_MSG: client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Got a test message from cerver!"); break;
 
-					default: 
-						client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown app request.");
-						break;
-				}
-			}
+			default: 
+				client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown app request.");
+				break;
 		}
 	}
 

@@ -92,26 +92,20 @@ static void app_handler (void *packet_ptr) {
 
 	if (packet_ptr) {
         Packet *packet = (Packet *) packet_ptr;
-        if (packet) {
-            if (packet->data_size >= sizeof (RequestData)) {
-                RequestData *req = (RequestData *) (packet->data);
+        
+        switch (packet->header->request_type) {
+            case TEST_MSG: client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Got a test message from cerver!"); break;
 
-                switch (req->type) {
-                    case TEST_MSG: client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Got a test message from cerver!"); break;
+            case GET_MSG: {
+                char *end = (char *) packet->data;
 
-                    case GET_MSG: {
-                        char *end = (char *) packet->data;
-                        end += sizeof (RequestData);
+                AppMessage *app_message = (AppMessage *) end;
+                printf ("%s - %d\n", app_message->message, app_message->len);
+            } break;
 
-                        AppMessage *app_message = (AppMessage *) end;
-                        printf ("%s - %d\n", app_message->message, app_message->len);
-                    } break;
-
-                    default: 
-                        client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown app request.");
-                        break;
-                }
-            }
+            default: 
+                client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown app request.");
+                break;
         }
     }
 
@@ -128,7 +122,7 @@ static int request_message (void) {
     // manually create a packet to send
     Packet *packet = packet_new ();
     if (packet) {
-        size_t packet_len = sizeof (PacketHeader) + sizeof (RequestData);
+        size_t packet_len = sizeof (PacketHeader);
         packet->packet = malloc (packet_len);
         packet->packet_size = packet_len;
 
@@ -140,9 +134,7 @@ static int request_message (void) {
         header->packet_size = packet_len;
         header->handler_id = 0;
 
-        end += sizeof (PacketHeader);
-        RequestData *req_data = (RequestData *) end;
-        req_data->type = GET_MSG;
+        header->request_type = GET_MSG;
 
         printf ("Requesting to cerver...\n");
         if (client_request_to_cerver (client, connection, packet)) {
