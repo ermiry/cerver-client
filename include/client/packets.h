@@ -47,6 +47,27 @@ extern void packets_set_protocol_version (ProtocolVersion version);
 
 #pragma endregion
 
+#pragma region version
+
+struct _PacketVersion {
+
+	ProtocolID protocol_id;
+	ProtocolVersion protocol_version;
+
+};
+
+typedef struct _PacketVersion PacketVersion;
+
+extern PacketVersion *packet_version_new (void);
+
+extern void packet_version_delete (PacketVersion *version);
+
+extern PacketVersion *packet_version_create (void);
+
+extern void packet_version_print (PacketVersion *version);
+
+#pragma endregion
+
 #pragma region types
 
 // these indicate what type of packet we are sending/recieving
@@ -101,9 +122,6 @@ extern void packets_per_type_print (PacketsPerType *packets_per_type);
 #pragma region header
 
 struct _PacketHeader {
-
-	ProtocolID protocol_id;
-	ProtocolVersion protocol_version;
 
 	PacketType packet_type;
 	size_t packet_size;
