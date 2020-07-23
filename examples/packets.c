@@ -200,8 +200,6 @@ static unsigned int app_msg_send_generate_manual (const char *message) {
 
 			char *end = (char *) req->packet;
 			PacketHeader *header = (PacketHeader *) end;
-			header->protocol_id = packets_get_protocol_id ();
-			header->protocol_version = packets_get_protocol_version ();
 			header->packet_type = APP_PACKET;
 			header->packet_size = packet_len;
 
@@ -269,8 +267,6 @@ static unsigned int app_msg_send_generate_split (const char *message) {
 			size_t packet_len = sizeof (PacketHeader) + data_size;
 
 			packet->header = packet_header_new ();
-			packet->header->protocol_id = packets_get_protocol_id ();
-			packet->header->protocol_version = packets_get_protocol_version ();
 			packet->header->packet_type = APP_PACKET;
 			packet->header->packet_size = packet_len;
 
