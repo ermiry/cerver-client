@@ -27,6 +27,7 @@ typedef enum ClientEventType {
     CLIENT_EVENT_CERVER_STATS,         // received cerver stats
     CLIENT_EVENT_CERVER_GAME_STATS,    // received cerver game stats
 
+    CLIENT_EVENT_AUTH_SENT,            // auth data has been sent to the cerver
     CLIENT_EVENT_SUCCESS_AUTH,         // auth with cerver has been successfull
     CLIENT_EVENT_MAX_AUTH_TRIES,       // maxed out attempts to authenticate to cerver, so try again
 

@@ -72,6 +72,25 @@ static void client_event_connection_close (void *client_event_data_ptr) {
 
 }
 
+static void client_event_auth_sent (void *client_event_data_ptr) {
+
+	if (client_event_data_ptr) {
+		ClientEventData *client_event_data = (ClientEventData *) client_event_data_ptr;
+
+		if (client_event_data->connection) {
+			char *status = c_string_create ("client_event_auth_sent () - sent connection <%s> auth data!",
+				client_event_data->connection->name->str);
+			if (status) {
+				client_log_debug (status);
+				free (status);
+			}
+		}
+
+		client_event_data_delete (client_event_data);
+	}
+
+}
+
 static void client_error_failed_auth (void *client_error_data_ptr) {
 
 	if (client_error_data_ptr) {
@@ -126,6 +145,13 @@ static int cerver_connect (const char *ip, unsigned int port) {
 				CLIENT_EVENT_CONNECTION_CLOSE, 
 				client_event_connection_close, NULL, NULL, 
 				false, false
+			);
+
+			client_event_register (
+				client,
+				CLIENT_EVENT_AUTH_SENT,
+				client_event_auth_sent, NULL, NULL,
+				true, false
 			);
 
 			client_error_register (

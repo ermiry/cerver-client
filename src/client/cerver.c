@@ -135,7 +135,7 @@ void cerver_delete (void *ptr) {
 
 }
 
-static void cerver_check_info_handle_auth (Cerver *cerver, Connection *connection) {
+static void cerver_check_info_handle_auth (Cerver *cerver, Client *client, Connection *connection) {
 
     if (cerver && connection) {
         if (cerver->auth_required) {
@@ -177,6 +177,8 @@ static void cerver_check_info_handle_auth (Cerver *cerver, Connection *connectio
                             client_log_success (s);
                             free (s);
                         }
+
+                        client_event_trigger (CLIENT_EVENT_AUTH_SENT, client, connection);
                     }
 
                     else {
@@ -215,7 +217,7 @@ static void cerver_check_info_handle_auth (Cerver *cerver, Connection *connectio
 
 // compare the info the server sent us with the one we expected 
 // and ajust our connection values if necessary
-static u8 cerver_check_info (Cerver *cerver, Connection *connection) {
+static u8 cerver_check_info (Cerver *cerver, Client *client, Connection *connection) {
 
     u8 retval = 1;
 
@@ -274,7 +276,7 @@ static u8 cerver_check_info (Cerver *cerver, Connection *connection) {
         }
         #endif
 
-        cerver_check_info_handle_auth (cerver, connection);
+        cerver_check_info_handle_auth (cerver, client, connection);
 
         retval = 0;
     }
@@ -296,7 +298,7 @@ static void cerver_packet_handle_info (Packet *packet) {
         client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Received a cerver info packet.");
         #endif
         Cerver *cerver = cerver_deserialize ((SCerver *) end);
-        if (cerver_check_info (cerver, packet->connection))
+        if (cerver_check_info (cerver, packet->client, packet->connection))
             client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to correctly check cerver info!");
     }
 
