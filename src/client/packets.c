@@ -82,15 +82,19 @@ PacketHeader *packet_header_new (void) {
 
 void packet_header_delete (PacketHeader *header) { if (header) free (header); }
 
-PacketHeader *packet_header_create (PacketType packet_type, size_t packet_size) {
+PacketHeader *packet_header_create (PacketType packet_type, size_t packet_size, u32 req_type) {
 
     PacketHeader *header = (PacketHeader *) malloc (sizeof (PacketHeader));
     if (header) {
-        memset (header, 0, sizeof (PacketHeader));
         header->protocol_id = protocol_id;
         header->protocol_version = protocol_version;
+
         header->packet_type = packet_type;
         header->packet_size = packet_size;
+
+        header->handler_id = 0;
+
+        header->request_type = req_type;
     }
 
     return header;
@@ -100,10 +104,12 @@ PacketHeader *packet_header_create (PacketType packet_type, size_t packet_size) 
 void packet_header_print (PacketHeader *header) {
 
     if (header) {
-        printf ("protocol id: %d\n", header->protocol_id);
-        printf ("protocol version: { %d - %d }\n", header->protocol_version.major, header->protocol_version.minor);
-        printf ("packet type: %d\n", header->packet_type);
-        printf ("packet size: %ld\n", header->packet_size);
+        printf ("Protocol id: %d\n", header->protocol_id);
+        printf ("Protocol version: { %d - %d }\n", header->protocol_version.major, header->protocol_version.minor);
+        printf ("Packet type: %d\n", header->packet_type);
+        printf ("Packet size: %ld\n", header->packet_size);
+        printf ("Handler id: %d\n", header->handler_id);
+        printf ("Request type: %d\n", header->request_type);
     }
 
 }
@@ -136,18 +142,20 @@ Packet *packet_new (void) {
 
     Packet *packet = (Packet *) malloc (sizeof (Packet));
     if (packet) {
-        memset (packet, 0, sizeof (Packet));
         packet->cerver = NULL;
         packet->client = NULL;
         packet->connection = NULL;
 
-        packet->custom_type = NULL;
+        packet->packet_type = DONT_CHECK_TYPE;
+        packet->req_type = 0;
 
+        packet->data_size = 0;
         packet->data = NULL;
         packet->data_end = NULL;
         packet->data_ref = false;
 
-        packet->header = NULL;  
+        packet->header = NULL;
+        packet->packet_size = 0;
         packet->packet = NULL;
         packet->packet_ref = false;
     }
@@ -179,8 +187,6 @@ void packet_delete (void *ptr) {
         packet->client = NULL;
         packet->connection = NULL;
 
-        str_delete (packet->custom_type);
-        
         if (!packet->data_ref) {
             if (packet->data) free (packet->data);
         }
@@ -383,7 +389,7 @@ u8 packet_generate (Packet *packet) {
         }   
 
         packet->packet_size = sizeof (PacketHeader) + packet->data_size;
-        packet->header = packet_header_create (packet->packet_type, packet->packet_size);
+        packet->header = packet_header_create (packet->packet_type, packet->packet_size, packet->req_type);
 
         // create the packet buffer to be sent
         packet->packet = malloc (packet->packet_size);
@@ -409,14 +415,7 @@ Packet *packet_generate_request (PacketType packet_type, u32 req_type,
     Packet *packet = packet_new ();
     if (packet) {
         packet->packet_type = packet_type;
-
-        // generate the request
-        packet->data = malloc (sizeof (RequestData));
-        ((RequestData *) packet->data)->type = req_type;
-
-        packet->data_size = sizeof (RequestData);
-        packet->data_end = (char *) packet->data;
-        packet->data_end += sizeof (RequestData);
+        packet->req_type = req_type;
 
         // if there is data, append it to the packet data buffer
         if (data) {

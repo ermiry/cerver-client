@@ -193,7 +193,7 @@ struct _Packet {
     struct _Connection *connection;
 
     PacketType packet_type;
-    String *custom_type;
+    u32 req_type;
 
     // serilized data
     size_t data_size;
