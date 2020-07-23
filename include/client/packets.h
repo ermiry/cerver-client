@@ -120,7 +120,7 @@ extern PacketHeader *packet_header_new (void);
 
 extern void packet_header_delete (PacketHeader *header);
 
-extern PacketHeader *packet_header_create (PacketType packet_type, size_t packet_size);
+extern PacketHeader *packet_header_create (PacketType packet_type, size_t packet_size, u32 req_type);
 
 // prints an already existing PacketHeader. Mostly used for debugging
 extern void packet_header_print (PacketHeader *header);

@@ -94,10 +94,9 @@ static Lobby *lobby_deserialize (SLobby *slobby) {
 static void client_game_lobby_create (Packet *packet) {
 
     if (packet) {
-        if (packet->data_size >= sizeof (RequestData) + sizeof (SLobby)) {
+        if (packet->data_size >= sizeof (SLobby)) {
             // get the lobby data from the cerver
             char *end = (char *) packet->data;
-            end += sizeof (RequestData);
             SLobby *slobby = (SLobby *) end;
 
             // deserialize the lobby
@@ -121,10 +120,9 @@ static void client_game_lobby_create (Packet *packet) {
 static void client_game_lobby_join (Packet *packet) {
 
     if (packet) {
-        if (packet->data_size >= sizeof (RequestData) + sizeof (SLobby)) {
+        if (packet->data_size >= sizeof (SLobby)) {
             // get the lobby data from the cerver
             char *end = (char *) packet->data;
-            end += sizeof (RequestData);
             SLobby *slobby = (SLobby *) end;
 
             // deserialize the lobby
@@ -149,7 +147,7 @@ static void client_game_lobby_join (Packet *packet) {
 static void client_game_lobby_leave (Packet *packet) {
 
     if (packet) {
-        if (packet->data_size >= sizeof (RequestData)) {
+        if (packet->data_size > 0) {
             // get the lobby data from the cerver
 
             // trigger the event
@@ -172,9 +170,8 @@ static void client_game_lobby_start (Packet *packet) {
 void client_game_packet_handler (Packet *packet) {
 
     if (packet) {
-        if (packet->data && (packet->data_size >= sizeof (RequestData))) {
-            RequestData *req = (RequestData *) (packet->data);
-            switch (req->type) {
+        if (packet->header) {
+            switch (packet->header->request_type) {
                 case GAME_LOBBY_CREATE: client_game_lobby_create (packet); break;
                 case GAME_LOBBY_JOIN: client_game_lobby_join (packet); break;
                 case GAME_LOBBY_LEAVE: client_game_lobby_leave (packet); break;

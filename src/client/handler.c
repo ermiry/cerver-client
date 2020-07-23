@@ -59,11 +59,8 @@ void sock_receive_delete (void *sock_receive_ptr) {
 static void client_client_packet_handler (Packet *packet) {
 
     if (packet) {
-        if (packet->data_size >= sizeof (RequestData)) {
-            // char *end = (char *) packet->data;
-            RequestData *req = (RequestData *) packet->data;
-
-            switch (req->type) {
+        if (packet->header) {
+            switch (packet->header->request_type) {
                 // the cerver close our connection
                 case CLIENT_CLOSE_CONNECTION:
                     client_connection_end (packet->client, packet->connection);
@@ -92,13 +89,11 @@ static u8 auth_strip_token (Packet *packet, Client *client) {
 
     if (packet) {
         // check we have a big enough packet
-        if (packet->data_size > sizeof (RequestData)) {
+        if (packet->data_size > 0) {
             char *end = (char *) packet->data;
 
-            end += sizeof (RequestData);
-
             // check if we have a token
-            if (packet->data_size == (sizeof (RequestData) + sizeof (SToken))) {
+            if (packet->data_size == (sizeof (SToken))) {
                 SToken *s_token = (SToken *) (end);
                 retval = client_set_session_id (client, s_token->token);
             }
@@ -137,11 +132,8 @@ static void client_auth_success_handler (Packet *packet) {
 static void client_auth_packet_handler (Packet *packet) {
 
     if (packet) {
-        if (packet->data_size >= sizeof (RequestData)) {
-            // char *end = (char *) packet->data;
-            RequestData *req = (RequestData *) packet->data;
-
-            switch (req->type) {
+        if (packet->header) {
+            switch (packet->header->request_type) {
                 // 24/01/2020 -- cerver requested authentication, if not, we will be disconnected
                 case AUTH_PACKET_TYPE_REQUEST_AUTH:
                     break;
@@ -168,11 +160,8 @@ static void client_auth_packet_handler (Packet *packet) {
 static void client_request_packet_handler (Packet *packet) {
 
     if (packet) {
-        if (packet->data_size >= sizeof (RequestData)) {
-            // char *end = (char *) packet->data;
-            RequestData *req = (RequestData *) packet->data;
-
-            switch (req->type) {
+        if (packet->header) {
+            switch (packet->header->request_type) {
                 default: 
                     client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Unknown request from cerver");
                     break;

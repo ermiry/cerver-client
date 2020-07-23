@@ -287,22 +287,29 @@ static u8 cerver_check_info (Cerver *cerver, Connection *connection) {
 
 #pragma region handler
 
+static void cerver_packet_handle_info (Packet *packet) {
+
+    if (packet->data && (packet->data_size > 0)) {
+        char *end = (char *) packet->data;
+
+        #ifdef CLIENT_DEBUG
+        client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Received a cerver info packet.");
+        #endif
+        Cerver *cerver = cerver_deserialize ((SCerver *) end);
+        if (cerver_check_info (cerver, packet->connection))
+            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to correctly check cerver info!");
+    }
+
+}
+
 // handles cerver type packets
 void cerver_packet_handler (Packet *packet) {
 
     if (packet) {
-        if (packet->data_size >= sizeof (RequestData)) {
-            char *end = (char *) packet->data;
-            RequestData *req = (RequestData *) (end);
-
-            switch (req->type) {
+        if (packet->header) {
+            switch (packet->header->request_type) {
                 case CERVER_INFO: {
-                    #ifdef CLIENT_DEBUG
-                    client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Received a cerver info packet.");
-                    #endif
-                    Cerver *cerver = cerver_deserialize ((SCerver *) (end += sizeof (RequestData)));
-                    if (cerver_check_info (cerver, packet->connection))
-                        client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to correctly check cerver info!");
+                   cerver_packet_handle_info (packet);
                 } break;
 
                 // the cerves is going to be teardown, we have to disconnect
