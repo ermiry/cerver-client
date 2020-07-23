@@ -640,8 +640,12 @@ static void packet_send_update_stats (PacketType packet_type, size_t sent,
             connection->stats->sent_packets->n_test_packets += 1;
             break;
 
-        case DONT_CHECK_TYPE:
-        default: break;
+        case DONT_CHECK_TYPE: break;
+
+        default: 
+            if (client) client->stats->sent_packets->n_unknown_packets += 1;
+            connection->stats->sent_packets->n_unknown_packets += 1;
+            break;
     }
 
 }
