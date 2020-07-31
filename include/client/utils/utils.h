@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 
+#include <stddef.h>
+
 /*** misc ***/
 
 extern bool system_is_little_endian (void);
@@ -40,8 +42,14 @@ extern void c_string_copy (char *to, const char *from);
 // creates a new c string with the desired format, as in printf
 extern char *c_string_create (const char *format, ...);
 
+// get how many tokens will be extracted by counting the number of apperances of the delim
+// the original string won't be affected
+extern size_t c_string_count_tokens (const char *original, const char delim);
+
 // splits a c string into tokens based on a delimiter
-extern char **c_string_split (char *string, const char delim, int *n_tokens);
+// the original string won't be affected
+// this method is thread safe as it uses __strtok_r () instead of the regular strtok ()
+extern char **c_string_split (const char *original, const char delim, size_t *n_tokens);
 
 // revers a c string
 // returns a newly allocated c string
