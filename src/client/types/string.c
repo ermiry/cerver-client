@@ -187,42 +187,46 @@ void str_to_lower (String *str) {
 char **str_split (String *str, const char delim, int *n_tokens) {
 
 	char **result = NULL;
-	size_t count = 0;
-	char *temp = str->str;
-	char *last = NULL;
-	char dlm[2] = { 0 };
-	dlm[0] = delim;
-	dlm[1] = 0;
 
-	// count how many elements will be extracted
-	while (*temp) {
-		if (delim == *temp) {
-			count++;
-			last = temp;
+	if (str) {
+		char *string = strdup (str->str);
+		if (string) {
+			// count tokens
+			size_t count = 0;
+			char *temp = (char *) str->str;
+			char last = '\0';
+
+			while (*temp) {
+				if (delim == *temp) {
+					if (last != delim) count++;
+				}
+
+				last = *temp;
+				temp++;
+			}
+
+			if (last == delim) count--;
+
+			result = (char **) calloc (count, sizeof (char *));
+			if (result) {
+				if (n_tokens) *n_tokens = count;
+
+				size_t idx = 0;
+
+				char dlm[2];
+				dlm[0] = delim;
+				dlm[1] = '\0';
+
+				char *token = NULL;
+				char *rest = string;
+				while ((token = __strtok_r (rest, dlm, &rest))) {
+					result[idx] = strdup (token);
+					idx++;
+				}
+			}
+
+			free (string);
 		}
-
-		temp++;
-	}
-
-	count += last < (str->str + strlen (str->str) - 1);
-
-	count++;
-
-	result = (char **) calloc (count, sizeof (char *));
-	*n_tokens = count;
-
-	if (result) {
-		size_t idx = 0;
-		char *token = strtok (str->str, dlm);
-
-		while (token) {
-			// assert (idx < count);
-			*(result + idx++) = strdup (token);
-			token = strtok (0, dlm);
-		}
-
-		// assert (idx == count - 1);
-		*(result + idx) = 0;
 	}
 
 	return result;
