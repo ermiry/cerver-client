@@ -180,7 +180,17 @@ static void client_packet_handler (void *data) {
 
         bool good = true;
         if (packet->client->check_packets) {
-            good = packet_check (packet);
+            // we expect the packet version in the packet's data
+            if (packet->data) {
+                packet->version = (PacketVersion *) packet->data_ptr;
+                packet->data_ptr += sizeof (PacketVersion);
+                good = packet_check (packet);
+            }
+
+            else {
+                client_log_error ("client_packet_handler () - No packet version to check!");
+                good = false;
+            }
         }
 
         if (good) {
