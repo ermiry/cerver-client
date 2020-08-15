@@ -1,6 +1,7 @@
 #ifndef _CLIENT_HANDLER_H_
 #define _CLIENT_HANDLER_H_
 
+#include "client/config.h"
 #include "client/client.h"
 #include "client/connection.h"
 #include "client/packets.h"
@@ -26,11 +27,11 @@ struct _SockReceive {
 
 typedef struct _SockReceive SockReceive;
 
-extern SockReceive *sock_receive_new (void);
+CLIENT_PRIVATE SockReceive *sock_receive_new (void);
 
-extern void sock_receive_delete (void *sock_receive_ptr);
+CLIENT_PRIVATE void sock_receive_delete (void *sock_receive_ptr);
 
 // receives incoming data from the socket
-extern void client_receive (struct _Client *client, struct _Connection *connection);
+CLIENT_PUBLIC void client_receive (struct _Client *client, struct _Connection *connection);
 
 #endif
