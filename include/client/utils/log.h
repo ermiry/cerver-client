@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+#include "client/config.h"
+
 #define LOG_COLOR_RED       "\x1b[31m"
 #define LOG_COLOR_GREEN     "\x1b[32m"
 #define LOG_COLOR_YELLOW    "\x1b[33m"
@@ -35,19 +37,22 @@ typedef enum LogType {
 
 } LogType;
 
-extern void client_log_msg (FILE *__restrict __stream, LogType first_type, LogType second_type,
-	const char *msg);
+CLIENT_PUBLIC void client_log_msg (
+	FILE *__restrict __stream, 
+	LogType first_type, LogType second_type,
+	const char *msg
+);
 
 // prints a red error message to stderr
-extern void client_log_error (const char *msg);
+CLIENT_PUBLIC void client_log_error (const char *msg);
 
 // prints a yellow warning message to stderr
-extern void client_log_warning (const char *msg);
+CLIENT_PUBLIC void client_log_warning (const char *msg);
 
 // prints a green success message to stdout
-extern void client_log_success (const char *msg);
+CLIENT_PUBLIC void client_log_success (const char *msg);
 
 // prints a debug message to stdout
-extern void client_log_debug (const char *msg);
+CLIENT_PUBLIC void client_log_debug (const char *msg);
 
 #endif
