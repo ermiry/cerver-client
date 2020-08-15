@@ -13,12 +13,15 @@ typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 
-typedef unsigned char asciiChar;
+typedef unsigned char ascii_char;
+typedef unsigned char uchar;
 
 // takes no argument and returns a value (int)
 typedef u8 (*Func)(void);
+
 // takes an argument and does not return a value
 typedef void (*Action)(void *);
+
 // takes an argument and returns a value (int)
 typedef u8 (*delegate)(void *);
 
