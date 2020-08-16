@@ -356,9 +356,13 @@ static void client_receive_handle_buffer (Client *client, Connection *connection
         bool spare_header = false;
 
         while (buffer_pos < buffer_size) {
+            // printf ("buffer size: %ld\n", buffer_size);
             remaining_buffer_size = buffer_size - buffer_pos;
+            // printf ("remaining_buffer_size: %ld\n", remaining_buffer_size);
+            // printf ("header size: %ld\n", sizeof (PacketHeader));
 
             if (sock_receive->complete_header) {
+                // printf ("\nsock_receive->complete_header\n");
                 packet_header_copy (&header, (PacketHeader *) sock_receive->header);
                 // header = ((PacketHeader *) sock_receive->header);
                 // packet_header_print (header);
@@ -379,6 +383,7 @@ static void client_receive_handle_buffer (Client *client, Connection *connection
             }
 
             else if (remaining_buffer_size >= sizeof (PacketHeader)) {
+                // printf ("\nremaining_buffer_size >= sizeof (PacketHeader)\n");
                 header = (PacketHeader *) end;
                 end += sizeof (PacketHeader);
                 buffer_pos += sizeof (PacketHeader);
@@ -440,7 +445,6 @@ static void client_receive_handle_buffer (Client *client, Connection *connection
                             connection->full_packet = true;
                             client_packet_handler (packet);
                         }
-                            
                     }
 
                     else {
@@ -461,7 +465,10 @@ static void client_receive_handle_buffer (Client *client, Connection *connection
             }
 
             else {
-                if (sock_receive->spare_packet) packet_append_data (sock_receive->spare_packet, (void *) end, remaining_buffer_size);
+                if (sock_receive->spare_packet) {
+                    // printf ("else sock_receive->spare_packet\n");
+                    packet_append_data (sock_receive->spare_packet, (void *) end, remaining_buffer_size);
+                } 
 
                 else {
                     // handle part of a new header
@@ -489,6 +496,8 @@ static void client_receive_handle_buffer (Client *client, Connection *connection
                     buffer_pos += remaining_buffer_size;
                 }
             }
+
+            header = NULL;
         }
     }
 
