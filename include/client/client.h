@@ -266,7 +266,7 @@ CLIENT_PRIVATE void client_connection_aux_delete (void *ptr);
 
 #pragma region serialization
 
-#define TOKEN_SIZE         64
+#define TOKEN_SIZE         256
 
 // serialized session id - token
 struct _SToken {

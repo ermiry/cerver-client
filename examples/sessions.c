@@ -320,7 +320,7 @@ int main (int argc, const char **argv) {
 
 	cerver_client_version_print_full ();
 
-	client_log_debug ("Basic Auth Example");
+	client_log_debug ("Client Sessions Example");
 	printf ("\n");
 
 	if (!cerver_connect ()) {

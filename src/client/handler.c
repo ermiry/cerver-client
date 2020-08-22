@@ -94,8 +94,7 @@ static u8 auth_strip_token (Packet *packet, Client *client) {
 
             // check if we have a token
             if (packet->data_size == (sizeof (SToken))) {
-                SToken *s_token = (SToken *) (end);
-                retval = client_set_session_id (client, s_token->token);
+                retval = client_set_session_id (client, end);
             }
         }
     }
