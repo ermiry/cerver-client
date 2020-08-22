@@ -3,7 +3,6 @@ SLIB		:= libclient.so
 
 PTHREAD 	:= -l pthread
 MATH		:= -lm
-# CMONGO 		:= `pkg-config --libs --cflags libmongoc-1.0`
 
 # print additional information
 DEFINES = -D CERVER_DEBUG -D CLIENT_DEBUG -D PACKETS_DEBUG -D AUTH_DEBUG
@@ -14,6 +13,8 @@ SRCDIR      := src
 INCDIR      := include
 BUILDDIR    := objs
 TARGETDIR   := bin
+
+EXAMDIR		:= examples
 
 SRCEXT      := c
 DEPEXT      := d
@@ -26,6 +27,8 @@ INCDEP      := -I $(INCDIR)
 
 SOURCES     := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS     := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
+
+EXAMPLES	:= $(shell find $(EXAMDIR) -type f -name *.$(SRCEXT))
 
 # all: directories $(TARGET)
 all: directories $(SLIB)
@@ -46,7 +49,8 @@ directories:
 	@mkdir -p $(BUILDDIR)
 
 clean:
-	@$(RM) -rf $(BUILDDIR) @$(RM) -rf $(TARGETDIR)
+	@$(RM) -rf $(BUILDDIR)
+	@$(RM) -rf $(TARGETDIR)
 	@$(RM) -rf ./examples/bin
 
 # pull in dependency info for *existing* .o files
@@ -69,7 +73,7 @@ $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@sed -e 's/.*://' -e 's/\\$$//' < $(BUILDDIR)/$*.$(DEPEXT).tmp | fmt -1 | sed -e 's/^ *//' -e 's/$$/:/' >> $(BUILDDIR)/$*.$(DEPEXT)
 	@rm -f $(BUILDDIR)/$*.$(DEPEXT).tmp
 
-examples: ./examples/test.c ./examples/handlers.c ./examples/multi.c ./examples/requests.c ./examples/auth.c ./examples/sessions.c ./examples/admin.c ./examples/packets.c
+examples: $(EXAMPLES)
 	@mkdir -p ./examples/bin
 	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/test.c -o ./examples/bin/test -l client
 	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/handlers.c -o ./examples/bin/handlers -l client
