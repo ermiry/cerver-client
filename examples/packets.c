@@ -424,7 +424,7 @@ int main (int argc, const char **argv) {
 
 	String *message = str_new ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.");
 
-	if (!cerver_connect ("127.0.0.1", 8007)) {
+	if (!cerver_connect ("127.0.0.1", 7000)) {
 		sleep (1);
 
 		// while (1) {

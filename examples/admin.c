@@ -266,7 +266,7 @@ int main (int argc, const char **argv) {
 	client_log_debug ("Basic Admin Example");
 	printf ("\n");
 
-	if (!cerver_connect ("127.0.0.1", 8007)) {
+	if (!cerver_connect ("127.0.0.1", 7000)) {
 		while (1) {
 			// send a test message every second
 			// if (connection->authenticated) {

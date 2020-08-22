@@ -241,7 +241,7 @@ int main (int argc, const char **argv) {
     client_log_debug ("Multiple Handlers Example");
 	printf ("\n");
 
-    if (!cerver_connect ("127.0.0.1", 8007)) {
+    if (!cerver_connect ("127.0.0.1", 7000)) {
         while (1) {
             test_app_msg_send ();
 

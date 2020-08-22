@@ -16,7 +16,7 @@
 #include "client/utils/log.h"
 
 #define CERVER_IP			"127.0.0.1"
-#define CERVER_PORT			8007
+#define CERVER_PORT			7000
 
 typedef enum AppRequest {
 
