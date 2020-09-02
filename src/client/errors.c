@@ -328,7 +328,7 @@ void error_packet_handler (Packet *packet) {
 					break;
 
 				default: 
-					client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Unknown error received from cerver!"); 
+					client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown error received from cerver!"); 
 					break;
 			}
 		}

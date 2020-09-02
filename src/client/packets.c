@@ -312,7 +312,7 @@ u8 packet_append_data (Packet *packet, void *data, size_t data_size) {
 
             else {
                 #ifdef PACKETS_DEBUG
-                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to realloc packet data!");
+                client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to realloc packet data!");
                 #endif
                 packet->data = NULL;
                 packet->data_size = 0;
@@ -337,7 +337,7 @@ u8 packet_append_data (Packet *packet, void *data, size_t data_size) {
 
             else {
                 #ifdef PACKETS_DEBUG
-                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to allocate packet data!");
+                client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to allocate packet data!");
                 #endif
                 packet->data = NULL;
                 packet->data_size = 0;
@@ -887,14 +887,14 @@ bool packet_check (Packet *packet) {
 
                 else {
                     #ifdef PACKETS_DEBUG
-                    client_log_msg (stdout, LOG_WARNING, LOG_PACKET, "Packet with incompatible version.");
+                    client_log_msg (stdout, LOG_TYPE_WARNING, LOG_TYPE_PACKET, "Packet with incompatible version.");
                     #endif
                 }
             }
 
             else {
                 #ifdef PACKETS_DEBUG
-                client_log_msg (stdout, LOG_WARNING, LOG_PACKET, "Packet with unknown protocol ID.");
+                client_log_msg (stdout, LOG_TYPE_WARNING, LOG_TYPE_PACKET, "Packet with unknown protocol ID.");
                 #endif
             }
         }

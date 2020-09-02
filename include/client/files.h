@@ -1,5 +1,5 @@
-#ifndef _CERVER_FILES_H_
-#define _CERVER_FILES_H_
+#ifndef _CLIENT_FILES_H_
+#define _CLIENT_FILES_H_
 
 #include <stdio.h>
 

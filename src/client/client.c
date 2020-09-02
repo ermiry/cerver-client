@@ -77,13 +77,13 @@ void client_stats_print (Client *client) {
         }
 
         else {
-            client_log_msg (stderr, LOG_ERROR, LOG_CLIENT, 
+            client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_CLIENT, 
                 "Client does not have a reference to a client stats!");
         }
     }
 
     else {
-        client_log_msg (stderr, LOG_WARNING, LOG_CLIENT, 
+        client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_CLIENT, 
             "Can't get stats of a NULL client!");
     }
 
@@ -333,11 +333,11 @@ Connection *client_connection_create (Client *client,
                 dlist_insert_after (client->connections, dlist_end (client->connections), connection);
             }
 
-            else client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create new connection!");
+            else client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create new connection!");
         }
 
         else {
-            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, 
+            client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, 
                 "Failed to create new connection, no ip provided!");
         }
     }
