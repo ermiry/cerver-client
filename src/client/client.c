@@ -77,13 +77,13 @@ void client_stats_print (Client *client) {
         }
 
         else {
-            client_log_msg (stderr, LOG_ERROR, LOG_CLIENT, 
+            client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_CLIENT, 
                 "Client does not have a reference to a client stats!");
         }
     }
 
     else {
-        client_log_msg (stderr, LOG_WARNING, LOG_CLIENT, 
+        client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_CLIENT, 
             "Can't get stats of a NULL client!");
     }
 
@@ -97,17 +97,25 @@ static Client *client_new (void) {
 
     Client *client = (Client *) malloc (sizeof (Client));
     if (client) {
-        memset (client, 0, sizeof (Client));
+        client->name = NULL;
+
+        client->connections = NULL;
 
         client->running = false;
-        client->connections = NULL;
-        client->registered_actions = NULL;
+
+        client->registered_events = NULL;
+        client->registered_errors = NULL;
 
         client->app_packet_handler = NULL;
         client->app_error_packet_handler = NULL;
         client->custom_packet_handler = NULL;
 
         client->check_packets = false;
+
+        client->time_started = 0;
+        client->uptime = 0;
+
+        client->session_id = NULL;
 
         client->stats = NULL;
     }
@@ -122,6 +130,10 @@ static void client_delete (Client *client) {
         dlist_delete (client->connections);
 
         client_events_end (client);
+
+        client_errors_end (client);
+
+        str_delete (client->session_id);
 
         client_stats_delete (client->stats);
 
@@ -170,6 +182,23 @@ void client_set_check_packets (Client *client, bool check_packets) {
 
 }
 
+// sets the client's session id
+// returns 0 on succes, 1 on error
+u8 client_set_session_id (Client *client, const char *session_id) {
+
+    u8 retval = 1;
+
+    if (client) {
+        str_delete (client->session_id);
+        client->session_id = session_id ? str_new (session_id) : NULL;
+
+        retval = 0;
+    }
+
+    return retval;
+
+}
+
 // inits client with default values
 static u8 client_init (Client *client) {
 
@@ -177,7 +206,10 @@ static u8 client_init (Client *client) {
 
     if (client) {
         client->connections = dlist_init (connection_delete, connection_comparator_by_sock_fd);
+
         client_events_init (client);
+        client_errors_init (client);
+
         client->stats = client_stats_new ();
 
         client->running = false;
@@ -275,7 +307,7 @@ Connection *client_connection_get_by_socket (Client *client, i32 sock_fd) {
         Connection *connection = NULL;
         for (ListElement *le = dlist_start (client->connections); le; le = le->next) {
             connection = (Connection *) le->data;
-            if (connection->sock_fd == sock_fd) {
+            if (connection->socket->sock_fd == sock_fd) {
                 retval = connection;
                 break;
             }
@@ -301,11 +333,11 @@ Connection *client_connection_create (Client *client,
                 dlist_insert_after (client->connections, dlist_end (client->connections), connection);
             }
 
-            else client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create new connection!");
+            else client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create new connection!");
         }
 
         else {
-            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, 
+            client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, 
                 "Failed to create new connection, no ip provided!");
         }
     }
@@ -347,6 +379,18 @@ int client_connection_unregister (Client *client, Connection *connection) {
 
 }
 
+// performs a receive in the connection's socket to get a complete packet & handle it
+void client_connection_get_next_packet (Client *client, Connection *connection) {
+
+    if (client && connection) {
+        connection->full_packet = false;
+        while (!connection->full_packet) {
+            client_receive (client, connection);
+        }
+    }
+
+}
+
 #pragma endregion
 
 #pragma region connect
@@ -362,13 +406,17 @@ unsigned int client_connect (Client *client, Connection *connection) {
 
     if (client && connection) {
         if (!connection_start (connection)) {
-            client_event_trigger (client, EVENT_CONNECTED);
+            client_event_trigger (CLIENT_EVENT_CONNECTED, client, connection);
             connection->connected = true;
             time (&connection->connected_timestamp);
             
             client_start (client);
 
             retval = 0;     // success - connected to cerver
+        }
+
+        else {
+            client_event_trigger (CLIENT_EVENT_CONNECTION_FAILED, client, connection);
         }
     }
 
@@ -399,13 +447,7 @@ static void *client_connect_thread (void *client_connection_ptr) {
     if (client_connection_ptr) {
         ClientConnection *cc = (ClientConnection *) client_connection_ptr;
 
-        if (!connection_start (cc->connection)) {
-            client_event_trigger (cc->client, EVENT_CONNECTED);
-            cc->connection->connected = true;
-            time (&cc->connection->connected_timestamp);
-            
-            client_start (cc->client);
-        }
+        (void) client_connect (cc->client, cc->connection);
 
         client_connection_aux_delete (cc);
     }
@@ -468,10 +510,7 @@ unsigned int client_request_to_cerver (Client *client, Connection *connection, P
             // printf ("Request to cerver: %ld\n", sent);
 
             // receive the data directly
-            connection->full_packet = false;
-            while (!connection->full_packet) {
-                client_receive (client, connection);
-            }
+            client_connection_get_next_packet (client, connection);
 
             retval = 0;
         }
@@ -681,14 +720,12 @@ int client_connection_end (Client *client, Connection *connection) {
     int retval = 1;
 
     if (client && connection) {
-        client_connection_terminate (client, connection);
-        client_event_trigger (client, EVENT_CONNECTION_CLOSE);
+        if (connection->connected) {
+            client_connection_terminate (client, connection);
+            client_event_trigger (CLIENT_EVENT_CONNECTION_CLOSE, client, connection);
 
-        // connection_delete (dlist_remove_element (client->connections, 
-        //     dlist_get_element (client->connections, connection, NULL)));
-        connection_delete (dlist_remove (client->connections, connection, NULL));
-
-        retval = 0;
+            retval = 0;
+        }
     }
 
     return retval;

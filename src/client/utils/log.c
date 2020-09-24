@@ -2,101 +2,122 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <stdarg.h>
-
 #include "client/utils/utils.h"
 #include "client/utils/log.h"
 
-static char *client_get_msg_type (LogMsgType type) {
-
-	char temp[16] = { 0 };
+static const char *log_get_msg_type (LogType type) {
 
 	switch (type) {
-		case LOG_ERROR: strcpy (temp, "[ERROR]"); break;
-		case LOG_WARNING: strcpy (temp, "[WARNING]"); break;
-		case LOG_SUCCESS: strcpy (temp, "[SUCCESS]"); break;
-		case LOG_DEBUG: strcpy (temp, "[DEBUG]"); break;
-		case LOG_TEST: strcpy (temp, "[TEST]"); break;
-
-		case LOG_CERVER: strcpy (temp, "[CERVER]"); break;
-		case LOG_CLIENT: strcpy (temp, "[CLIENT]"); break;
-
-		case LOG_REQ: strcpy (temp, "[REQ]"); break;
-		case LOG_FILE: strcpy (temp, "[FILE]"); break;
-		case LOG_PACKET: strcpy (temp, "[PACKET]"); break;
-		case LOG_PLAYER: strcpy (temp, "[PLAYER]"); break;
-		case LOG_GAME: strcpy (temp, "[GAME]"); break;
-
-		default: break;
+		#define XX(num, name, string) case LOG_TYPE_##name: return #string;
+		LOG_TYPE_MAP(XX)
+		#undef XX
 	}
 
-	char *retval = (char *) calloc (strlen (temp) + 1, sizeof (temp));
-    if (retval) strcpy (retval, temp);
-
-	return retval;
+	return log_get_msg_type (LOG_TYPE_NONE);
 
 }
 
-void client_log_msg (FILE *__restrict __stream, LogMsgType first_type, LogMsgType second_type,
-    const char *msg, ...) {
+void client_log_msg (
+	FILE *__restrict __stream, 
+	LogType first_type, LogType second_type,
+	const char *msg
+) {
 
-    char *first = client_get_msg_type (first_type);
-    char *second = NULL;
-    char *message = NULL;
+	if (__stream && msg) {
+		const char *first = log_get_msg_type (first_type);
+		if (first) {
+			char *message = NULL;
 
-    if (second_type != 0) {
-        second = client_get_msg_type (second_type);
+			if (second_type != LOG_TYPE_NONE) {
+				const char *second = log_get_msg_type (second_type);
+				if (second) {
+					switch (first_type) {
+						case LOG_TYPE_DEBUG:
+						case LOG_TYPE_TEST:
+							message = c_string_create ("%s: %s\n", second, msg);
+							break;
 
-        if (first_type == LOG_DEBUG)
-            message = c_string_create ("%s: %s\n", second, msg);
-        
-        else message = c_string_create ("%s%s: %s\n", first, second, msg);
-    }
+						default: 
+							message = c_string_create ("%s%s: %s\n", first, second, msg);
+							break;
+					}
+				}
+			}
 
-    else if (first_type != LOG_DEBUG)
-        message = c_string_create ("%s: %s\n", first, msg);
+			else {
+				switch (first_type) {
+					case LOG_TYPE_DEBUG:
+					case LOG_TYPE_TEST:
+						break;
 
-    // log messages with color
-    switch (first_type) {
-        case LOG_DEBUG: fprintf (__stream, COLOR_MAGENTA "%s: " COLOR_RESET "%s\n", first, msg); break;
+					default: 
+						message = c_string_create ("%s: %s\n", first, msg);
+						break;
+				}
+			}
 
-        case LOG_ERROR: fprintf (__stream, COLOR_RED "%s" COLOR_RESET, message); break;
-        case LOG_WARNING: fprintf (__stream, COLOR_YELLOW "%s" COLOR_RESET, message); break;
-        case LOG_SUCCESS: fprintf (__stream, COLOR_GREEN "%s" COLOR_RESET, message); break;
+			if (message) {
+				switch (first_type) {
+					case LOG_TYPE_DEBUG: fprintf (__stream, LOG_COLOR_MAGENTA "%s" LOG_COLOR_RESET "%s", first, message); break;
+					
+					case LOG_TYPE_TEST: fprintf (__stream, LOG_COLOR_CYAN "%s" LOG_COLOR_RESET "%s", first, message); break;
 
-        case LOG_CLIENT: fprintf (__stream, COLOR_BLUE "%s" COLOR_RESET, message); break;
+					case LOG_TYPE_ERROR: fprintf (__stream, LOG_COLOR_RED "%s" LOG_COLOR_RESET, message); break;
+					case LOG_TYPE_WARNING: fprintf (__stream, LOG_COLOR_YELLOW "%s" LOG_COLOR_RESET, message); break;
+					case LOG_TYPE_SUCCESS: fprintf (__stream, LOG_COLOR_GREEN "%s" LOG_COLOR_RESET, message); break;
 
-        default: fprintf (__stream, "%s", message); break;
-    }
+					case LOG_TYPE_CERVER: fprintf (__stream, LOG_COLOR_BLUE "%s" LOG_COLOR_RESET, message); break;
 
-    if (message) free (message);
+					case LOG_TYPE_EVENT: fprintf (__stream, LOG_COLOR_MAGENTA "%s" LOG_COLOR_RESET, message); break;
+
+					default: fprintf (__stream, "%s", message); break;
+				}
+
+				free (message);
+			}
+
+			else {
+				switch (first_type) {
+					case LOG_TYPE_DEBUG: 
+						fprintf (__stream, LOG_COLOR_MAGENTA "%s: " LOG_COLOR_RESET "%s\n", first, msg); 
+						break;
+					
+					case LOG_TYPE_TEST: 
+						fprintf (__stream, LOG_COLOR_CYAN "%s: " LOG_COLOR_RESET "%s\n", first, msg);
+						break;
+
+					default: break;
+				}
+			}
+		}
+	}
 
 }
 
 // prints a red error message to stderr
 void client_log_error (const char *msg) {
 
-	if (msg) fprintf (stderr, COLOR_RED "[ERROR]: " "%s\n" COLOR_RESET, msg);
+	if (msg) fprintf (stderr, LOG_COLOR_RED "[ERROR]: " "%s\n" LOG_COLOR_RESET, msg);
 
 }
 
 // prints a yellow warning message to stderr
 void client_log_warning (const char *msg) {
 
-	if (msg) fprintf (stderr, COLOR_YELLOW "[WARNING]: " "%s\n" COLOR_RESET, msg);
+	if (msg) fprintf (stderr, LOG_COLOR_YELLOW "[WARNING]: " "%s\n" LOG_COLOR_RESET, msg);
 
 }
 
 // prints a green success message to stdout
 void client_log_success (const char *msg) {
 
-	if (msg) fprintf (stdout, COLOR_GREEN "[SUCCESS]: " "%s\n" COLOR_RESET, msg);
+	if (msg) fprintf (stdout, LOG_COLOR_GREEN "[SUCCESS]: " "%s\n" LOG_COLOR_RESET, msg);
 
 }
 
 // prints a debug message to stdout
 void client_log_debug (const char *msg) {
 
-	if (msg) fprintf (stdout, COLOR_MAGENTA "[DEBUG]: " COLOR_RESET "%s\n", msg);
+	if (msg) fprintf (stdout, LOG_COLOR_MAGENTA "[DEBUG]: " LOG_COLOR_RESET "%s\n", msg);
 
 }

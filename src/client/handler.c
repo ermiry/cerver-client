@@ -31,6 +31,11 @@ SockReceive *sock_receive_new (void) {
     if (sr) {
         sr->spare_packet = NULL;
         sr->missing_packet = 0;
+
+        sr->header = NULL;
+        sr->header_end = NULL;
+        sr->remaining_header = 0;
+        sr->complete_header = false;
     } 
 
     return sr;
@@ -54,25 +59,21 @@ void sock_receive_delete (void *sock_receive_ptr) {
 static void client_client_packet_handler (Packet *packet) {
 
     if (packet) {
-        if (packet->data_size >= sizeof (RequestData)) {
-            // char *end = (char *) packet->data;
-            RequestData *req = (RequestData *) packet->data;
-
-            switch (req->type) {
+        if (packet->header) {
+            switch (packet->header->request_type) {
                 // the cerver close our connection
                 case CLIENT_CLOSE_CONNECTION:
                     client_connection_end (packet->client, packet->connection);
-                    client_event_trigger (packet->client, EVENT_DISCONNECTED);
                     break;
 
                 // the cerver has disconneted us
                 case CLIENT_DISCONNET:
                     client_got_disconnected (packet->client);
-                    client_event_trigger (packet->client, EVENT_DISCONNECTED);
+                    client_event_trigger (CLIENT_EVENT_DISCONNECTED, packet->client, NULL);
                     break;
 
                 default: 
-                    client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Unknown client packet type.");
+                    client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown client packet type.");
                     break;
             }
         }
@@ -80,31 +81,73 @@ static void client_client_packet_handler (Packet *packet) {
 
 }
 
+// get the token from the packet data
+// returns 0 on succes, 1 on error
+static u8 auth_strip_token (Packet *packet, Client *client) {
+
+    u8 retval = 1;
+
+    if (packet) {
+        // check we have a big enough packet
+        if (packet->data_size > 0) {
+            char *end = (char *) packet->data;
+
+            // check if we have a token
+            if (packet->data_size == (sizeof (SToken))) {
+                retval = client_set_session_id (client, end);
+            }
+        }
+    }
+
+    return retval;
+
+}
+
+static void client_auth_success_handler (Packet *packet) {
+
+    if (packet) {
+        packet->connection->authenticated = true;
+
+        if (packet->connection->cerver) {
+            if (packet->connection->cerver->uses_sessions) {
+                if (!auth_strip_token (packet, packet->client)) {
+                    #ifdef AUTH_DEBUG
+                    char *status = c_string_create ("Got client's <%s> session id <%s>",
+                        packet->client->name->str, packet->client->session_id->str);
+                    if (status) {
+                        client_log_debug (status);
+                        free (status);
+                    }
+                    #endif
+                }
+            }
+        }
+
+        client_event_trigger (CLIENT_EVENT_SUCCESS_AUTH, packet->client, packet->connection);
+    }
+
+}
+
 static void client_auth_packet_handler (Packet *packet) {
 
     if (packet) {
-        if (packet->data_size >= sizeof (RequestData)) {
-            // char *end = (char *) packet->data;
-            RequestData *req = (RequestData *) packet->data;
-
-            switch (req->type) {
+        if (packet->header) {
+            switch (packet->header->request_type) {
                 // 24/01/2020 -- cerver requested authentication, if not, we will be disconnected
-                case REQ_AUTH_CLIENT:
-                    // TODO: 24/01/2020 -- 17:03
+                case AUTH_PACKET_TYPE_REQUEST_AUTH:
                     break;
 
                 // we recieve a token from the cerver to use in sessions
-                case CLIENT_AUTH_DATA:
-                    // TODO: 24/01/2020 -- 17:03
+                case AUTH_PACKET_TYPE_CLIENT_AUTH:
                     break;
 
                 // we have successfully authenticated with the server
-                case SUCCESS_AUTH:
-                    client_event_trigger (packet->client, EVENT_SUCCESS_AUTH);
+                case AUTH_PACKET_TYPE_SUCCESS:
+                    client_auth_success_handler (packet);
                     break;
 
                 default: 
-                    client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Unknown auth packet type.");
+                    client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown auth packet type.");
                     break;
             }
         }
@@ -116,13 +159,10 @@ static void client_auth_packet_handler (Packet *packet) {
 static void client_request_packet_handler (Packet *packet) {
 
     if (packet) {
-        if (packet->data_size >= sizeof (RequestData)) {
-            // char *end = (char *) packet->data;
-            RequestData *req = (RequestData *) packet->data;
-
-            switch (req->type) {
+        if (packet->header) {
+            switch (packet->header->request_type) {
                 default: 
-                    client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Unknown request from cerver");
+                    client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown request from cerver");
                     break;
             }
         }
@@ -139,7 +179,17 @@ static void client_packet_handler (void *data) {
 
         bool good = true;
         if (packet->client->check_packets) {
-            good = packet_check (packet);
+            // we expect the packet version in the packet's data
+            if (packet->data) {
+                packet->version = (PacketVersion *) packet->data_ptr;
+                packet->data_ptr += sizeof (PacketVersion);
+                good = packet_check (packet);
+            }
+
+            else {
+                client_log_error ("client_packet_handler () - No packet version to check!");
+                good = false;
+            }
         }
 
         if (good) {
@@ -212,14 +262,14 @@ static void client_packet_handler (void *data) {
                 case TEST_PACKET: 
                     packet->client->stats->received_packets->n_test_packets += 1;
                     packet->connection->stats->received_packets->n_test_packets += 1;
-                    client_log_msg (stdout, LOG_TEST, LOG_NO_TYPE, "Got a test packet from cerver.");
+                    client_log_msg (stdout, LOG_TYPE_TEST, LOG_TYPE_NONE, "Got a test packet from cerver.");
                     break;
 
                 default:
                     packet->client->stats->received_packets->n_bad_packets += 1;
                     packet->connection->stats->received_packets->n_bad_packets += 1;
                     #ifdef CLIENT_DEBUG
-                    client_log_msg (stdout, LOG_WARNING, LOG_NO_TYPE, "Got a packet of unknown type.");
+                    client_log_msg (stdout, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got a packet of unknown type.");
                     #endif
                     break;
             }
@@ -305,9 +355,13 @@ static void client_receive_handle_buffer (Client *client, Connection *connection
         bool spare_header = false;
 
         while (buffer_pos < buffer_size) {
+            // printf ("buffer size: %ld\n", buffer_size);
             remaining_buffer_size = buffer_size - buffer_pos;
+            // printf ("remaining_buffer_size: %ld\n", remaining_buffer_size);
+            // printf ("header size: %ld\n", sizeof (PacketHeader));
 
             if (sock_receive->complete_header) {
+                // printf ("\nsock_receive->complete_header\n");
                 packet_header_copy (&header, (PacketHeader *) sock_receive->header);
                 // header = ((PacketHeader *) sock_receive->header);
                 // packet_header_print (header);
@@ -328,6 +382,7 @@ static void client_receive_handle_buffer (Client *client, Connection *connection
             }
 
             else if (remaining_buffer_size >= sizeof (PacketHeader)) {
+                // printf ("\nremaining_buffer_size >= sizeof (PacketHeader)\n");
                 header = (PacketHeader *) end;
                 end += sizeof (PacketHeader);
                 buffer_pos += sizeof (PacketHeader);
@@ -389,11 +444,10 @@ static void client_receive_handle_buffer (Client *client, Connection *connection
                             connection->full_packet = true;
                             client_packet_handler (packet);
                         }
-                            
                     }
 
                     else {
-                        client_log_msg (stderr, LOG_ERROR, LOG_CLIENT, 
+                        client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_CLIENT, 
                             "Failed to create a new packet in cerver_handle_receive_buffer ()");
                     }
                 }
@@ -401,7 +455,7 @@ static void client_receive_handle_buffer (Client *client, Connection *connection
                 else {
                     char *status = c_string_create ("Got a packet of invalid size: %ld", packet_size);
                     if (status) {
-                        client_log_msg (stderr, LOG_WARNING, LOG_CLIENT, status); 
+                        client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_CLIENT, status); 
                         free (status);
                     }
                     
@@ -410,13 +464,20 @@ static void client_receive_handle_buffer (Client *client, Connection *connection
             }
 
             else {
-                if (sock_receive->spare_packet) packet_append_data (sock_receive->spare_packet, (void *) end, remaining_buffer_size);
+                if (sock_receive->spare_packet) {
+                    // printf ("else sock_receive->spare_packet\n");
+                    packet_append_data (sock_receive->spare_packet, (void *) end, remaining_buffer_size);
+                } 
 
                 else {
                     // handle part of a new header
                     // #ifdef CERVER_DEBUG
-                    // cerver_log_debug ("Handle part of a new header...");
+                    // client_log_debug ("Handle part of a new header...");
                     // #endif
+
+                    // printf ("buffer size: %ld\n", buffer_size);
+                    // printf ("buffer pos: %ld\n", buffer_pos);
+                    // printf ("remaining_buffer_size: %ld\n", remaining_buffer_size);
 
                     // copy the piece of possible header that was cut of between recv ()
                     sock_receive->header = malloc (sizeof (PacketHeader));
@@ -434,6 +495,8 @@ static void client_receive_handle_buffer (Client *client, Connection *connection
                     buffer_pos += remaining_buffer_size;
                 }
             }
+
+            header = NULL;
         }
     }
 
@@ -460,15 +523,15 @@ void client_receive (Client *client, Connection *connection) {
     if (client && connection) {
         char *packet_buffer = (char *) calloc (connection->receive_packet_buffer_size, sizeof (char));
         if (packet_buffer) {
-            ssize_t rc = recv (connection->sock_fd, packet_buffer, connection->receive_packet_buffer_size, 0);
+            ssize_t rc = recv (connection->socket->sock_fd, packet_buffer, connection->receive_packet_buffer_size, 0);
 
             switch (rc) {
                 case -1: {
                     if (errno != EWOULDBLOCK) {
                         #ifdef CLIENT_DEBUG 
-                        char *s = c_string_create ("client_receive () - rc < 0 - sock fd: %d", connection->sock_fd);
+                        char *s = c_string_create ("client_receive () - rc < 0 - sock fd: %d", connection->socket->sock_fd);
                         if (s) {
-                            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, s);
+                            client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, s);
                             free (s);
                         }
                         perror ("Error");
@@ -483,9 +546,9 @@ void client_receive (Client *client, Connection *connection) {
                     // but in dgram it might mean something?
                     #ifdef CLIENT_DEBUG
                     char *s = c_string_create ("client_receive () - rc == 0 - sock fd: %d",
-                        connection->sock_fd);
+                        connection->socket->sock_fd);
                     if (s) {
-                        client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, s);
+                        client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, s);
                         free (s);
                     }
                     // perror ("Error");
@@ -498,7 +561,7 @@ void client_receive (Client *client, Connection *connection) {
                     // char *s = c_string_create ("Connection %s rc: %ld",
                     //     connection->name->str, rc);
                     // if (s) {
-                    //     client_log_msg (stdout, LOG_DEBUG, LOG_CLIENT, s);
+                    //     client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_CLIENT, s);
                     //     free (s);
                     // }
 
@@ -523,7 +586,7 @@ void client_receive (Client *client, Connection *connection) {
 
         else {
             #ifdef CLIENT_DEBUG
-            client_log_msg (stderr, LOG_ERROR, LOG_CLIENT, 
+            client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_CLIENT, 
                 "Failed to allocate a new packet buffer!");
             #endif
         }

@@ -1,50 +1,61 @@
-#ifndef _CLIENT_LOG_H_
-#define _CLIENT_LOG_H_
+#ifndef _CLIENT_UTILS_LOG_H_
+#define _CLIENT_UTILS_LOG_H_
 
 #include <stdio.h>
 
-#define COLOR_RED       "\x1b[31m"
-#define COLOR_GREEN     "\x1b[32m"
-#define COLOR_YELLOW    "\x1b[33m"
-#define COLOR_BLUE      "\x1b[34m"
-#define COLOR_MAGENTA   "\x1b[35m"
-#define COLOR_CYAN      "\x1b[36m"
-#define COLOR_RESET     "\x1b[0m"
+#include "client/config.h"
 
-typedef enum LogMsgType {
+#define LOG_COLOR_RED       "\x1b[31m"
+#define LOG_COLOR_GREEN     "\x1b[32m"
+#define LOG_COLOR_YELLOW    "\x1b[33m"
+#define LOG_COLOR_BLUE      "\x1b[34m"
+#define LOG_COLOR_MAGENTA   "\x1b[35m"
+#define LOG_COLOR_CYAN      "\x1b[36m"
+#define LOG_COLOR_RESET     "\x1b[0m"
 
-	LOG_NO_TYPE             = 0,
+#define LOG_TYPE_MAP(XX)						\
+	XX(0, 	NONE, 		[NONE])					\
+	XX(1, 	ERROR, 		[ERROR])				\
+	XX(2, 	WARNING, 	[WARNING])				\
+	XX(3, 	SUCCESS, 	[SUCCESS])				\
+	XX(4, 	DEBUG, 		[DEBUG])				\
+	XX(5, 	TEST, 		[TEST])					\
+	XX(6, 	CERVER, 	[CERVER])				\
+	XX(7, 	CLIENT, 	[CLIENT])				\
+	XX(8, 	HANDLER, 	[HANDLER])				\
+	XX(9, 	ADMIN, 		[ADMIN])				\
+	XX(10, 	EVENT, 		[EVENT])				\
+	XX(11, 	PACKET, 	[PACKET])				\
+	XX(12, 	REQ, 		[REQ])					\
+	XX(13, 	FILE, 		[FILE])					\
+	XX(14, 	HTTP, 		[HTTP])					\
+	XX(15, 	GAME, 		[GAME])					\
+	XX(16, 	PLAYER, 	[PLAYER)				\
 
-	LOG_ERROR               = 1,
-	LOG_WARNING             = 2,
-	LOG_SUCCESS             = 3,
-	LOG_DEBUG               = 4,
-	LOG_TEST                = 5,
+typedef enum LogType {
 
-	LOG_CERVER,
-	LOG_CLIENT,
+	#define XX(num, name, string) LOG_TYPE_##name = num,
+	LOG_TYPE_MAP (XX)
+	#undef XX
+	
+} LogType;
 
-	LOG_REQ,
-	LOG_PACKET,
-	LOG_FILE,
-	LOG_GAME,
-	LOG_PLAYER,
-
-} LogMsgType;
-
-extern void client_log_msg (FILE *__restrict __stream, LogMsgType first_type, LogMsgType second_type,
-    const char *msg, ...);
+CLIENT_PUBLIC void client_log_msg (
+	FILE *__restrict __stream, 
+	LogType first_type, LogType second_type,
+	const char *msg
+);
 
 // prints a red error message to stderr
-extern void client_log_error (const char *msg);
+CLIENT_PUBLIC void client_log_error (const char *msg);
 
 // prints a yellow warning message to stderr
-extern void client_log_warning (const char *msg);
+CLIENT_PUBLIC void client_log_warning (const char *msg);
 
 // prints a green success message to stdout
-extern void client_log_success (const char *msg);
+CLIENT_PUBLIC void client_log_success (const char *msg);
 
 // prints a debug message to stdout
-extern void client_log_debug (const char *msg);
+CLIENT_PUBLIC void client_log_debug (const char *msg);
 
 #endif

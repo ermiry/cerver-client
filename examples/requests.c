@@ -52,22 +52,22 @@ static int cerver_connect (const char *ip, unsigned int port) {
                 connection_set_max_sleep (connection, 30);
                 
                 if (!client_connect_to_cerver (client, connection)) {
-                    client_log_msg (stdout, LOG_SUCCESS, LOG_NO_TYPE, "Connected to cerver!");
+                    client_log_msg (stdout, LOG_TYPE_SUCCESS, LOG_TYPE_NONE, "Connected to cerver!");
                     retval = 0;
                 }
 
                 else {
-                    client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to connect to cerver!");
+                    client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to connect to cerver!");
                 }
             }
 
             else {
-                client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create connection!");
+                client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create connection!");
             }
         }
 
         else {
-            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to create client!");
+            client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create client!");
         }
     }
 
@@ -92,26 +92,20 @@ static void app_handler (void *packet_ptr) {
 
 	if (packet_ptr) {
         Packet *packet = (Packet *) packet_ptr;
-        if (packet) {
-            if (packet->data_size >= sizeof (RequestData)) {
-                RequestData *req = (RequestData *) (packet->data);
+        
+        switch (packet->header->request_type) {
+            case TEST_MSG: client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Got a test message from cerver!"); break;
 
-                switch (req->type) {
-                    case TEST_MSG: client_log_msg (stdout, LOG_DEBUG, LOG_NO_TYPE, "Got a test message from cerver!"); break;
+            case GET_MSG: {
+                char *end = (char *) packet->data;
 
-                    case GET_MSG: {
-                        char *end = (char *) packet->data;
-                        end += sizeof (RequestData);
+                AppMessage *app_message = (AppMessage *) end;
+                printf ("%s - %d\n", app_message->message, app_message->len);
+            } break;
 
-                        AppMessage *app_message = (AppMessage *) end;
-                        printf ("%s - %d\n", app_message->message, app_message->len);
-                    } break;
-
-                    default: 
-                        client_log_msg (stderr, LOG_WARNING, LOG_NO_TYPE, "Got an unknown app request.");
-                        break;
-                }
-            }
+            default: 
+                client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown app request.");
+                break;
         }
     }
 
@@ -128,25 +122,21 @@ static int request_message (void) {
     // manually create a packet to send
     Packet *packet = packet_new ();
     if (packet) {
-        size_t packet_len = sizeof (PacketHeader) + sizeof (RequestData);
+        size_t packet_len = sizeof (PacketHeader);
         packet->packet = malloc (packet_len);
         packet->packet_size = packet_len;
 
         char *end = (char *) packet->packet;
         PacketHeader *header = (PacketHeader *) end;
-        header->protocol_id = packets_get_protocol_id ();
-        header->protocol_version = packets_get_protocol_version ();
         header->packet_type = APP_PACKET;
         header->packet_size = packet_len;
         header->handler_id = 0;
 
-        end += sizeof (PacketHeader);
-        RequestData *req_data = (RequestData *) end;
-        req_data->type = GET_MSG;
+        header->request_type = GET_MSG;
 
         printf ("Requesting to cerver...\n");
         if (client_request_to_cerver (client, connection, packet)) {
-            client_log_msg (stderr, LOG_ERROR, LOG_NO_TYPE, "Failed to send message request to cerver");
+            client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to send message request to cerver");
         }
         printf ("Request has ended\n");
 
@@ -183,7 +173,7 @@ int main (int argc, const char **argv) {
     client_log_debug ("Request Example");
 	printf ("\n");
 
-    if (!cerver_connect ("127.0.0.1", 8007)) {
+    if (!cerver_connect ("127.0.0.1", 7000)) {
         while (1) {
             request_message ();
 

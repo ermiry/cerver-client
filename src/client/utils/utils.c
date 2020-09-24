@@ -112,6 +112,31 @@ char *itoa (int i, char *b) {
 
 /*** c strings ***/
 
+// copies a c string into another one previuosly allocated
+void c_string_copy (char *to, const char *from) {
+
+	if (to && from) {
+		while (*from) *to++ = *from++;
+		
+		*to = '\0';
+	}
+
+}
+
+// copies n bytes from a c string into another one previuosly allocated
+void c_string_n_copy (char *to, const char *from, size_t n) {
+
+	if (to && from) {
+		while (*from && n) {
+			*to++ = *from++;
+			n--;
+		}
+		
+		*to = '\0';
+	}
+
+}
+
 // creates a new c string with the desired format, as in printf
 char *c_string_create (const char *format, ...) {
 
@@ -140,85 +165,103 @@ char *c_string_create (const char *format, ...) {
 
 }
 
-// splits a c string into tokens based on a delimiter
-char **c_string_split (char *string, const char delim, int *n_tokens) {
+// get how many tokens will be extracted by counting the number of apperances of the delim
+// the original string won't be affected
+size_t c_string_count_tokens (const char *original, const char delim) {
 
-	char **result = 0;
 	size_t count = 0;
-	char *temp = string;
-	char *last = 0;
-	char dlm[2];
-	dlm[0] = delim;
-	dlm[1] = 0;
 
-	// count how many elements will be extracted
-	while (*temp) {
-		if (delim == *temp) {
-			count++;
-			last = temp;
+	if (original) {
+		char *temp = (char *) original;
+		char prev = '\0';
+		char *last = NULL;
+
+		while (*temp) {
+			if (delim == *temp) {
+				if (prev != delim) count++;
+				last = temp;
+			}
+
+			prev = *temp;
+			temp++;
 		}
 
-		temp++;
+		// don't count if the delim is the last char of the string
+		if (prev == delim) count--;
+
+		// check if we have info between delims
+		if (original[0] == delim && count) count--;
+
+		if (last) count += (last < temp);
 	}
 
-	count += last < (string + strlen (string) - 1);
+	return count;
 
-	count++;
+}
 
-	result = (char **) calloc (count, sizeof (char *));
-	if (n_tokens) *n_tokens = count;
+// splits a c string into tokens based on a delimiter
+// the original string won't be affected
+// this method is thread safe as it uses __strtok_r () instead of the regular strtok ()
+char **c_string_split (const char *original, const char delim, size_t *n_tokens) {
 
-	if (result) {
-		size_t idx = 0;
-		char *token = strtok (string, dlm);
+	char **result = NULL;
 
-		while (token) {
-			// assert (idx < count);
-			*(result + idx++) = strdup (token);
-			token = strtok (0, dlm);
+	if (original) {
+		if (strlen (original) > 1) {
+			char *string = strdup (original);
+			if (string) {
+				size_t count = c_string_count_tokens (original, delim);
+				if (count) {
+					result = (char **) calloc (count, sizeof (char *));
+					if (result) {
+						if (n_tokens) *n_tokens = count;
+
+						size_t idx = 0;
+
+						char dlm[2];
+						dlm[0] = delim;
+						dlm[1] = '\0';
+
+						char *token = NULL;
+						char *rest = string;
+						while ((token = __strtok_r (rest, dlm, &rest))) {
+							result[idx] = strdup (token);
+							idx++;
+						}
+					}
+				}
+
+				free (string);
+			}
 		}
-
-		// assert (idx == count - 1);
-		*(result + idx) = 0;
 	}
 
 	return result;
 
 }
 
-// copies a c string into another one previuosly allocated
-void c_string_copy (char *to, const char *from) {
-
-	if (to && from) {
-		while (*from) *to++ = *from++;
-		
-		*to = '\0';
-	}
-
-}
-
 // revers a c string
-char *c_string_reverse (char *str) {
+// returns a newly allocated c string
+char *c_string_reverse (const char *str) {
+
+	char *reverse = NULL;
 
 	if (str) {
-		char reverse[20];
-		int len = strlen (str);
-		short int end = len - 1;
-		short int begin = 0;
-		for ( ; begin < len; begin++) {
-			reverse[begin] = str[end];
-			end--;
+		size_t len = strlen (str);
+		reverse = (char *) calloc (len + 1, sizeof (char));
+		if (reverse) {
+			size_t end = len - 1;
+			size_t begin = 0;
+			for (; begin < len; begin++) {
+				reverse[begin] = str[end];
+				end--;
+			}
+
+			reverse[begin] = '\0';
 		}
-
-		reverse[begin] = '\0';
-
-		char *retval = (char *) calloc (len + 1, sizeof (char));
-		if (retval) c_string_copy (retval, reverse);
-
-		return retval;
 	}
 
-	return NULL;
+	return reverse;
 
 }
 
@@ -276,6 +319,47 @@ char *c_string_remove_sub (char *str, const char *sub) {
 	
 	return retval;
 
+}
+
+// removes any white space from the string
+char *c_string_trim (char *str) {
+
+	while (isspace (*str)) str++;
+
+	if (*str == 0) return str;
+
+	char *end = str + strlen (str) - 1;
+	while (end > str && isspace (*end)) end--;
+
+	*(end + 1) = 0;
+
+	return str;
+
+}
+
+static inline bool is_quote (char c) { return (c == '"' || c == '\''); }
+
+// removes quotes from string
+char *c_string_strip_quotes (char *str) {
+
+	while (is_quote (*str)) str++;
+
+	if (*str == 0) return str;
+
+	char *end = str + strlen(str) - 1;
+	while (end > str && is_quote (*end)) end--;
+
+	*(end + 1) = 0;
+
+	return str;
+
+}
+
+// returns true if the string starts with the selected sub string
+bool c_string_starts_with (const char *str, const char *substr) {
+
+	return (str && substr) ? strncmp (str, substr, strlen (substr)) == 0 : false;
+	
 }
 
 // creates a newly allocated string using the data between the two pointers of the SAME string
