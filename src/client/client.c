@@ -106,9 +106,9 @@ static Client *client_new (void) {
         client->registered_events = NULL;
         client->registered_errors = NULL;
 
-        client->PACKET_TYPE_APP_handler = NULL;
-        client->PACKET_TYPE_APP_ERROR_handler = NULL;
-        client->PACKET_TYPE_CUSTOM_handler = NULL;
+        client->app_packet_handler = NULL;
+        client->app_error_packet_handler = NULL;
+        client->custom_packet_handler = NULL;
 
         client->check_packets = false;
 
@@ -156,8 +156,8 @@ void client_set_name (Client *client, const char *name) {
 void client_set_app_handlers (Client *client, Action app_handler, Action app_error_handler) {
 
     if (client) {
-        client->PACKET_TYPE_APP_handler = app_handler;
-        client->PACKET_TYPE_APP_ERROR_handler = app_error_handler;
+        client->app_packet_handler = app_handler;
+        client->app_error_packet_handler = app_error_handler;
     }
 
 }
@@ -165,7 +165,7 @@ void client_set_app_handlers (Client *client, Action app_handler, Action app_err
 // sets a custom packet handler
 void client_set_custom_handler (Client *client, Action custom_handler) {
 
-    if (client) client->PACKET_TYPE_CUSTOM_handler = custom_handler;
+    if (client) client->custom_packet_handler = custom_handler;
 
 }
 
