@@ -219,7 +219,7 @@ static int test_msg_send (void) {
 	int retval = 1;
 
 	if ((client->running) && (connection->connected)) {
-		Packet *packet = packet_generate_request (APP_PACKET, TEST_MSG, NULL, 0);
+		Packet *packet = packet_generate_request (PACKET_TYPE_APP, TEST_MSG, NULL, 0);
 		if (packet) {
 			packet_set_network_values (packet, client, connection);
 			size_t sent = 0;

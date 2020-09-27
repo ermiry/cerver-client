@@ -88,11 +88,11 @@ static void my_app_handler (void *data) {
 		Packet *packet = (Packet *) data;
 		switch (packet->header->request_type) {
             case TEST_MSG: 
-                client_log_debug ("Got a APP_PACKET test!");
+                client_log_debug ("Got a PACKET_TYPE_APP test!");
                 break;
 
             default: 
-                client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown APP_PACKET request.");
+                client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown PACKET_TYPE_APP request.");
                 break;
         }
 	}
@@ -105,11 +105,11 @@ static void my_app_error_handler (void *data) {
 		Packet *packet = (Packet *) data;
 		switch (packet->header->request_type) {
             case TEST_MSG: 
-                client_log_debug ("Got a APP_ERROR_PACKET test!");
+                client_log_debug ("Got a PACKET_TYPE_APP_ERROR test!");
                 break;
 
             default: 
-                client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown APP_ERROR_PACKET request.");
+                client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown PACKET_TYPE_APP_ERROR request.");
                 break;
         }
 	}
@@ -122,11 +122,11 @@ static void my_custom_handler (void *data) {
 		Packet *packet = (Packet *) data;
 		switch (packet->header->request_type) {
             case TEST_MSG: 
-                client_log_debug ("Got a CUSTOM_PACKET test!");
+                client_log_debug ("Got a PACKET_TYPE_CUSTOM test!");
                 break;
 
             default: 
-                client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown CUSTOM_PACKET request.");
+                client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown PACKET_TYPE_CUSTOM request.");
                 break;
         }
 	}
@@ -142,7 +142,7 @@ static int test_app_msg_send (void) {
     int retval = 1;
 
     if ((client->running) && (connection->connected)) {
-        Packet *packet = packet_generate_request (APP_PACKET, TEST_MSG, NULL, 0);
+        Packet *packet = packet_generate_request (PACKET_TYPE_APP, TEST_MSG, NULL, 0);
         if (packet) {
             packet_set_network_values (packet, client, connection);
             size_t sent = 0;
@@ -151,7 +151,7 @@ static int test_app_msg_send (void) {
             }
 
             else {
-                printf ("APP_PACKET sent to cerver: %ld\n", sent);
+                printf ("PACKET_TYPE_APP sent to cerver: %ld\n", sent);
                 retval = 0;
             } 
 
@@ -168,7 +168,7 @@ static int test_app_error_msg_send (void) {
     int retval = 1;
 
     if ((client->running) && (connection->connected)) {
-        Packet *packet = packet_generate_request (APP_ERROR_PACKET, TEST_MSG, NULL, 0);
+        Packet *packet = packet_generate_request (PACKET_TYPE_APP_ERROR, TEST_MSG, NULL, 0);
         if (packet) {
             packet_set_network_values (packet, client, connection);
             size_t sent = 0;
@@ -177,7 +177,7 @@ static int test_app_error_msg_send (void) {
             }
 
             else {
-                printf ("APP_ERROR_PACKET sent to cerver: %ld\n", sent);
+                printf ("PACKET_TYPE_APP_ERROR sent to cerver: %ld\n", sent);
                 retval = 0;
             } 
 
@@ -194,7 +194,7 @@ static int test_custom_msg_send (void) {
     int retval = 1;
 
     if ((client->running) && (connection->connected)) {
-        Packet *packet = packet_generate_request (CUSTOM_PACKET, TEST_MSG, NULL, 0);
+        Packet *packet = packet_generate_request (PACKET_TYPE_CUSTOM, TEST_MSG, NULL, 0);
         if (packet) {
             packet_set_network_values (packet, client, connection);
             size_t sent = 0;
@@ -203,7 +203,7 @@ static int test_custom_msg_send (void) {
             }
 
             else {
-                printf ("CUSTOM_PACKET sent to cerver: %ld\n", sent);
+                printf ("PACKET_TYPE_CUSTOM sent to cerver: %ld\n", sent);
                 retval = 0;
             } 
 

@@ -276,7 +276,7 @@ static int test_msg_send (Connection *con) {
 	int retval = 1;
 
 	if ((client->running) && (con->connected)) {
-		Packet *packet = packet_generate_request (APP_PACKET, TEST_MSG, NULL, 0);
+		Packet *packet = packet_generate_request (PACKET_TYPE_APP, TEST_MSG, NULL, 0);
 		if (packet) {
 			packet_set_network_values (packet, client, con);
 			size_t sent = 0;

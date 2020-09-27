@@ -185,7 +185,7 @@ static unsigned int test_msg_send (void) {
 	unsigned int retval = 1;
 
 	if ((client->running) && (connection->connected)) {
-		Packet *packet = packet_generate_request (APP_PACKET, TEST_MSG, NULL, 0);
+		Packet *packet = packet_generate_request (PACKET_TYPE_APP, TEST_MSG, NULL, 0);
 		if (packet) {
 			retval = send_packet (packet);
 
@@ -210,7 +210,7 @@ static unsigned int app_msg_send_generate_manual (const char *message) {
 
 			char *end = (char *) req->packet;
 			PacketHeader *header = (PacketHeader *) end;
-			header->packet_type = APP_PACKET;
+			header->packet_type = PACKET_TYPE_APP;
 			header->packet_size = packet_len;
 
 			header->request_type = APP_MSG;
@@ -244,7 +244,7 @@ static unsigned int app_msg_send_generate_request (const char *message) {
 		AppData *app_data = app_data_create (message);
 		if (app_data) {
 			Packet *packet = packet_generate_request (
-				APP_PACKET, APP_MSG, 
+				PACKET_TYPE_APP, APP_MSG, 
 				app_data, sizeof (AppData)
 			);
 
@@ -277,7 +277,7 @@ static unsigned int app_msg_send_generate_split (const char *message) {
 			size_t packet_len = sizeof (PacketHeader) + data_size;
 
 			packet->header = packet_header_new ();
-			packet->header->packet_type = APP_PACKET;
+			packet->header->packet_type = PACKET_TYPE_APP;
 			packet->header->packet_size = packet_len;
 
 			packet->header->request_type = APP_MSG;
@@ -325,7 +325,7 @@ static unsigned int app_msg_send_generate_pieces (void) {
 		size_t packet_len = sizeof (PacketHeader) + data_size;
 
 		packet->header = packet_header_new ();
-		packet->header->packet_type = APP_PACKET;
+		packet->header->packet_type = PACKET_TYPE_APP;
 		packet->header->packet_size = packet_len;
 
 		packet->header->request_type = MULTI_MSG;
