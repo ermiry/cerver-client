@@ -169,23 +169,21 @@ static void client_game_lobby_start (Packet *packet) {
 // handles a game packet from the cerver
 void client_game_packet_handler (Packet *packet) {
 
-    if (packet) {
-        if (packet->header) {
-            switch (packet->header->request_type) {
-                case GAME_LOBBY_CREATE: client_game_lobby_create (packet); break;
-                case GAME_LOBBY_JOIN: client_game_lobby_join (packet); break;
-                case GAME_LOBBY_LEAVE: client_game_lobby_leave (packet); break;
-                case GAME_LOBBY_UPDATE: break;
-                case GAME_LOBBY_DESTROY: break;
+    if (packet->header) {
+        switch (packet->header->request_type) {
+            case GAME_PACKET_TYPE_GAME_INIT: break;
+            case GAME_PACKET_TYPE_GAME_START: client_game_lobby_start (packet); break;
 
-                case GAME_INIT: break;
-                case GAME_START: client_game_lobby_start (packet); break;
+            case GAME_PACKET_TYPE_LOBBY_CREATE: client_game_lobby_create (packet); break;
+            case GAME_PACKET_TYPE_LOBBY_JOIN: client_game_lobby_join (packet); break;
+            case GAME_PACKET_TYPE_LOBBY_LEAVE: client_game_lobby_leave (packet); break;
+            case GAME_PACKET_TYPE_LOBBY_UPDATE: break;
+            case GAME_PACKET_TYPE_LOBBY_DESTROY: break;
 
-                default:
-                    client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_CLIENT,
-                        "Got a game packet of unknown type!");
-                    break;
-            }
+            default:
+                client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_CLIENT,
+                    "Got a game packet of unknown type!");
+                break;
         }
     }
 
