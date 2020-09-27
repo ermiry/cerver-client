@@ -71,42 +71,43 @@ CLIENT_PUBLIC void packet_version_print (PacketVersion *version);
 
 #pragma region types
 
+#define PACKET_TYPE_MAP(XX)					\
+	XX(0, 	NONE)							\
+	XX(1, 	CERVER)							\
+	XX(2, 	CLIENT)							\
+	XX(3, 	ERROR)							\
+	XX(4, 	REQUEST)						\
+	XX(5, 	AUTH)							\
+	XX(6, 	GAME)							\
+	XX(7, 	APP)							\
+	XX(8, 	APP_ERROR)						\
+	XX(9, 	CUSTOM)							\
+	XX(10, 	TEST)
+
 // these indicate what type of packet we are sending/recieving
 typedef enum PacketType {
 
-    CERVER_PACKET       = 0,
-    CLIENT_PACKET       = 1,
-
-    ERROR_PACKET        = 2,
-
-	REQUEST_PACKET      = 3,
-    AUTH_PACKET         = 4,
-    GAME_PACKET         = 5,
-
-    APP_PACKET          = 6,
-    APP_ERROR_PACKET    = 7,
-
-    CUSTOM_PACKET       = 70,
-
-    TEST_PACKET         = 100,
-    DONT_CHECK_TYPE     = 101,
+	#define XX(num, name) PACKET_TYPE_##name = num,
+	PACKET_TYPE_MAP (XX)
+	#undef XX
 
 } PacketType;
 
 struct _PacketsPerType {
 
-    u64 n_cerver_packets;
-    u64 n_error_packets;
-    u64 n_auth_packets;
-    u64 n_request_packets;
-    u64 n_game_packets;
-    u64 n_app_packets;
-    u64 n_app_error_packets;
-    u64 n_custom_packets;
-    u64 n_test_packets;
-    u64 n_unknown_packets;
+	u64 n_cerver_packets;
+	u64 n_client_packets;
+	u64 n_error_packets;
+	u64 n_request_packets;
+	u64 n_auth_packets;
+	u64 n_game_packets;
+	u64 n_app_packets;
+	u64 n_app_error_packets;
+	u64 n_custom_packets;
+	u64 n_test_packets;
+	u64 n_unknown_packets;
 
-    u64 n_bad_packets;
+	u64 n_bad_packets;
 
 };
 
@@ -152,81 +153,101 @@ CLIENT_PUBLIC u8 packet_header_copy (PacketHeader **dest, PacketHeader *source);
 
 #pragma region packets
 
-typedef enum RequestType {
-
-    REQ_GET_FILE                = 1,
-    POST_SEND_FILE              = 2,
-    
-} RequestType;
+#define CERVER_PACKET_TYPE_MAP(XX)			\
+	XX(0, 	NONE)							\
+	XX(1, 	INFO)							\
+	XX(2, 	TEARDOWN)
 
 typedef enum CerverPacketType {
 
-	CERVER_INFO                 = 0,
-	CERVER_TEARDOWN             = 1,
-
-	CERVER_INFO_STATS           = 2,
-	CERVER_GAME_STATS           = 3
+	#define XX(num, name) CERVER_PACKET_TYPE_##name = num,
+	CERVER_PACKET_TYPE_MAP (XX)
+	#undef XX
 
 } CerverPacketType;
 
+#define CLIENT_PACKET_TYPE_MAP(XX)			\
+	XX(0, 	NONE)							\
+	XX(1, 	CLOSE_CONNECTION)				\
+	XX(2, 	DISCONNECT)
+
 typedef enum ClientPacketType {
 
-	CLIENT_CLOSE_CONNECTION     = 1,
-	CLIENT_DISCONNET            = 2,
+	#define XX(num, name) CLIENT_PACKET_TYPE_##name = num,
+	CLIENT_PACKET_TYPE_MAP (XX)
+	#undef XX
 
 } ClientPacketType;
 
+#define REQUEST_PACKET_TYPE_MAP(XX)			\
+	XX(0, 	NONE)							\
+	XX(1, 	GET_FILE)						\
+	XX(2, 	SEND_FILE)
+
+typedef enum RequestPacketType {
+
+	#define XX(num, name) REQUEST_PACKET_TYPE_##name = num,
+	REQUEST_PACKET_TYPE_MAP (XX)
+	#undef XX
+
+} RequestPacketType;
+
+#define AUTH_PACKET_TYPE_MAP(XX)			\
+	XX(0, 	NONE)							\
+	XX(1, 	REQUEST_AUTH)					\
+	XX(2, 	CLIENT_AUTH)					\
+	XX(3, 	ADMIN_AUTH)						\
+	XX(4, 	SUCCESS)
+
 typedef enum AuthPacketType {
 
-	AUTH_PACKET_TYPE_NONE			= 0,
-
-	AUTH_PACKET_TYPE_REQUEST_AUTH	= 1,
-
-	AUTH_PACKET_TYPE_CLIENT_AUTH	= 2,
-	AUTH_PACKET_TYPE_ADMIN_AUTH		= 3,
-
-	AUTH_PACKET_TYPE_SUCCESS		= 4
+	#define XX(num, name) AUTH_PACKET_TYPE_##name = num,
+	AUTH_PACKET_TYPE_MAP (XX)
+	#undef XX
 
 } AuthPacketType;
 
+#define GAME_PACKET_TYPE_MAP(XX)			\
+	XX(0, 	NONE)							\
+	XX(1, 	GAME_INIT)						\
+	XX(2, 	GAME_START)						\
+	XX(3, 	LOBBY_CREATE)					\
+	XX(4, 	LOBBY_JOIN)						\
+	XX(5, 	LOBBY_LEAVE)					\
+	XX(6, 	LOBBY_UPDATE)					\
+	XX(7, 	LOBBY_DESTROY)					\
+
 typedef enum GamePacketType {
 
-	GAME_LOBBY_CREATE           = 0,
-	GAME_LOBBY_JOIN             = 1,
-	GAME_LOBBY_LEAVE            = 2,
-	GAME_LOBBY_UPDATE           = 3,
-	GAME_LOBBY_DESTROY          = 4,
-
-	GAME_INIT                   = 5,   // prepares the game structures
-	GAME_START                  = 6,   // strat running the game
-	GAME_INPUT_UPDATE           = 7,
-	GAME_SEND_MSG               = 8,
+	#define XX(num, name) GAME_PACKET_TYPE_##name = num,
+	GAME_PACKET_TYPE_MAP (XX)
+	#undef XX
 
 } GamePacketType;
 
 struct _Packet {
 
-    // the cerver and client the packet is from
-    struct _Cerver *cerver;
-    struct _Client *client;
-    struct _Connection *connection;
+	// the cerver and client the packet is from
+	struct _Cerver *cerver;
+	struct _Client *client;
+	struct _Connection *connection;
 
-    PacketType packet_type;
-    u32 req_type;
+	PacketType packet_type;
+	u32 req_type;
 
-    // serilized data
-    size_t data_size;
-    void *data;
-    char *data_ptr;
-    char *data_end;
-    bool data_ref;
+	// serilized data
+	size_t data_size;
+	void *data;
+	char *data_ptr;
+	char *data_end;
+	bool data_ref;
 
-    // the actual packet to be sent
-    PacketHeader *header;
-    PacketVersion *version;
-    size_t packet_size;
-    void *packet;
-    bool packet_ref;
+	// the actual packet to be sent
+	PacketHeader *header;
+	PacketVersion *version;
+	size_t packet_size;
+	void *packet;
+	bool packet_ref;
 
 };
 
@@ -243,8 +264,10 @@ CLIENT_PUBLIC void packet_delete (void *ptr);
 CLIENT_EXPORT Packet *packet_create (PacketType type, void *data, size_t data_size);
 
 // sets the packet destinatary to whom this packet is going to be sent
-CLIENT_EXPORT void packet_set_network_values (Packet *packet, 
-    struct _Client *client, struct _Connection *connection);
+CLIENT_EXPORT void packet_set_network_values (
+	Packet *packet, 
+	struct _Client *client, struct _Connection *connection
+);
 
 // sets the data of the packet -> copies the data into the packet
 // if the packet had data before it is deleted and replaced with the new one
@@ -285,8 +308,10 @@ CLIENT_EXPORT u8 packet_generate (Packet *packet);
 // generates a simple request packet of the requested type reday to be sent, 
 // and with option to pass some data
 // returns a newly allocated packet that should be deleted after use
-CLIENT_EXPORT Packet *packet_generate_request (PacketType packet_type, u32 req_type, 
-    void *data, size_t data_size);
+CLIENT_EXPORT Packet *packet_generate_request (
+	PacketType packet_type, u32 req_type, 
+	void *data, size_t data_size
+);
 
 // sends a packet using its network values
 // raw flag to send a raw packet (only the data that was set to the packet, without any header)
@@ -298,8 +323,11 @@ CLIENT_EXPORT u8 packet_send (const Packet *packet, int flags, size_t *total_sen
 // at least a packet & an active connection are required for this method to succeed
 // raw flag to send a raw packet (only the data that was set to the packet, without any header)
 // returns 0 on success, 1 on error
-CLIENT_EXPORT u8 packet_send_to (const Packet *packet, size_t *total_sent, bool raw,
-    struct _Client *client, struct _Connection *connection);
+CLIENT_EXPORT u8 packet_send_to (
+	const Packet *packet,
+	size_t *total_sent, bool raw,
+	struct _Client *client, struct _Connection *connection
+);
 
 // sends a packet to the socket in two parts, first the header & then the data
 // this method can be useful when trying to forward a big received packet without the overhead of 
@@ -312,25 +340,30 @@ CLIENT_EXPORT u8 packet_send_split (const Packet *packet, int flags, size_t *tot
 // sends a packet to the socket in two parts, first the header & then the data
 // works just as packet_send_split () but with the flags set to 0
 // returns 0 on success, 1 on error
-CLIENT_EXPORT u8 packet_send_to_split (const Packet *packet, size_t *total_sent,
-    struct _Client *client, struct _Connection *connection);
+CLIENT_EXPORT u8 packet_send_to_split (
+	const Packet *packet,
+	size_t *total_sent,
+	struct _Client *client, struct _Connection *connection
+);
 
 // sends a packet in pieces, taking the header from the packet's field
 // sends each buffer as they are with they respective sizes
 // socket mutex will be locked for the entire operation
 // returns 0 on success, 1 on error
 CLIENT_EXPORT u8 packet_send_pieces (
-    const Packet *packet, 
-    void **pieces, size_t *sizes, u32 n_pieces, 
-    int flags, 
-    size_t *total_sent
+	const Packet *packet, 
+	void **pieces, size_t *sizes, u32 n_pieces, 
+	int flags, 
+	size_t *total_sent
 );
 
 // sends a packet directly to the socket
 // raw flag to send a raw packet (only the data that was set to the packet, without any header)
 // returns 0 on success, 1 on error
-CLIENT_EXPORT u8 packet_send_to_socket (const Packet *packet, struct _Socket *socket, 
-    int flags, size_t *total_sent, bool raw);
+CLIENT_EXPORT u8 packet_send_to_socket (
+	const Packet *packet, 
+	struct _Socket *socket, int flags, size_t *total_sent, bool raw
+);
 
 // check if packet has a compatible protocol id and a version
 // returns false on a bad packet
