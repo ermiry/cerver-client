@@ -106,9 +106,9 @@ static Client *client_new (void) {
         client->registered_events = NULL;
         client->registered_errors = NULL;
 
-        client->app_packet_handler = NULL;
-        client->app_error_packet_handler = NULL;
-        client->custom_packet_handler = NULL;
+        client->PACKET_TYPE_APP_handler = NULL;
+        client->PACKET_TYPE_APP_ERROR_handler = NULL;
+        client->PACKET_TYPE_CUSTOM_handler = NULL;
 
         client->check_packets = false;
 
@@ -156,8 +156,8 @@ void client_set_name (Client *client, const char *name) {
 void client_set_app_handlers (Client *client, Action app_handler, Action app_error_handler) {
 
     if (client) {
-        client->app_packet_handler = app_handler;
-        client->app_error_packet_handler = app_error_handler;
+        client->PACKET_TYPE_APP_handler = app_handler;
+        client->PACKET_TYPE_APP_ERROR_handler = app_error_handler;
     }
 
 }
@@ -165,7 +165,7 @@ void client_set_app_handlers (Client *client, Action app_handler, Action app_err
 // sets a custom packet handler
 void client_set_custom_handler (Client *client, Action custom_handler) {
 
-    if (client) client->custom_packet_handler = custom_handler;
+    if (client) client->PACKET_TYPE_CUSTOM_handler = custom_handler;
 
 }
 
@@ -697,11 +697,11 @@ static void client_connection_terminate (Client *client, Connection *connection)
         if (connection->connected) {
             if (connection->cerver) {
                 // send a close connection packet
-                Packet *packet = packet_generate_request (REQUEST_PACKET, CLIENT_CLOSE_CONNECTION, NULL, 0);
+                Packet *packet = packet_generate_request (PACKET_TYPE_CLIENT, CLIENT_PACKET_TYPE_CLOSE_CONNECTION, NULL, 0);
                 if (packet) {
                     packet_set_network_values (packet, client, connection);
                     if (packet_send (packet, 0, NULL, false)) {
-                        client_log_error ("Failed to send CLIENT_CLOSE_CONNECTION!");
+                        client_log_error ("Failed to send CLIENT_PACKET_TYPE_CLOSE_CONNECTION!");
                     }
                     packet_delete (packet);
                 }
@@ -834,8 +834,10 @@ u8 client_game_create_lobby (Client *owner, Connection *connection,
         String *type = str_new (game_type);
         void *stype = str_serialize (type, SS_SMALL);
 
-        Packet *packet = packet_generate_request (GAME_PACKET, GAME_LOBBY_CREATE, 
-            stype, sizeof (SStringS));
+        Packet *packet = packet_generate_request (
+            PACKET_TYPE_GAME, GAME_PACKET_TYPE_LOBBY_CREATE, 
+            stype, sizeof (SStringS)
+        );
         if (packet) {
             packet_set_network_values (packet, owner, connection);
             retval = packet_send (packet, 0, NULL, false);
@@ -871,8 +873,10 @@ u8 client_game_join_lobby (Client *client, Connection *connection,
             strcpy (lobby_join.lobby_id.string, lobby_id);
         }
 
-        Packet *packet = packet_generate_request (GAME_PACKET, GAME_LOBBY_JOIN,
-            &lobby_join, sizeof (LobbyJoin));
+        Packet *packet = packet_generate_request (
+            PACKET_TYPE_GAME, GAME_PACKET_TYPE_LOBBY_JOIN,
+            &lobby_join, sizeof (LobbyJoin)
+        );
         if (packet) {
             packet_set_network_values (packet, client, connection);
             retval = packet_send (packet, 0, NULL, false);
@@ -896,8 +900,10 @@ u8 client_game_leave_lobby (Client *client, Connection *connection,
         id.len = strlen (lobby_id);
         strcpy (id.string, lobby_id);
 
-        Packet *packet = packet_generate_request (GAME_PACKET, GAME_LOBBY_LEAVE, 
-            &id, sizeof (SStringS));
+        Packet *packet = packet_generate_request (
+            PACKET_TYPE_GAME, GAME_PACKET_TYPE_LOBBY_LEAVE, 
+            &id, sizeof (SStringS)
+        );
         if (packet) {
             packet_set_network_values (packet, client, connection);
             retval = packet_send (packet, 0, NULL, false);
@@ -921,8 +927,10 @@ u8 client_game_start_lobby (Client *client, Connection *connection,
         id.len = strlen (lobby_id);
         strcpy (id.string, lobby_id);
 
-        Packet *packet = packet_generate_request (GAME_PACKET, GAME_START,
-            &id, sizeof (SStringS));
+        Packet *packet = packet_generate_request (
+            PACKET_TYPE_GAME, GAME_PACKET_TYPE_GAME_START,
+            &id, sizeof (SStringS)
+        );
         if (packet) {
             packet_set_network_values (packet, client, connection);
             retval = packet_send (packet, 0, NULL, false);
