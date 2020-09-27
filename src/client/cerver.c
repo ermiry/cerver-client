@@ -307,38 +307,24 @@ static void cerver_packet_handle_info (Packet *packet) {
 // handles cerver type packets
 void cerver_packet_handler (Packet *packet) {
 
-    if (packet) {
-        if (packet->header) {
-            switch (packet->header->request_type) {
-                case CERVER_INFO: {
-                   cerver_packet_handle_info (packet);
-                } break;
+    if (packet->header) {
+        switch (packet->header->request_type) {
+            case CERVER_PACKET_TYPE_INFO:
+                cerver_packet_handle_info (packet);
+            break;
 
-                // the cerves is going to be teardown, we have to disconnect
-                case CERVER_TEARDOWN:
-                    #ifdef CLIENT_DEBUG
-                    client_log_msg (stdout, LOG_TYPE_WARNING, LOG_TYPE_NONE, "---> Server teardown! <---");
-                    #endif
-                    client_got_disconnected (packet->client);
-                    client_event_trigger (CLIENT_EVENT_DISCONNECTED, packet->client, NULL);
-                    break;
+            // the cerves is going to be teardown, we have to disconnect
+            case CERVER_PACKET_TYPE_TEARDOWN:
+                #ifdef CLIENT_DEBUG
+                client_log_msg (stdout, LOG_TYPE_WARNING, LOG_TYPE_NONE, "---> Server teardown! <---");
+                #endif
+                client_got_disconnected (packet->client);
+                client_event_trigger (CLIENT_EVENT_DISCONNECTED, packet->client, NULL);
+                break;
 
-                case CERVER_INFO_STATS:
-                    // #ifdef CLIENT_DEBUG
-                    // client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Received a cerver stats packet.");
-                    // #endif
-                    break;
-
-                case CERVER_GAME_STATS:
-                    // #ifdef CLIENT_DEBUG
-                    // client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Received a cerver game stats packet.");
-                    // #endif
-                    break;
-
-                default: 
-                    client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown cerver type packet."); 
-                    break;
-            }
+            default: 
+                client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown cerver type packet."); 
+                break;
         }
     }
 
