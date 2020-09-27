@@ -95,9 +95,9 @@ void packets_per_type_print (PacketsPerType *packets_per_type) {
         printf ("Request:           %ld\n", packets_per_type->n_request_packets);
         printf ("Auth:              %ld\n", packets_per_type->n_auth_packets);
         printf ("Game:              %ld\n", packets_per_type->n_game_packets);
-        printf ("App:               %ld\n", packets_per_type->n_PACKET_TYPE_APPs);
-        printf ("App Error:         %ld\n", packets_per_type->n_PACKET_TYPE_APP_ERRORs);
-        printf ("Custom:            %ld\n", packets_per_type->n_PACKET_TYPE_CUSTOMs);
+        printf ("App:               %ld\n", packets_per_type->n_app_packets);
+        printf ("App Error:         %ld\n", packets_per_type->n_app_error_packets);
+        printf ("Custom:            %ld\n", packets_per_type->n_custom_packets);
         printf ("Test:              %ld\n", packets_per_type->n_test_packets);
         printf ("Unknown:           %ld\n", packets_per_type->n_unknown_packets);
         printf ("Bad:               %ld\n", packets_per_type->n_bad_packets);
@@ -634,18 +634,18 @@ static void packet_send_update_stats (
             break;
 
         case PACKET_TYPE_APP:
-            if (client) client->stats->sent_packets->n_PACKET_TYPE_APPs += 1;
-            connection->stats->sent_packets->n_PACKET_TYPE_APPs += 1;
+            if (client) client->stats->sent_packets->n_app_packets += 1;
+            connection->stats->sent_packets->n_app_packets += 1;
             break;
 
         case PACKET_TYPE_APP_ERROR: 
-            if (client) client->stats->sent_packets->n_PACKET_TYPE_APP_ERRORs += 1;
-            connection->stats->sent_packets->n_PACKET_TYPE_APP_ERRORs += 1;
+            if (client) client->stats->sent_packets->n_app_error_packets += 1;
+            connection->stats->sent_packets->n_app_error_packets += 1;
             break;
 
         case PACKET_TYPE_CUSTOM:
-            if (client) client->stats->sent_packets->n_PACKET_TYPE_CUSTOMs += 1;
-            connection->stats->sent_packets->n_PACKET_TYPE_CUSTOMs += 1;
+            if (client) client->stats->sent_packets->n_custom_packets += 1;
+            connection->stats->sent_packets->n_custom_packets += 1;
             break;
 
         case PACKET_TYPE_TEST: 

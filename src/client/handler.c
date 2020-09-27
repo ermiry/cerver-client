@@ -238,26 +238,26 @@ static void client_packet_handler (void *data) {
 
                 // user set handler to handler app specific packets
                 case PACKET_TYPE_APP:
-                    packet->client->stats->received_packets->n_PACKET_TYPE_APPs += 1;
-                    packet->connection->stats->received_packets->n_PACKET_TYPE_APPs += 1;
-                    if (packet->client->PACKET_TYPE_APP_handler)
-                        packet->client->PACKET_TYPE_APP_handler (packet);
+                    packet->client->stats->received_packets->n_app_packets += 1;
+                    packet->connection->stats->received_packets->n_app_packets += 1;
+                    if (packet->client->app_packet_handler)
+                        packet->client->app_packet_handler (packet);
                     break;
 
                 // user set handler to handle app specific errors
                 case PACKET_TYPE_APP_ERROR: 
-                    packet->client->stats->received_packets->n_PACKET_TYPE_APP_ERRORs += 1;
-                    packet->connection->stats->received_packets->n_PACKET_TYPE_APP_ERRORs += 1;
-                    if (packet->client->PACKET_TYPE_APP_ERROR_handler)
-                        packet->client->PACKET_TYPE_APP_ERROR_handler (packet);
+                    packet->client->stats->received_packets->n_app_error_packets += 1;
+                    packet->connection->stats->received_packets->n_app_error_packets += 1;
+                    if (packet->client->app_error_packet_handler)
+                        packet->client->app_error_packet_handler (packet);
                     break;
 
                 // custom packet hanlder
                 case PACKET_TYPE_CUSTOM: 
-                    packet->client->stats->received_packets->n_PACKET_TYPE_CUSTOMs += 1;
-                    packet->connection->stats->received_packets->n_PACKET_TYPE_CUSTOMs += 1;
-                    if (packet->client->PACKET_TYPE_CUSTOM_handler)
-                        packet->client->PACKET_TYPE_CUSTOM_handler (packet);
+                    packet->client->stats->received_packets->n_custom_packets += 1;
+                    packet->connection->stats->received_packets->n_custom_packets += 1;
+                    if (packet->client->custom_packet_handler)
+                        packet->client->custom_packet_handler (packet);
                     break;
 
                 // handles a test packet form the cerver
