@@ -14,6 +14,24 @@
 
 u8 client_event_unregister (Client *client, ClientEventType event_type);
 
+#pragma region types
+
+// get the description for the current event type
+const char *client_event_type_description (ClientEventType type) {
+
+	switch (type) {
+		#define XX(num, name, description) case CLIENT_EVENT_##name: return #description;
+		CLIENT_EVENT_MAP(XX)
+		#undef XX
+	}
+
+	return client_event_type_description (CLIENT_EVENT_UNKNOWN);
+
+}
+
+
+#pragma endregion
+
 #pragma region data
 
 static ClientEventData *client_event_data_new (void) {

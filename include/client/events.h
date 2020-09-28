@@ -11,34 +11,42 @@
 struct _Client;
 struct _Connection;
 
+#pragma region types
+
+#define CLIENT_EVENT_MAP(XX)																													\
+	XX(0,	NONE, 				No event)																										\
+	XX(1,	CONNECTED, 			Connected to cerver)																							\
+	XX(2,	DISCONNECTED, 		Disconnected from the cerver; either by the cerver or by losing connection)										\
+	XX(3,	CONNECTION_FAILED, 	Failed to connect to cerver)																					\
+	XX(4,	CONNECTION_CLOSE, 	The connection was clossed directly by client. This happens when a call to a recv () methods returns <= 0)		\
+	XX(5,	CONNECTION_DATA, 	Data has been received; only triggered from client request methods)												\
+	XX(6,	CERVER_INFO, 		Received cerver info from the cerver)																			\
+	XX(7,	CERVER_TEARDOWN, 	The cerver is going to teardown & the client will disconnect)													\
+	XX(8,	CERVER_STATS, 		Received cerver stats)																							\
+	XX(9,	CERVER_GAME_STATS, 	Received cerver game stats)																						\
+	XX(10,	AUTH_SENT, 			Auth data has been sent to the cerver)																			\
+	XX(11,	SUCCESS_AUTH, 		Auth with cerver has been successfull)																			\
+	XX(12,	MAX_AUTH_TRIES, 	Maxed out attempts to authenticate to cerver; need to try again)												\
+	XX(13,	LOBBY_CREATE, 		A new lobby was successfully created)																			\
+	XX(14,	LOBBY_JOIN, 		Correctly joined a new lobby)																					\
+	XX(15,	LOBBY_LEAVE, 		Successfully exited a lobby)																					\
+	XX(16,	LOBBY_START, 		The game in the lobby has started)																				\
+	XX(17,	UNKNOWN, 			Unknown event)
+
 typedef enum ClientEventType {
 
-	CLIENT_EVENT_NONE                  = 0,
-
-	CLIENT_EVENT_CONNECTED,            // connected to cerver
-	CLIENT_EVENT_DISCONNECTED,         // disconnected from the cerver, either by the cerver or by losing connection
-
-	CLIENT_EVENT_CONNECTION_FAILED,    // failed to connect to cerver
-	CLIENT_EVENT_CONNECTION_CLOSE,     // this happens when a call to a recv () methods returns <= 0, the connection is clossed directly by client
-
-	CLIENT_EVENT_CONNECTION_DATA,      // data has been received, only triggered from client request methods
-
-	CLIENT_EVENT_CERVER_INFO,          // received cerver info from the cerver
-	CLIENT_EVENT_CERVER_TEARDOWN,      // the cerver is going to teardown (disconnect happens automatically)
-	CLIENT_EVENT_CERVER_STATS,         // received cerver stats
-	CLIENT_EVENT_CERVER_GAME_STATS,    // received cerver game stats
-
-	CLIENT_EVENT_AUTH_SENT,            // auth data has been sent to the cerver
-	CLIENT_EVENT_SUCCESS_AUTH,         // auth with cerver has been successfull
-	CLIENT_EVENT_MAX_AUTH_TRIES,       // maxed out attempts to authenticate to cerver, so try again
-
-	CLIENT_EVENT_LOBBY_CREATE,         // a new lobby was successfully created
-	CLIENT_EVENT_LOBBY_JOIN,           // correctly joined a new lobby
-	CLIENT_EVENT_LOBBY_LEAVE,          // successfully exited a lobby
-
-	CLIENT_EVENT_LOBBY_START,          // the game in the lobby has started
+	#define XX(num, name, description) CLIENT_EVENT_##name = num,
+	CLIENT_EVENT_MAP (XX)
+	#undef XX
 
 } ClientEventType;
+
+// get the description for the current error type
+CLIENT_EXPORT const char *client_event_type_description (ClientEventType type);
+
+#pragma endregion
+
+#pragma region event
 
 typedef struct ClientEvent {
 
@@ -86,6 +94,8 @@ CLIENT_PRIVATE void client_event_trigger (
 	const ClientEventType event_type,
 	const struct _Client *client, const struct _Connection *connection
 );
+
+#pragma endregion
 
 #pragma region data
 
