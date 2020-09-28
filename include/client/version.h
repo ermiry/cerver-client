@@ -3,10 +3,10 @@
 
 #include "client/config.h"
 
-#define CLIENT_VERSION                      "1.3.1rc-1"
-#define CLIENT_VERSION_NAME                 "Release 1.3.1rc-1"
-#define CLIENT_VERSION_DATE			        "26/09/2020"
-#define CLIENT_VERSION_TIME			        "23:43 CST"
+#define CLIENT_VERSION                      "1.3.1rc-2"
+#define CLIENT_VERSION_NAME                 "Release 1.3.1rc-2"
+#define CLIENT_VERSION_DATE			        "27/09/2020"
+#define CLIENT_VERSION_TIME			        "20:05 CST"
 #define CLIENT_VERSION_AUTHOR			    "Erick Salas"
 
 // print full cerver client version information 
