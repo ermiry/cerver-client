@@ -103,8 +103,11 @@ static Client *client_new (void) {
 
 		client->running = false;
 
-		client->registered_events = NULL;
-		client->registered_errors = NULL;
+		for (unsigned int i = 0; i < CLIENT_MAX_EVENTS; i++)
+			client->events[i] = NULL;
+
+		for (unsigned int i = 0; i < CLIENT_MAX_ERRORS; i++)
+			client->errors[i] = NULL;
 
 		client->app_packet_handler = NULL;
 		client->app_error_packet_handler = NULL;
@@ -129,9 +132,11 @@ static void client_delete (Client *client) {
 	if (client) {
 		dlist_delete (client->connections);
 
-		client_events_end (client);
+		for (unsigned int i = 0; i < CLIENT_MAX_EVENTS; i++)
+			if (client->events[i]) client_event_delete (client->events[i]);
 
-		client_errors_end (client);
+		for (unsigned int i = 0; i < CLIENT_MAX_ERRORS; i++)
+			if (client->errors[i]) client_error_delete (client->errors[i]);
 
 		str_delete (client->session_id);
 
@@ -206,9 +211,6 @@ static u8 client_init (Client *client) {
 
 	if (client) {
 		client->connections = dlist_init (connection_delete, connection_comparator_by_sock_fd);
-
-		client_events_init (client);
-		client_errors_init (client);
 
 		client->stats = client_stats_new ();
 

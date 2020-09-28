@@ -49,8 +49,8 @@ struct _Client {
 
 	bool running;                   // any connection is active
 
-	DoubleList *registered_events;
-	DoubleList *registered_errors;
+	ClientEvent *events[CLIENT_MAX_EVENTS];
+	ClientError *errors[CLIENT_MAX_ERRORS];
 
 	// custom packet handlers
 	Action app_packet_handler;
