@@ -15,6 +15,8 @@ struct _Packet;
 
 #pragma region types
 
+#define CLIENT_MAX_ERRORS				32
+
 #define CLIENT_ERROR_MAP(XX)													\
 	XX(0,	NONE, 				No error)										\
 	XX(1,	CERVER_ERROR, 		The cerver had an internal error)				\
@@ -54,6 +56,8 @@ typedef struct ClientError {
 
 } ClientError;
 
+CLIENT_PRIVATE void client_error_delete (void *client_error_ptr);
+
 // registers an action to be triggered when the specified error occurs
 // if there is an existing action registered to an error, it will be overrided
 // a newly allocated ClientErrorData structure will be passed to your method 
@@ -68,7 +72,7 @@ CLIENT_EXPORT u8 client_error_register (
 
 // unregisters the action associated with the error types
 // deletes the action args using the delete_action_args () if NOT NULL
-// returns 0 on success, 1 on error
+// returns 0 on success, 1 on error or if error is NOT registered
 CLIENT_EXPORT u8 client_error_unregister (struct _Client *client, const ClientErrorType error_type);
 
 // triggers all the actions that are registred to an error
@@ -103,14 +107,6 @@ CLIENT_PUBLIC void client_error_data_delete (ClientErrorData *error_data);
 
 // handles error packets
 CLIENT_PRIVATE void error_packet_handler (struct _Packet *packet);
-
-#pragma endregion
-
-#pragma region main
-
-CLIENT_PRIVATE u8 client_errors_init (struct _Client *client);
-
-CLIENT_PRIVATE void client_errors_end (struct _Client *client);
 
 #pragma endregion
 

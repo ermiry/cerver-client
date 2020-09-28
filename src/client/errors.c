@@ -107,7 +107,7 @@ static ClientError *client_error_new (void) {
 
 }
 
-static void client_error_delete (void *client_error_ptr) {
+void client_error_delete (void *client_error_ptr) {
 
 	if (client_error_ptr) {
 		ClientError *client_error = (ClientError *) client_error_ptr;
@@ -118,37 +118,6 @@ static void client_error_delete (void *client_error_ptr) {
 		}
 
 		free (client_error_ptr);
-	}
-
-}
-
-static ClientError *client_error_get (
-	const Client *client, const ClientErrorType error_type,
-	ListElement **le_ptr
-) {
-
-	if (client) {
-		if (client->registered_errors) {
-			ClientError *error = NULL;
-			for (ListElement *le = dlist_start (client->registered_errors); le; le = le->next) {
-				error = (ClientError *) le->data;
-				if (error->type == error_type) {
-					if (le_ptr) *le_ptr = le;
-					return error;
-				}
-			}
-		}
-	}
-
-	return NULL;
-
-}
-
-static void client_error_pop (DoubleList *list, ListElement *le) {
-
-	if (le) {
-		void *data = dlist_remove_element (list, le);
-		if (data) client_error_delete (data);
 	}
 
 }
@@ -168,29 +137,23 @@ u8 client_error_register (
 	u8 retval = 1;
 
 	if (client) {
-		if (client->registered_errors) {
-			ClientError *error = client_error_new ();
-			if (error) {
-				error->type = error_type;
+		ClientError *error = client_error_new ();
+		if (error) {
+			error->type = error_type;
 
-				error->create_thread = create_thread;
-				error->drop_after_trigger = drop_after_trigger;
+			error->create_thread = create_thread;
+			error->drop_after_trigger = drop_after_trigger;
 
-				error->action = action;
-				error->action_args = action_args;
-				error->delete_action_args = delete_action_args;
+			error->action = action;
+			error->action_args = action_args;
+			error->delete_action_args = delete_action_args;
 
-				// search if there is an action already registred for that error and remove it
-				(void) client_error_unregister (client, error_type);
+			// search if there is an action already registred for that error and remove it
+			(void) client_error_unregister (client, error_type);
 
-				if (!dlist_insert_after (
-					client->registered_errors,
-					dlist_end (client->registered_errors),
-					error
-				)) {
-					retval = 0;
-				}
-			}
+			client->errors[error_type] = error;
+
+			retval = 0;
 		}
 	}
 
@@ -200,23 +163,17 @@ u8 client_error_register (
 
 // unregisters the action associated with the error types
 // deletes the action args using the delete_action_args () if NOT NULL
-// returns 0 on success, 1 on error
+// returns 0 on success, 1 on error or if error is NOT registered
 u8 client_error_unregister (Client *client, const ClientErrorType error_type) {
 
 	u8 retval = 1;
 
 	if (client) {
-		if (client->registered_errors) {
-			ClientError *error = NULL;
-			for (ListElement *le = dlist_start (client->registered_errors); le; le = le->next) {
-				error = (ClientError *) le->data;
-				if (error->type == error_type) {
-					client_error_delete (dlist_remove_element (client->registered_errors, le));
-					retval = 0;
+		if (client->errors[error_type]) {
+			client_error_delete (client->errors[error_type]);
+			client->errors[error_type] = NULL;
 
-					break;
-				}
-			}
+			retval = 0;
 		}
 	}
 
@@ -235,8 +192,7 @@ u8 client_error_trigger (
 	u8 retval = 1;
 
 	if (client) {
-		ListElement *le = NULL;
-		ClientError *error = client_error_get (client, error_type, &le);
+		ClientError *error = client->errors[error_type];
 		if (error) {
 			// trigger the action
 			if (error->action) {
@@ -263,7 +219,9 @@ u8 client_error_trigger (
 					retval = 0;
 				}
 
-				if (error->drop_after_trigger) client_error_pop (client->registered_errors, le);
+				if (error->drop_after_trigger) {
+					(void) client_error_unregister ((Client *) client, error_type);
+				}
 			}
 		}
 	}
@@ -358,29 +316,6 @@ void error_packet_handler (Packet *packet) {
 			}
 		}
 	}
-
-}
-
-#pragma endregion
-
-#pragma region main
-
-u8 client_errors_init (Client *client) {
-
-	u8 retval = 1;
-
-	if (client) {
-		client->registered_errors = dlist_init (client_error_delete, NULL);
-		retval = client->registered_errors ? 0 : 1;
-	}
-
-	return retval;
-
-}
-
-void client_errors_end (Client *client) {
-
-	if (client) dlist_delete (client->registered_errors);
 
 }
 
