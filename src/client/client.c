@@ -32,60 +32,60 @@ Connection *client_connection_get_by_socket (Client *client, i32 sock_fd);
 
 static ClientStats *client_stats_new (void) {
 
-    ClientStats *client_stats = (ClientStats *) malloc (sizeof (ClientStats));
-    if (client_stats) {
-        memset (client_stats, 0, sizeof (ClientStats));
-        client_stats->received_packets = packets_per_type_new ();
-        client_stats->sent_packets = packets_per_type_new ();
-    } 
+	ClientStats *client_stats = (ClientStats *) malloc (sizeof (ClientStats));
+	if (client_stats) {
+		memset (client_stats, 0, sizeof (ClientStats));
+		client_stats->received_packets = packets_per_type_new ();
+		client_stats->sent_packets = packets_per_type_new ();
+	}
 
-    return client_stats;
+	return client_stats;
 
 }
 
-static inline void client_stats_delete (ClientStats *client_stats) { 
-    
-    if (client_stats) {
-        packets_per_type_delete (client_stats->received_packets);
-        packets_per_type_delete (client_stats->sent_packets);
+static inline void client_stats_delete (ClientStats *client_stats) {
 
-        free (client_stats); 
-    } 
-    
+	if (client_stats) {
+		packets_per_type_delete (client_stats->received_packets);
+		packets_per_type_delete (client_stats->sent_packets);
+
+		free (client_stats);
+	}
+
 }
 
 void client_stats_print (Client *client) {
 
-    if (client) {
-        if (client->stats) {
-            printf ("\nClient's stats:\n");
-            printf ("Threshold time:            %ld\n", client->stats->threshold_time);
+	if (client) {
+		if (client->stats) {
+			printf ("\nClient's stats:\n");
+			printf ("Threshold time:            %ld\n", client->stats->threshold_time);
 
-            printf ("N receives done:           %ld\n", client->stats->n_receives_done);
+			printf ("N receives done:           %ld\n", client->stats->n_receives_done);
 
-            printf ("Total bytes received:      %ld\n", client->stats->total_bytes_received);
-            printf ("Total bytes sent:          %ld\n", client->stats->total_bytes_sent);
+			printf ("Total bytes received:      %ld\n", client->stats->total_bytes_received);
+			printf ("Total bytes sent:          %ld\n", client->stats->total_bytes_sent);
 
-            printf ("N packets received:        %ld\n", client->stats->n_packets_received);
-            printf ("N packets sent:            %ld\n", client->stats->n_packets_sent);
+			printf ("N packets received:        %ld\n", client->stats->n_packets_received);
+			printf ("N packets sent:            %ld\n", client->stats->n_packets_sent);
 
-            printf ("\nReceived packets:\n");
-            packets_per_type_print (client->stats->received_packets);
+			printf ("\nReceived packets:\n");
+			packets_per_type_print (client->stats->received_packets);
 
-            printf ("\nSent packets:\n");
-            packets_per_type_print (client->stats->sent_packets);
-        }
+			printf ("\nSent packets:\n");
+			packets_per_type_print (client->stats->sent_packets);
+		}
 
-        else {
-            client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_CLIENT, 
-                "Client does not have a reference to a client stats!");
-        }
-    }
+		else {
+			client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_CLIENT,
+				"Client does not have a reference to a client stats!");
+		}
+	}
 
-    else {
-        client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_CLIENT, 
-            "Can't get stats of a NULL client!");
-    }
+	else {
+		client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_CLIENT,
+			"Can't get stats of a NULL client!");
+	}
 
 }
 
@@ -95,77 +95,77 @@ void client_stats_print (Client *client) {
 
 static Client *client_new (void) {
 
-    Client *client = (Client *) malloc (sizeof (Client));
-    if (client) {
-        client->name = NULL;
+	Client *client = (Client *) malloc (sizeof (Client));
+	if (client) {
+		client->name = NULL;
 
-        client->connections = NULL;
+		client->connections = NULL;
 
-        client->running = false;
+		client->running = false;
 
-        client->registered_events = NULL;
-        client->registered_errors = NULL;
+		client->registered_events = NULL;
+		client->registered_errors = NULL;
 
-        client->app_packet_handler = NULL;
-        client->app_error_packet_handler = NULL;
-        client->custom_packet_handler = NULL;
+		client->app_packet_handler = NULL;
+		client->app_error_packet_handler = NULL;
+		client->custom_packet_handler = NULL;
 
-        client->check_packets = false;
+		client->check_packets = false;
 
-        client->time_started = 0;
-        client->uptime = 0;
+		client->time_started = 0;
+		client->uptime = 0;
 
-        client->session_id = NULL;
+		client->session_id = NULL;
 
-        client->stats = NULL;
-    }
+		client->stats = NULL;
+	}
 
-    return client;
+	return client;
 
 }
 
 static void client_delete (Client *client) {
 
-    if (client) {
-        dlist_delete (client->connections);
+	if (client) {
+		dlist_delete (client->connections);
 
-        client_events_end (client);
+		client_events_end (client);
 
-        client_errors_end (client);
+		client_errors_end (client);
 
-        str_delete (client->session_id);
+		str_delete (client->session_id);
 
-        client_stats_delete (client->stats);
+		client_stats_delete (client->stats);
 
-        free (client);
-    }
+		free (client);
+	}
 
 }
 
 // sets the client's name
 void client_set_name (Client *client, const char *name) {
 
-    if (client) {
-        if (client->name) str_delete (client->name);
-        client->name = name ? str_new (name) : NULL;
-    }
+	if (client) {
+		if (client->name) str_delete (client->name);
+		client->name = name ? str_new (name) : NULL;
+	}
 
 }
 
 // sets a cutom app packet hanlder and a custom app error packet handler
 void client_set_app_handlers (Client *client, Action app_handler, Action app_error_handler) {
 
-    if (client) {
-        client->app_packet_handler = app_handler;
-        client->app_error_packet_handler = app_error_handler;
-    }
+	if (client) {
+		client->app_packet_handler = app_handler;
+		client->app_error_packet_handler = app_error_handler;
+	}
 
 }
 
 // sets a custom packet handler
 void client_set_custom_handler (Client *client, Action custom_handler) {
 
-    if (client) client->custom_packet_handler = custom_handler;
+	if (client) client->custom_packet_handler = custom_handler;
 
 }
 
@@ -176,9 +176,9 @@ void client_set_custom_handler (Client *client, Action custom_handler) {
 // by default, this option is turned off
 void client_set_check_packets (Client *client, bool check_packets) {
 
-    if (client) {
-        client->check_packets = check_packets;
-    }
+	if (client) {
+		client->check_packets = check_packets;
+	}
 
 }
 
@@ -186,91 +186,91 @@ void client_set_check_packets (Client *client, bool check_packets) {
 // returns 0 on succes, 1 on error
 u8 client_set_session_id (Client *client, const char *session_id) {
 
-    u8 retval = 1;
+	u8 retval = 1;
 
-    if (client) {
-        str_delete (client->session_id);
-        client->session_id = session_id ? str_new (session_id) : NULL;
+	if (client) {
+		str_delete (client->session_id);
+		client->session_id = session_id ? str_new (session_id) : NULL;
 
-        retval = 0;
-    }
+		retval = 0;
+	}
 
-    return retval;
+	return retval;
 
 }
 
 // inits client with default values
 static u8 client_init (Client *client) {
 
-    u8 retval = 1;
+	u8 retval = 1;
 
-    if (client) {
-        client->connections = dlist_init (connection_delete, connection_comparator_by_sock_fd);
+	if (client) {
+		client->connections = dlist_init (connection_delete, connection_comparator_by_sock_fd);
 
-        client_events_init (client);
-        client_errors_init (client);
+		client_events_init (client);
+		client_errors_init (client);
 
-        client->stats = client_stats_new ();
+		client->stats = client_stats_new ();
 
-        client->running = false;
+		client->running = false;
 
-        retval = 0;
-    }
+		retval = 0;
+	}
 
-    return retval;
+	return retval;
 
 }
 
 Client *client_create (void) {
 
-    Client *client = client_new ();
-    if (client) {
-        client->name = str_new ("no-name");
-        client_init (client);
-    } 
+	Client *client = client_new ();
+	if (client) {
+		client->name = str_new ("no-name");
+		client_init (client);
+	}
 
-    return client;
+	return client;
 
 }
 
 // start the client thpool and adds client_poll () to it
 static u8 client_start (Client *client) {
 
-    u8 retval = 1;
+	u8 retval = 1;
 
-    if (client) {
-        // check if we walready have the client poll running
-        if (!client->running) {
-            time (&client->time_started);
-            client->running = true;
+	if (client) {
+		// check if we walready have the client poll running
+		if (!client->running) {
+			time (&client->time_started);
+			client->running = true;
 
-            retval = 0;
-        }
+			retval = 0;
+		}
 
-        else {
-            // client is already running because of an active connection
-            retval = 0;
-        }
-    }
+		else {
+			// client is already running because of an active connection
+			retval = 0;
+		}
+	}
 
-    return retval;
+	return retval;
 
 }
 
 // stop any on going process and destroys the client
 u8 client_teardown (Client *client) {
 
-    u8 retval = 1;
+	u8 retval = 1;
 
-    if (client) {
-        client_disconnect (client);
+	if (client) {
+		client_disconnect (client);
 
-        client_delete (client);
+		client_delete (client);
 
-        retval = 0;
-    }
+		retval = 0;
+	}
 
-    return retval;
+	return retval;
 
 }
 
@@ -281,40 +281,40 @@ u8 client_teardown (Client *client) {
 // returns a connection (registered to a client) by its name
 Connection *client_connection_get_by_name (Client *client, const char *name) {
 
-    Connection *retval = NULL;
+	Connection *retval = NULL;
 
-    if (client && name) {
-        Connection *connection = NULL;
-        for (ListElement *le = dlist_start (client->connections); le; le = le->next) {
-            connection = (Connection *) le->data;
-            if (!strcmp (connection->name->str, name)) {
-                retval = connection;
-                break;
-            }
-        }
-    }
+	if (client && name) {
+		Connection *connection = NULL;
+		for (ListElement *le = dlist_start (client->connections); le; le = le->next) {
+			connection = (Connection *) le->data;
+			if (!strcmp (connection->name->str, name)) {
+				retval = connection;
+				break;
+			}
+		}
+	}
 
-    return retval;
+	return retval;
 
 }
 
 // returns a connection assocaited with a socket
 Connection *client_connection_get_by_socket (Client *client, i32 sock_fd) {
 
-    Connection *retval = NULL;
+	Connection *retval = NULL;
 
-    if (client) {
-        Connection *connection = NULL;
-        for (ListElement *le = dlist_start (client->connections); le; le = le->next) {
-            connection = (Connection *) le->data;
-            if (connection->socket->sock_fd == sock_fd) {
-                retval = connection;
-                break;
-            }
-        }
-    }
+	if (client) {
+		Connection *connection = NULL;
+		for (ListElement *le = dlist_start (client->connections); le; le = le->next) {
+			connection = (Connection *) le->data;
+			if (connection->socket->sock_fd == sock_fd) {
+				retval = connection;
+				break;
+			}
+		}
+	}
 
-    return retval;
+	return retval;
 
 }
 
@@ -322,27 +322,27 @@ Connection *client_connection_get_by_socket (Client *client, i32 sock_fd) {
 // the connection should be ready to be started
 // returns a new connection on success, NULL on error
 Connection *client_connection_create (Client *client,
-    const char *ip_address, u16 port, Protocol protocol, bool use_ipv6) {
+	const char *ip_address, u16 port, Protocol protocol, bool use_ipv6) {
 
-    Connection *connection = NULL;
+	Connection *connection = NULL;
 
-    if (client) {
-        if (ip_address) {
-            connection = connection_create (ip_address, port, protocol, use_ipv6);
-            if (connection) {
-                dlist_insert_after (client->connections, dlist_end (client->connections), connection);
-            }
+	if (client) {
+		if (ip_address) {
+			connection = connection_create (ip_address, port, protocol, use_ipv6);
+			if (connection) {
+				dlist_insert_after (client->connections, dlist_end (client->connections), connection);
+			}
 
-            else client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create new connection!");
-        }
+			else client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create new connection!");
+		}
 
-        else {
-            client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, 
-                "Failed to create new connection, no ip provided!");
-        }
-    }
+		else {
+			client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE,
+				"Failed to create new connection, no ip provided!");
+		}
+	}
 
-    return connection;
+	return connection;
 
 }
 
@@ -350,17 +350,17 @@ Connection *client_connection_create (Client *client,
 // retuns 0 on success, 1 on error
 int client_connection_register (Client *client, Connection *connection) {
 
-    int retval = 1;
+	int retval = 1;
 
-    if (client && connection) {
-        retval =  dlist_insert_after (
-            client->connections, 
-            dlist_end (client->connections), 
-            connection
-        );
-    }
+	if (client && connection) {
+		retval =  dlist_insert_after (
+			client->connections,
+			dlist_end (client->connections),
+			connection
+		);
+	}
 
-    return retval;
+	return retval;
 
 }
 
@@ -368,26 +368,26 @@ int client_connection_register (Client *client, Connection *connection) {
 // returns 0 on success, 1 on error or if the connection does not belong to the client
 int client_connection_unregister (Client *client, Connection *connection) {
 
-    int retval = 1;
-    if (client && connection) {
-        if (dlist_remove (client->connections, connection, NULL)) {
-            retval = 0;
-        }
-    }
+	int retval = 1;
+	if (client && connection) {
+		if (dlist_remove (client->connections, connection, NULL)) {
+			retval = 0;
+		}
+	}
 
-    return retval;
+	return retval;
 
 }
 
 // performs a receive in the connection's socket to get a complete packet & handle it
 void client_connection_get_next_packet (Client *client, Connection *connection) {
 
-    if (client && connection) {
-        connection->full_packet = false;
-        while (!connection->full_packet) {
-            client_receive (client, connection);
-        }
-    }
+	if (client && connection) {
+		connection->full_packet = false;
+		while (!connection->full_packet) {
+			client_receive (client, connection);
+		}
+	}
 
 }
 
@@ -402,57 +402,57 @@ void client_connection_get_next_packet (Client *client, Connection *connection) 
 // returns 0 when the connection has been established, 1 on error or failed to connect
 unsigned int client_connect (Client *client, Connection *connection) {
 
-    unsigned int retval = 1;
+	unsigned int retval = 1;
 
-    if (client && connection) {
-        if (!connection_start (connection)) {
-            client_event_trigger (CLIENT_EVENT_CONNECTED, client, connection);
-            connection->connected = true;
-            time (&connection->connected_timestamp);
-            
-            client_start (client);
+	if (client && connection) {
+		if (!connection_start (connection)) {
+			client_event_trigger (CLIENT_EVENT_CONNECTED, client, connection);
+			connection->connected = true;
+			time (&connection->connected_timestamp);
 
-            retval = 0;     // success - connected to cerver
-        }
+			client_start (client);
 
-        else {
-            client_event_trigger (CLIENT_EVENT_CONNECTION_FAILED, client, connection);
-        }
-    }
+			retval = 0;     // success - connected to cerver
+		}
 
-    return retval;
+		else {
+			client_event_trigger (CLIENT_EVENT_CONNECTION_FAILED, client, connection);
+		}
+	}
+
+	return retval;
 
 }
 
 // connects a client to the host with the specified values in the connection
-// performs a first read to get the cerver info packet 
+// performs a first read to get the cerver info packet
 // this is a blocking method, and works exactly the same as if only calling client_connect ()
 // returns 0 when the connection has been established, 1 on error or failed to connect
 unsigned int client_connect_to_cerver (Client *client, Connection *connection) {
 
-    unsigned int retval = 1;
+	unsigned int retval = 1;
 
-    if (!client_connect (client, connection)) {
-        client_receive (client, connection);
+	if (!client_connect (client, connection)) {
+		client_receive (client, connection);
 
-        retval = 0;
-    }
+		retval = 0;
+	}
 
-    return retval;
+	return retval;
 
 }
 
 static void *client_connect_thread (void *client_connection_ptr) {
 
-    if (client_connection_ptr) {
-        ClientConnection *cc = (ClientConnection *) client_connection_ptr;
+	if (client_connection_ptr) {
+		ClientConnection *cc = (ClientConnection *) client_connection_ptr;
 
-        (void) client_connect (cc->client, cc->connection);
+		(void) client_connect (cc->client, cc->connection);
 
-        client_connection_aux_delete (cc);
-    }
+		client_connection_aux_delete (cc);
+	}
 
-    return NULL;
+	return NULL;
 
 }
 
@@ -464,25 +464,25 @@ static void *client_connect_thread (void *client_connection_ptr) {
 // returns 0 on success connection thread creation, 1 on error
 unsigned int client_connect_async (Client *client, Connection *connection) {
 
-    unsigned int retval = 1;
+	unsigned int retval = 1;
 
-    if (client && connection) {
-        ClientConnection *cc = client_connection_aux_new (client, connection);
-        if (cc) {
-            pthread_t thread_id = 0;
-            if (!thread_create_detachable (&thread_id, client_connect_thread, cc)) {
-                retval = 0;         // success
-            }
+	if (client && connection) {
+		ClientConnection *cc = client_connection_aux_new (client, connection);
+		if (cc) {
+			pthread_t thread_id = 0;
+			if (!thread_create_detachable (&thread_id, client_connect_thread, cc)) {
+				retval = 0;         // success
+			}
 
-            else {
-                #ifdef CLIENT_DEBUG
-                client_log_error ("Failed to create client_connect_thread () detachable thread!");
-                #endif
-            }
-        }
-    }
+			else {
+				#ifdef CLIENT_DEBUG
+				client_log_error ("Failed to create client_connect_thread () detachable thread!");
+				#endif
+			}
+		}
+	}
 
-    return retval;
+	return retval;
 
 }
 
@@ -499,47 +499,47 @@ unsigned int client_connect_async (Client *client, Connection *connection) {
 // retruns 0 when the response has been handled, 1 on error
 unsigned int client_request_to_cerver (Client *client, Connection *connection, Packet *request) {
 
-    unsigned int retval = 1;
+	unsigned int retval = 1;
 
-    if (client && connection && request) {
-        // send the request to the cerver
-        packet_set_network_values (request, client, connection);
+	if (client && connection && request) {
+		// send the request to the cerver
+		packet_set_network_values (request, client, connection);
 
-        size_t sent = 0;
-        if (!packet_send (request, 0, &sent, false)) {
-            // printf ("Request to cerver: %ld\n", sent);
+		size_t sent = 0;
+		if (!packet_send (request, 0, &sent, false)) {
+			// printf ("Request to cerver: %ld\n", sent);
 
-            // receive the data directly
-            client_connection_get_next_packet (client, connection);
+			// receive the data directly
+			client_connection_get_next_packet (client, connection);
 
-            retval = 0;
-        }
+			retval = 0;
+		}
 
-        else {
-            #ifdef CLIENT_DEBUG
-            client_log_error ("client_request_to_cerver () - failed to send request packet!");
-            #endif
-        }
-    }
+		else {
+			#ifdef CLIENT_DEBUG
+			client_log_error ("client_request_to_cerver () - failed to send request packet!");
+			#endif
+		}
+	}
 
-    return retval;
+	return retval;
 
 }
 
 static void *client_request_to_cerver_thread (void *cc_ptr) {
 
-    if (cc_ptr) {
-        ClientConnection *cc = (ClientConnection *) cc_ptr;
+	if (cc_ptr) {
+		ClientConnection *cc = (ClientConnection *) cc_ptr;
 
-        cc->connection->full_packet = false;
-        while (!cc->connection->full_packet) {
-            client_receive (cc->client, cc->connection);
-        }
+		cc->connection->full_packet = false;
+		while (!cc->connection->full_packet) {
+			client_receive (cc->client, cc->connection);
+		}
 
-        client_connection_aux_delete (cc);
-    }
+		client_connection_aux_delete (cc);
+	}
 
-    return NULL;
+	return NULL;
 
 }
 
@@ -551,36 +551,36 @@ static void *client_request_to_cerver_thread (void *cc_ptr) {
 // returns 0 on success request, 1 on error
 unsigned int client_request_to_cerver_async (Client *client, Connection *connection, Packet *request) {
 
-    unsigned int retval = 1;
+	unsigned int retval = 1;
 
-    if (client && connection && request) {
-        // send the request to the cerver
-        packet_set_network_values (request, client, connection);
-        if (!packet_send (request, 0, NULL, false)) {
-            ClientConnection *cc = client_connection_aux_new (client, connection);
-            if (cc) {
-                // create a new thread to receive & handle the response
-                pthread_t thread_id = 0;
-                if (!thread_create_detachable (&thread_id, client_request_to_cerver_thread, cc)) {
-                    retval = 0;         // success
-                }
+	if (client && connection && request) {
+		// send the request to the cerver
+		packet_set_network_values (request, client, connection);
+		if (!packet_send (request, 0, NULL, false)) {
+			ClientConnection *cc = client_connection_aux_new (client, connection);
+			if (cc) {
+				// create a new thread to receive & handle the response
+				pthread_t thread_id = 0;
+				if (!thread_create_detachable (&thread_id, client_request_to_cerver_thread, cc)) {
+					retval = 0;         // success
+				}
 
-                else {
-                    #ifdef CLIENT_DEBUG
-                    client_log_error ("Failed to create client_request_to_cerver_thread () detachable thread!");
-                    #endif
-                }
-            }
-        }
+				else {
+					#ifdef CLIENT_DEBUG
+					client_log_error ("Failed to create client_request_to_cerver_thread () detachable thread!");
+					#endif
+				}
+			}
+		}
 
-        else {
-            #ifdef CLIENT_DEBUG
-            client_log_error ("client_request_to_cerver_async () - failed to send request packet!");
-            #endif
-        }
-    }
+		else {
+			#ifdef CLIENT_DEBUG
+			client_log_error ("client_request_to_cerver_async () - failed to send request packet!");
+			#endif
+		}
+	}
 
-    return retval;
+	return retval;
 
 }
 
@@ -588,48 +588,48 @@ unsigned int client_request_to_cerver_async (Client *client, Connection *connect
 
 #pragma region start
 
-// after a client connection successfully connects to a server, 
+// after a client connection successfully connects to a server,
 // it will start the connection's update thread to enable the connection to
 // receive & handle packets in a dedicated thread
 // returns 0 on success, 1 on error
 int client_connection_start (Client *client, Connection *connection) {
 
-    int retval = 1;
+	int retval = 1;
 
-    if (client && connection) {
-        if (connection->connected) {
-            if (!client_start (client)) {
-                pthread_t thread_id = 0;
-                if (!thread_create_detachable (
-                    &thread_id,
-                    (void *(*)(void *)) connection_update,
-                    client_connection_aux_new (client, connection)
-                )) {
-                    retval = 0;         // success
-                }
+	if (client && connection) {
+		if (connection->connected) {
+			if (!client_start (client)) {
+				pthread_t thread_id = 0;
+				if (!thread_create_detachable (
+					&thread_id,
+					(void *(*)(void *)) connection_update,
+					client_connection_aux_new (client, connection)
+				)) {
+					retval = 0;         // success
+				}
 
-                else {
-                    char *s = c_string_create ("client_connection_start () - Failed to create update thread for client %s", 
-                        client->name->str);
-                    if (s) {
-                        client_log_error (s);
-                        free (s);
-                    }
-                }
-            }
+				else {
+					char *s = c_string_create ("client_connection_start () - Failed to create update thread for client %s",
+						client->name->str);
+					if (s) {
+						client_log_error (s);
+						free (s);
+					}
+				}
+			}
 
-            else {
-                char *s = c_string_create ("client_connection_start () - Failed to start client %s", 
-                    client->name->str);
-                if (s) {
-                    client_log_error (s);
-                    free (s);
-                }
-            }
-        }
-    }
+			else {
+				char *s = c_string_create ("client_connection_start () - Failed to start client %s",
+					client->name->str);
+				if (s) {
+					client_log_error (s);
+					free (s);
+				}
+			}
+		}
+	}
 
-    return retval;
+	return retval;
 
 }
 
@@ -639,36 +639,36 @@ int client_connection_start (Client *client, Connection *connection) {
 // returns 0 on success, 1 on error
 int client_connect_and_start (Client *client, Connection *connection) {
 
-    int retval = 1;
+	int retval = 1;
 
-    if (client && connection) {
-        if (!client_connect (client, connection)) {
-            if (!client_connection_start (client, connection)) {
-                retval = 0;
-            }
-        }
+	if (client && connection) {
+		if (!client_connect (client, connection)) {
+			if (!client_connection_start (client, connection)) {
+				retval = 0;
+			}
+		}
 
-        else {
-            char *s = c_string_create ("client_connect_and_start () - Client %s failed to connect", 
-                client->name->str);
-            if (s) {
-                client_log_error (s);
-                free (s);
-            }
-        }
-    }
+		else {
+			char *s = c_string_create ("client_connect_and_start () - Client %s failed to connect",
+				client->name->str);
+			if (s) {
+				client_log_error (s);
+				free (s);
+			}
+		}
+	}
 
-    return retval;
+	return retval;
 
 }
 
 static void client_connection_start_wrapper (void *data_ptr) {
 
-    if (data_ptr) {
-        ClientConnection *cc = (ClientConnection *) data_ptr;
-        client_connect_and_start (cc->client, cc->connection);
-        client_connection_aux_delete (cc);
-    }
+	if (data_ptr) {
+		ClientConnection *cc = (ClientConnection *) data_ptr;
+		client_connect_and_start (cc->client, cc->connection);
+		client_connection_aux_delete (cc);
+	}
 
 }
 
@@ -677,12 +677,12 @@ static void client_connection_start_wrapper (void *data_ptr) {
 // returns 0 on success creating connection thread, 1 on error
 u8 client_connect_and_start_async (Client *client, Connection *connection) {
 
-    pthread_t thread_id = 0;
-    return (client && connection) ? thread_create_detachable (
-        &thread_id,
-        (void *(*)(void *)) client_connection_start_wrapper,
-        client_connection_aux_new (client, connection)
-    ) : 1;
+	pthread_t thread_id = 0;
+	return (client && connection) ? thread_create_detachable (
+		&thread_id,
+		(void *(*)(void *)) client_connection_start_wrapper,
+		client_connection_aux_new (client, connection)
+	) : 1;
 
 }
 
@@ -693,23 +693,23 @@ u8 client_connect_and_start_async (Client *client, Connection *connection) {
 // ends a connection with a cerver by sending a disconnect packet and the closing the connection
 static void client_connection_terminate (Client *client, Connection *connection) {
 
-    if (connection) {
-        if (connection->connected) {
-            if (connection->cerver) {
-                // send a close connection packet
-                Packet *packet = packet_generate_request (PACKET_TYPE_CLIENT, CLIENT_PACKET_TYPE_CLOSE_CONNECTION, NULL, 0);
-                if (packet) {
-                    packet_set_network_values (packet, client, connection);
-                    if (packet_send (packet, 0, NULL, false)) {
-                        client_log_error ("Failed to send CLIENT_PACKET_TYPE_CLOSE_CONNECTION!");
-                    }
-                    packet_delete (packet);
-                }
-            }
+	if (connection) {
+		if (connection->connected) {
+			if (connection->cerver) {
+				// send a close connection packet
+				Packet *packet = packet_generate_request (PACKET_TYPE_CLIENT, CLIENT_PACKET_TYPE_CLOSE_CONNECTION, NULL, 0);
+				if (packet) {
+					packet_set_network_values (packet, client, connection);
+					if (packet_send (packet, 0, NULL, false)) {
+						client_log_error ("Failed to send CLIENT_PACKET_TYPE_CLOSE_CONNECTION!");
+					}
+					packet_delete (packet);
+				}
+			}
 
-            connection_close (connection);
-        } 
-    }
+			connection_close (connection);
+		}
+	}
 
 }
 
@@ -717,18 +717,18 @@ static void client_connection_terminate (Client *client, Connection *connection)
 // returns 0 on success, 1 on error
 int client_connection_end (Client *client, Connection *connection) {
 
-    int retval = 1;
+	int retval = 1;
 
-    if (client && connection) {
-        if (connection->connected) {
-            client_connection_terminate (client, connection);
-            client_event_trigger (CLIENT_EVENT_CONNECTION_CLOSE, client, connection);
+	if (client && connection) {
+		if (connection->connected) {
+			client_connection_terminate (client, connection);
+			client_event_trigger (CLIENT_EVENT_CONNECTION_CLOSE, client, connection);
 
-            retval = 0;
-        }
-    }
+			retval = 0;
+		}
+	}
 
-    return retval;
+	return retval;
 
 }
 
@@ -736,42 +736,42 @@ int client_connection_end (Client *client, Connection *connection) {
 // return 0 on success, 1 on error
 int client_disconnect (Client *client) {
 
-    int retval = 1;
+	int retval = 1;
 
-    if (client) {
-        // end any ongoing connection
-        for (ListElement *le = dlist_start (client->connections); le; le = le->next) {
-            client_connection_terminate (client, (Connection *) le->data);
-        }
+	if (client) {
+		// end any ongoing connection
+		for (ListElement *le = dlist_start (client->connections); le; le = le->next) {
+			client_connection_terminate (client, (Connection *) le->data);
+		}
 
-        dlist_reset (client->connections);
+		dlist_reset (client->connections);
 
-        // reset client
-        client->running = false;
-        client->time_started = 0;
+		// reset client
+		client->running = false;
+		client->time_started = 0;
 
-        retval = 0;
-    }
+		retval = 0;
+	}
 
-    return retval;
+	return retval;
 
 }
 
 // the client got disconnected from the cerver, so correctly clear our data
 void client_got_disconnected (Client *client) {
 
-    if (client) {
-        // close any ongoing connection
-        for (ListElement *le = dlist_start (client->connections); le; le = le->next) {
-            connection_close ((Connection *) le->data);
-        }
+	if (client) {
+		// close any ongoing connection
+		for (ListElement *le = dlist_start (client->connections); le; le = le->next) {
+			connection_close ((Connection *) le->data);
+		}
 
-        // dlist_reset (client->connections);
+		// dlist_reset (client->connections);
 
-        // reset client
-        client->running = false;
-        client->time_started = 0;
-    }
+		// reset client
+		client->running = false;
+		client->time_started = 0;
+	}
 
 }
 
@@ -786,14 +786,14 @@ void client_got_disconnected (Client *client) {
 // returns 0 on success sending request, 1 on failed to send request
 u8 client_file_get (Client *client, Connection *connection, const char *filename) {
 
-    u8 retval = 1;
+	u8 retval = 1;
 
-    if (client && connection) {
-        // request the file from the cerver
-        // set our file tray for incoming files
-    }
+	if (client && connection) {
+		// request the file from the cerver
+		// set our file tray for incoming files
+	}
 
-    return retval;
+	return retval;
 
 }
 
@@ -805,16 +805,16 @@ u8 client_file_get (Client *client, Connection *connection, const char *filename
 // returns 0 on success sending request, 1 on failed to send request
 u8 client_file_send (Client *client, Connection *connection, const char *filename) {
 
-    u8 retval = 1;
+	u8 retval = 1;
 
-    if (client && connection) {
-        // request the cerver for a file transmission
-        // open the file
-        // send file header
-        // send file in packets
-    }
+	if (client && connection) {
+		// request the cerver for a file transmission
+		// open the file
+		// send file header
+		// send file in packets
+	}
 
-    return retval;
+	return retval;
 
 }
 
@@ -826,29 +826,29 @@ u8 client_file_send (Client *client, Connection *connection, const char *filenam
 // game type: is the type of game to create the lobby, the configuration must exist in the cerver
 // returns 0 on success sending request, 1 on failed to send request
 u8 client_game_create_lobby (Client *owner, Connection *connection,
-    const char *game_type) {
+	const char *game_type) {
 
-    u8 retval = 1;
+	u8 retval = 1;
 
-    if (owner && connection && game_type) {
-        String *type = str_new (game_type);
-        void *stype = str_serialize (type, SS_SMALL);
+	if (owner && connection && game_type) {
+		String *type = str_new (game_type);
+		void *stype = str_serialize (type, SS_SMALL);
 
-        Packet *packet = packet_generate_request (
-            PACKET_TYPE_GAME, GAME_PACKET_TYPE_LOBBY_CREATE, 
-            stype, sizeof (SStringS)
-        );
-        if (packet) {
-            packet_set_network_values (packet, owner, connection);
-            retval = packet_send (packet, 0, NULL, false);
-            packet_delete (packet);
-        }
+		Packet *packet = packet_generate_request (
+			PACKET_TYPE_GAME, GAME_PACKET_TYPE_LOBBY_CREATE,
+			stype, sizeof (SStringS)
+		);
+		if (packet) {
+			packet_set_network_values (packet, owner, connection);
+			retval = packet_send (packet, 0, NULL, false);
+			packet_delete (packet);
+		}
 
-        str_delete (type);
-        free (stype);
-    }
+		str_delete (type);
+		free (stype);
+	}
 
-    return retval;
+	return retval;
 
 }
 
@@ -857,88 +857,88 @@ u8 client_game_create_lobby (Client *owner, Connection *connection,
 // lobby id: if you know the id of the lobby to join to, if not, the cerver witll search one for you
 // returns 0 on success sending request, 1 on failed to send request
 u8 client_game_join_lobby (Client *client, Connection *connection,
-    const char *game_type, const char *lobby_id) {
+	const char *game_type, const char *lobby_id) {
 
-    u8 retval = 1;
+	u8 retval = 1;
 
-    if (client && connection) {
-        LobbyJoin lobby_join = { 0 };
-        if (game_type) {
-            lobby_join.game_type.len = strlen (game_type);
-            strcpy (lobby_join.game_type.string, game_type);
-        }
+	if (client && connection) {
+		LobbyJoin lobby_join = { 0 };
+		if (game_type) {
+			lobby_join.game_type.len = strlen (game_type);
+			strcpy (lobby_join.game_type.string, game_type);
+		}
 
-        if (lobby_id) {
-            lobby_join.lobby_id.len = strlen (lobby_id);
-            strcpy (lobby_join.lobby_id.string, lobby_id);
-        }
+		if (lobby_id) {
+			lobby_join.lobby_id.len = strlen (lobby_id);
+			strcpy (lobby_join.lobby_id.string, lobby_id);
+		}
 
-        Packet *packet = packet_generate_request (
-            PACKET_TYPE_GAME, GAME_PACKET_TYPE_LOBBY_JOIN,
-            &lobby_join, sizeof (LobbyJoin)
-        );
-        if (packet) {
-            packet_set_network_values (packet, client, connection);
-            retval = packet_send (packet, 0, NULL, false);
-            packet_delete (packet);
-        }
-    }
+		Packet *packet = packet_generate_request (
+			PACKET_TYPE_GAME, GAME_PACKET_TYPE_LOBBY_JOIN,
+			&lobby_join, sizeof (LobbyJoin)
+		);
+		if (packet) {
+			packet_set_network_values (packet, client, connection);
+			retval = packet_send (packet, 0, NULL, false);
+			packet_delete (packet);
+		}
+	}
 
-    return retval;
+	return retval;
 
 }
 
 // request the cerver to leave the current lobby
 // returns 0 on success sending request, 1 on failed to send request
 u8 client_game_leave_lobby (Client *client, Connection *connection,
-    const char *lobby_id) {
+	const char *lobby_id) {
 
-    u8 retval = 1;
+	u8 retval = 1;
 
-    if (client && connection && lobby_id) {
-        SStringS id = { 0 };
-        id.len = strlen (lobby_id);
-        strcpy (id.string, lobby_id);
+	if (client && connection && lobby_id) {
+		SStringS id = { 0 };
+		id.len = strlen (lobby_id);
+		strcpy (id.string, lobby_id);
 
-        Packet *packet = packet_generate_request (
-            PACKET_TYPE_GAME, GAME_PACKET_TYPE_LOBBY_LEAVE, 
-            &id, sizeof (SStringS)
-        );
-        if (packet) {
-            packet_set_network_values (packet, client, connection);
-            retval = packet_send (packet, 0, NULL, false);
-            packet_delete (packet);
-        }
-    }
+		Packet *packet = packet_generate_request (
+			PACKET_TYPE_GAME, GAME_PACKET_TYPE_LOBBY_LEAVE,
+			&id, sizeof (SStringS)
+		);
+		if (packet) {
+			packet_set_network_values (packet, client, connection);
+			retval = packet_send (packet, 0, NULL, false);
+			packet_delete (packet);
+		}
+	}
 
-    return retval;
+	return retval;
 
 }
 
 // requests the cerver to start the game in the current lobby
 // returns 0 on success sending request, 1 on failed to send request
 u8 client_game_start_lobby (Client *client, Connection *connection,
-    const char *lobby_id) {
+	const char *lobby_id) {
 
-    u8 retval = 1;
+	u8 retval = 1;
 
-    if (client && connection && lobby_id) {
-        SStringS id = { 0 };
-        id.len = strlen (lobby_id);
-        strcpy (id.string, lobby_id);
+	if (client && connection && lobby_id) {
+		SStringS id = { 0 };
+		id.len = strlen (lobby_id);
+		strcpy (id.string, lobby_id);
 
-        Packet *packet = packet_generate_request (
-            PACKET_TYPE_GAME, GAME_PACKET_TYPE_GAME_START,
-            &id, sizeof (SStringS)
-        );
-        if (packet) {
-            packet_set_network_values (packet, client, connection);
-            retval = packet_send (packet, 0, NULL, false);
-            packet_delete (packet);
-        }
-    }
+		Packet *packet = packet_generate_request (
+			PACKET_TYPE_GAME, GAME_PACKET_TYPE_GAME_START,
+			&id, sizeof (SStringS)
+		);
+		if (packet) {
+			packet_set_network_values (packet, client, connection);
+			retval = packet_send (packet, 0, NULL, false);
+			packet_delete (packet);
+		}
+	}
 
-    return retval;
+	return retval;
 
 }
 
@@ -948,13 +948,13 @@ u8 client_game_start_lobby (Client *client, Connection *connection,
 
 ClientConnection *client_connection_aux_new (Client *client, Connection *connection) {
 
-    ClientConnection *cc = (ClientConnection *) malloc (sizeof (ClientConnection));
-    if (cc) {
-        cc->client = client;
-        cc->connection = connection;
-    }
+	ClientConnection *cc = (ClientConnection *) malloc (sizeof (ClientConnection));
+	if (cc) {
+		cc->client = client;
+		cc->connection = connection;
+	}
 
-    return cc;
+	return cc;
 
 }
 

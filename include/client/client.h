@@ -22,18 +22,18 @@ struct _PacketsPerType;
 
 struct _ClientStats {
 
-    time_t threshold_time;                  // every time we want to reset the client's stats
+	time_t threshold_time;                  // every time we want to reset the client's stats
 
-    u64 n_receives_done;                    // n calls to recv ()
+	u64 n_receives_done;                    // n calls to recv ()
 
-    u64 total_bytes_received;               // total amount of bytes received from this client
-    u64 total_bytes_sent;                   // total amount of bytes that have been sent to the client (all of its connections)
+	u64 total_bytes_received;               // total amount of bytes received from this client
+	u64 total_bytes_sent;                   // total amount of bytes that have been sent to the client (all of its connections)
 
-    u64 n_packets_received;                 // total number of packets received from this client (packet header + data)
-    u64 n_packets_sent;                     // total number of packets sent to this client (all connections)
+	u64 n_packets_received;                 // total number of packets received from this client (packet header + data)
+	u64 n_packets_sent;                     // total number of packets sent to this client (all connections)
 
-    struct _PacketsPerType *received_packets;
-    struct _PacketsPerType *sent_packets;
+	struct _PacketsPerType *received_packets;
+	struct _PacketsPerType *sent_packets;
 
 };
 
@@ -43,28 +43,28 @@ CLIENT_PUBLIC void client_stats_print (struct _Client *client);
 
 struct _Client {
 
-    String *name;
+	String *name;
 
-    DoubleList *connections;
+	DoubleList *connections;
 
-    bool running;                   // any connection is active
+	bool running;                   // any connection is active
 
-    DoubleList *registered_events;
-    DoubleList *registered_errors;
+	DoubleList *registered_events;
+	DoubleList *registered_errors;
 
-    // custom packet handlers
-    Action app_packet_handler;
-    Action app_error_packet_handler;
-    Action custom_packet_handler;
+	// custom packet handlers
+	Action app_packet_handler;
+	Action app_error_packet_handler;
+	Action custom_packet_handler;
 
-    bool check_packets;              // enable / disbale packet checking
+	bool check_packets;              // enable / disbale packet checking
 
-    time_t time_started;
-    u64 uptime;
+	time_t time_started;
+	u64 uptime;
 
-    String *session_id;
+	String *session_id;
 
-    ClientStats *stats;
+	ClientStats *stats;
 
 };
 
@@ -112,7 +112,7 @@ CLIENT_PUBLIC struct _Connection *client_connection_get_by_name (Client *client,
 // the connection should be ready to be started
 // returns a new connection on success, NULL on error
 CLIENT_EXPORT struct _Connection *client_connection_create (Client *client,
-    const char *ip_address, u16 port, Protocol protocol, bool use_ipv6);
+	const char *ip_address, u16 port, Protocol protocol, bool use_ipv6);
 
 // registers an existing connection to a client
 // retuns 0 on success, 1 on error
@@ -137,7 +137,7 @@ CLIENT_EXPORT void client_connection_get_next_packet (Client *client, struct _Co
 CLIENT_EXPORT unsigned int client_connect (Client *client, struct _Connection *connection);
 
 // connects a client to the host with the specified values in the connection
-// performs a first read to get the cerver info packet 
+// performs a first read to get the cerver info packet
 // this is a blocking method, and works exactly the same as if only calling client_connect ()
 // returns 0 when the connection has been established, 1 on error or failed to connect
 CLIENT_EXPORT unsigned int client_connect_to_cerver (Client *client, Connection *connection);
@@ -175,7 +175,7 @@ CLIENT_EXPORT unsigned int client_request_to_cerver_async (Client *client, struc
 
 #pragma region start
 
-// after a client connection successfully connects to a server, 
+// after a client connection successfully connects to a server,
 // it will start the connection's update thread to enable the connection to
 // receive & handle packets in a dedicated thread
 // returns 0 on success, 1 on error
@@ -232,31 +232,31 @@ CLIENT_EXPORT u8 client_file_send (Client *client, struct _Connection *connectio
 // game type: is the type of game to create the lobby, the configuration must exist in the cerver
 // returns 0 on success sending request, 1 on failed to send request
 CLIENT_EXPORT u8 client_game_create_lobby (Client *owner, struct _Connection *connection,
-    const char *game_type);
+	const char *game_type);
 
 // requests the cerver to join a lobby
 // game type: is the type of game to create the lobby, the configuration must exist in the cerver
 // lobby id: if you know the id of the lobby to join to, if not, the cerver witll search one for you
 // returns 0 on success sending request, 1 on failed to send request
 CLIENT_EXPORT u8 client_game_join_lobby (Client *client, struct _Connection *connection,
-    const char *game_type, const char *lobby_id);
+	const char *game_type, const char *lobby_id);
 
 // request the cerver to leave the currect lobby
 // returns 0 on success sending request, 1 on failed to send request
 CLIENT_EXPORT u8 client_game_leave_lobby (Client *client, struct _Connection *connection,
-    const char *lobby_id);
+	const char *lobby_id);
 
 // requests the cerver to start the game in the current lobby
 // returns 0 on success sending request, 1 on failed to send request
 CLIENT_EXPORT u8 client_game_start_lobby (Client *client, struct _Connection *connection,
-    const char *lobby_id);
+	const char *lobby_id);
 
 /*** aux ***/
 
 typedef struct ClientConnection {
 
-    Client *client;
-    struct _Connection *connection;
+	Client *client;
+	struct _Connection *connection;
 
 } ClientConnection;
 
@@ -271,7 +271,7 @@ CLIENT_PRIVATE void client_connection_aux_delete (void *ptr);
 // serialized session id - token
 struct _SToken {
 
-    char token[TOKEN_SIZE];
+	char token[TOKEN_SIZE];
 
 };
 
