@@ -105,7 +105,7 @@ static ClientEvent *client_event_new (void) {
 
 }
 
-static void client_event_delete (void *ptr) {
+void client_event_delete (void *ptr) {
 
 	if (ptr) {
 		ClientEvent *event = (ClientEvent *) ptr;
@@ -125,37 +125,6 @@ static void client_event_delete (void *ptr) {
 
 }
 
-static ClientEvent *client_event_get (
-	const Client *client, const ClientEventType event_type,
-	ListElement **le_ptr
-) {
-
-	if (client) {
-		if (client->registered_events) {
-			ClientEvent *event = NULL;
-			for (ListElement *le = dlist_start (client->registered_events); le; le = le->next) {
-				event = (ClientEvent *) le->data;
-				if (event->type == event_type) {
-					if (le_ptr) *le_ptr = le;
-					return event;
-				}
-			}
-		}
-	}
-
-	return NULL;
-
-}
-
-static void client_event_pop (DoubleList *list, ListElement *le) {
-
-	if (le) {
-		void *data = dlist_remove_element (list, le);
-		if (data) client_event_delete (data);
-	}
-
-}
-
 // registers an action to be triggered when the specified event occurs
 // if there is an existing action registered to an event, it will be overrided
 // a newly allocated ClientEventData structure will be passed to your method
@@ -171,29 +140,23 @@ u8 client_event_register (
 	u8 retval = 1;
 
 	if (client) {
-		if (client->registered_events) {
-			ClientEvent *event = client_event_new ();
-			if (event) {
-				event->type = event_type;
+		ClientEvent *event = client_event_new ();
+		if (event) {
+			event->type = event_type;
 
-				event->create_thread = create_thread;
-				event->drop_after_trigger = drop_after_trigger;
+			event->create_thread = create_thread;
+			event->drop_after_trigger = drop_after_trigger;
 
-				event->action = action;
-				event->action_args = action_args;
-				event->delete_action_args = delete_action_args;
+			event->action = action;
+			event->action_args = action_args;
+			event->delete_action_args = delete_action_args;
 
-				// search if there is an action already registred for that event and remove it
-				(void) client_event_unregister (client, event_type);
+			// search if there is an action already registred for that event and remove it
+			(void) client_event_unregister (client, event_type);
 
-				if (!dlist_insert_after (
-					client->registered_events,
-					dlist_end (client->registered_events),
-					event
-				)) {
-					retval = 0;
-				}
-			}
+			client->events[event_type] = event;
+
+			retval = 0;
 		}
 	}
 
@@ -203,23 +166,17 @@ u8 client_event_register (
 
 // unregister the action associated with an event
 // deletes the action args using the delete_action_args () if NOT NULL
-// returns 0 on success, 1 on error
+// returns 0 on success, 1 on error or if event is NOT registered
 u8 client_event_unregister (Client *client, const ClientEventType event_type) {
 
 	u8 retval = 1;
 
 	if (client) {
-		if (client->registered_events) {
-			ClientEvent *event = NULL;
-			for (ListElement *le = dlist_start (client->registered_events); le; le = le->next) {
-				event = (ClientEvent *) le->data;
-				if (event->type == event_type) {
-					client_event_delete (dlist_remove_element (client->registered_events, le));
-					retval = 0;
+		if (client->events[event_type]) {
+			client_event_delete (client->events[event_type]);
+			client->events[event_type] = NULL;
 
-					break;
-				}
-			}
+			retval = 0;
 		}
 	}
 
@@ -234,7 +191,7 @@ void client_event_set_response (
 ) {
 
 	if (client) {
-		ClientEvent *event = client_event_get (client, event_type, NULL);
+		ClientEvent *event = client->events[event_type];
 		if (event) {
 			event->response_data = response_data;
 			event->delete_response_data = delete_response_data;
@@ -250,8 +207,7 @@ void client_event_trigger (
 ) {
 
 	if (client) {
-		ListElement *le = NULL;
-		ClientEvent *event = client_event_get (client, event_type, &le);
+		ClientEvent *event = client->events[event_type];
 		if (event) {
 			// trigger the action
 			if (event->action) {
@@ -274,33 +230,12 @@ void client_event_trigger (
 					));
 				}
 
-				if (event->drop_after_trigger) client_event_pop (client->registered_events, le);
+				if (event->drop_after_trigger) {
+					(void) client_event_unregister ((Client *) client, event_type);
+				}
 			}
 		}
 	}
-
-}
-
-#pragma endregion
-
-#pragma region main
-
-u8 client_events_init (Client *client) {
-
-	u8 retval = 1;
-
-	if (client) {
-		client->registered_events = dlist_init (client_event_delete, NULL);
-		retval = client->registered_events ? 0 : 1;
-	}
-
-	return retval;
-
-}
-
-void client_events_end (Client *client) {
-
-	if (client) dlist_delete (client->registered_events);
 
 }
 

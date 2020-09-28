@@ -13,6 +13,8 @@ struct _Connection;
 
 #pragma region types
 
+#define CLIENT_MAX_EVENTS				32
+
 #define CLIENT_EVENT_MAP(XX)																													\
 	XX(0,	NONE, 				No event)																										\
 	XX(1,	CONNECTED, 			Connected to cerver)																							\
@@ -66,6 +68,8 @@ typedef struct ClientEvent {
 
 } ClientEvent;
 
+CLIENT_PRIVATE void client_event_delete (void *ptr);
+
 // registers an action to be triggered when the specified event occurs
 // if there is an existing action registered to an event, it will be overrided
 // a newly allocated ClientEventData structure will be passed to your method
@@ -80,7 +84,7 @@ CLIENT_EXPORT u8 client_event_register (
 
 // unregister the action associated with an event
 // deletes the action args using the delete_action_args () if NOT NULL
-// returns 0 on success, 1 on error
+// returns 0 on success, 1 on error or if event is NOT registered
 CLIENT_EXPORT u8 client_event_unregister (struct _Client *client, const ClientEventType event_type);
 
 CLIENT_PRIVATE void client_event_set_response (
@@ -114,14 +118,6 @@ typedef struct ClientEventData {
 } ClientEventData;
 
 CLIENT_PUBLIC void client_event_data_delete (ClientEventData *event_data);
-
-#pragma endregion
-
-#pragma region main
-
-CLIENT_PRIVATE u8 client_events_init (struct _Client *client);
-
-CLIENT_PRIVATE void client_events_end (struct _Client *client);
 
 #pragma endregion
 
