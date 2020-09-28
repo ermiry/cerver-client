@@ -19,6 +19,24 @@
 
 u8 client_error_unregister (Client *client, const ClientErrorType error_type);
 
+#pragma region types
+
+// get the description for the current error type
+const char *client_error_type_description (ClientErrorType type) {
+
+	switch (type) {
+		#define XX(num, name, description) case CLIENT_ERROR_##name: return #description;
+		CLIENT_ERROR_MAP(XX)
+		#undef XX
+	}
+
+	return client_error_type_description (CLIENT_ERROR_UNKNOWN);
+
+}
+
+
+#pragma endregion
+
 #pragma region data
 
 static ClientErrorData *client_error_data_new (void) {
@@ -50,7 +68,8 @@ void client_error_data_delete (ClientErrorData *error_data) {
 static ClientErrorData *client_error_data_create (
 	const Client *client, const Connection *connection,
 	void *args,
-	const char *error_message) {
+	const char *error_message
+) {
 
 	ClientErrorData *error_data = client_error_data_new ();
 	if (error_data) {
@@ -103,8 +122,10 @@ static void client_error_delete (void *client_error_ptr) {
 
 }
 
-static ClientError *client_error_get (const Client *client, const ClientErrorType error_type,
-	ListElement **le_ptr) {
+static ClientError *client_error_get (
+	const Client *client, const ClientErrorType error_type,
+	ListElement **le_ptr
+) {
 
 	if (client) {
 		if (client->registered_errors) {
@@ -137,9 +158,12 @@ static void client_error_pop (DoubleList *list, ListElement *le) {
 // a newly allocated ClientErrorData structure will be passed to your method
 // that should be free using the client_error_data_delete () method
 // returns 0 on success, 1 on error
-u8 client_error_register (Client *client, const ClientErrorType error_type,
+u8 client_error_register (
+	Client *client,
+	const ClientErrorType error_type,
 	Action action, void *action_args, Action delete_action_args,
-	bool create_thread, bool drop_after_trigger) {
+	bool create_thread, bool drop_after_trigger
+) {
 
 	u8 retval = 1;
 
@@ -202,7 +226,8 @@ u8 client_error_unregister (Client *client, const ClientErrorType error_type) {
 
 // triggers all the actions that are registred to an error
 // returns 0 on success, 1 on error
-u8 client_error_trigger (const ClientErrorType error_type,
+u8 client_error_trigger (
+	const ClientErrorType error_type,
 	const Client *client, const Connection *connection,
 	const char *error_message
 ) {
