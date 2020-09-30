@@ -15,6 +15,22 @@
 
 static Cerver *cerver_deserialize (SCerver *scerver);
 
+#pragma region types
+
+const char *cerver_type_to_string (CerverType type) {
+
+	switch (type) {
+		#define XX(num, name, string) case CERVER_TYPE_##name: return #string;
+		CERVER_TYPE_MAP(XX)
+		#undef XX
+	}
+
+	return cerver_type_to_string (CERVER_TYPE_NONE);
+
+}
+
+#pragma endregion
+
 #pragma region stats
 
 static CerverStats *cerver_stats_new (void) {
@@ -257,22 +273,27 @@ static u8 cerver_check_info (Cerver *cerver, Client *client, Connection *connect
 
         #ifdef CLIENT_DEBUG
         switch (cerver->type) {
-            case CUSTOM_CERVER:
-                client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Cerver type: CUSTOM");
-                break;
-            case FILE_CERVER:
-                client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Cerver type: FILE");
-                break;
-            case WEB_CERVER:
-                client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Cerver type: WEB");
-                break;
-            case GAME_CERVER:
-                client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Cerver type: GAME");
-                break;
+            case CERVER_TYPE_CUSTOM:
+				client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Cerver type: CUSTOM");
+				break;
 
-            default: 
-                client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Cerver type: UNKNOWN"); 
-                break;
+			case CERVER_TYPE_GAME:
+				client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Cerver type: GAME");
+				break;
+			case CERVER_TYPE_WEB:
+				client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Cerver type: WEB");
+				break;
+			case CERVER_TYPE_FILES:
+				client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Cerver type: FILE");
+				break;
+
+			case CERVER_TYPE_BALANCER:
+				client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Cerver type: BALANCER");
+				break;
+
+			default:
+				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Cerver type: UNKNOWN");
+				break;
         }
         #endif
 

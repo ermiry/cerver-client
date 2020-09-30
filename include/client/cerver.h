@@ -14,14 +14,27 @@ struct _Cerver;
 struct _Packet;
 struct _Token;
 
+#pragma region types
+
+#define CERVER_TYPE_MAP(XX)					\
+	XX(0,	NONE, 		None)				\
+	XX(1,	CUSTOM, 	Custom)				\
+	XX(2,	GAME, 		Game)				\
+	XX(3,	WEB, 		Web)				\
+	XX(4,	FILES, 		Files)				\
+	XX(5,	BALANCER, 	Balancer)
+
 typedef enum CerverType {
 
-    CUSTOM_CERVER = 0,
-    FILE_CERVER,
-    GAME_CERVER,
-    WEB_CERVER, 
+	#define XX(num, name, string) CERVER_TYPE_##name = num,
+	CERVER_TYPE_MAP (XX)
+	#undef XX
 
 } CerverType;
+
+CLIENT_EXPORT const char *cerver_type_to_string (CerverType type);
+
+#pragma endregion
 
 #pragma region stats
 
