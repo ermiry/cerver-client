@@ -132,6 +132,8 @@ struct _PacketHeader {
 	
 	u32 request_type;
 
+	u16 sock_fd;
+
 };
 
 typedef struct _PacketHeader PacketHeader;
