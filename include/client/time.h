@@ -2,7 +2,7 @@
 #define _CLIENT_TIME_H_
 
 #ifndef __USE_POSIX199309
-    #define __USE_POSIX199309
+	#define __USE_POSIX199309
 #endif
 
 #include <time.h>
@@ -26,7 +26,7 @@ CLIENT_PUBLIC struct tm *timer_get_gmt_time (void);
 
 CLIENT_PUBLIC struct tm *timer_get_local_time (void);
 
-// returns a string representing the 24h time 
+// returns a string representing the 24h time
 CLIENT_PUBLIC String *timer_time_to_string (struct tm *timeinfo);
 
 // returns a string with day/month/year
