@@ -24,8 +24,8 @@ CLIENT_EXPORT DoubleList *files_get_from_dir (const char *dir);
 CLIENT_EXPORT DoubleList *file_get_lines (const char *filename);
 
 // opens a file and returns it as a FILE
-CLIENT_EXPORT FILE *file_open_as_file (const char *filename, 
-    const char *modes, struct stat *filestatus);
+CLIENT_EXPORT FILE *file_open_as_file (const char *filename,
+	const char *modes, struct stat *filestatus);
 
 // opens and reads a file into a buffer
 // sets file size to the amount of bytes read
