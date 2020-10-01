@@ -237,83 +237,103 @@ u8 client_error_trigger (
 // handles error packets
 void error_packet_handler (Packet *packet) {
 
-	if (packet) {
-		if (packet->data_size >= sizeof (SError)) {
-			char *end = (char *) packet->data;
-			SError *s_error = (SError *) end;
+	if (packet->data_size >= sizeof (SError)) {
+		char *end = (char *) packet->data;
+		SError *s_error = (SError *) end;
 
-			switch (s_error->error_type) {
-				case CLIENT_ERROR_CERVER_ERROR:
-					client_error_trigger (
-						CLIENT_ERROR_CERVER_ERROR,
-						packet->client, packet->connection,
-						s_error->msg
-					);
+		switch (s_error->error_type) {
+			case CLIENT_ERROR_CERVER_ERROR:
+				client_error_trigger (
+					CLIENT_ERROR_CERVER_ERROR,
+					packet->client, packet->connection,
+					s_error->msg
+				);
+				break;
+			case CLIENT_ERROR_PACKET_ERROR:
+				client_error_trigger (
+					CLIENT_ERROR_PACKET_ERROR,
+					packet->client, packet->connection,
+					s_error->msg
+				);
 				break;
 
-				case CLIENT_ERROR_FAILED_AUTH: {
-					if (client_error_trigger (
-						CLIENT_ERROR_FAILED_AUTH,
-						packet->client, packet->connection,
-						s_error->msg
-					)) {
-						// not error action is registered to handle the error
-						char *status = c_string_create ("Failed to authenticate - %s", s_error->msg);
-						if (status) {
-							client_log_error (status);
-							free (status);
-						}
+			case CLIENT_ERROR_FAILED_AUTH: {
+				if (client_error_trigger (
+					CLIENT_ERROR_FAILED_AUTH,
+					packet->client, packet->connection,
+					s_error->msg
+				)) {
+					// not error action is registered to handle the error
+					char *status = c_string_create ("Failed to authenticate - %s", s_error->msg);
+					if (status) {
+						client_log_error (status);
+						free (status);
 					}
-				} break;
+				}
+			} break;
 
-				case CLIENT_ERROR_CREATE_LOBBY:
-					client_error_trigger (
-						CLIENT_ERROR_CREATE_LOBBY,
-						packet->client, packet->connection,
-						s_error->msg
-					);
-					break;
-				case CLIENT_ERROR_JOIN_LOBBY:
-					client_error_trigger (
-						CLIENT_ERROR_JOIN_LOBBY,
-						packet->client, packet->connection,
-						s_error->msg
-					);
-					break;
-				case CLIENT_ERROR_LEAVE_LOBBY:
-					client_error_trigger (
-						CLIENT_ERROR_LEAVE_LOBBY,
-						packet->client, packet->connection,
-						s_error->msg
-					);
-					break;
-				case CLIENT_ERROR_FIND_LOBBY:
-					client_error_trigger (
-						CLIENT_ERROR_FIND_LOBBY,
-						packet->client, packet->connection,
-						s_error->msg
-					);
-					break;
+			case CLIENT_ERROR_GET_FILE:
+				client_error_trigger (
+					CLIENT_ERROR_GET_FILE,
+					packet->client, packet->connection,
+					s_error->msg
+				);
+				break;
+			case CLIENT_ERROR_SEND_FILE:
+				client_error_trigger (
+					CLIENT_ERROR_SEND_FILE,
+					packet->client, packet->connection,
+					s_error->msg
+				);
+				break;
 
-				case CLIENT_ERROR_GAME_INIT:
-					client_error_trigger (
-						CLIENT_ERROR_GAME_INIT,
-						packet->client, packet->connection,
-						s_error->msg
-					);
-					break;
-				case CLIENT_ERROR_GAME_START:
-					client_error_trigger (
-						CLIENT_ERROR_GAME_START,
-						packet->client, packet->connection,
-						s_error->msg
-					);
-					break;
+			case CLIENT_ERROR_CREATE_LOBBY:
+				client_error_trigger (
+					CLIENT_ERROR_CREATE_LOBBY,
+					packet->client, packet->connection,
+					s_error->msg
+				);
+				break;
+			case CLIENT_ERROR_JOIN_LOBBY:
+				client_error_trigger (
+					CLIENT_ERROR_JOIN_LOBBY,
+					packet->client, packet->connection,
+					s_error->msg
+				);
+				break;
+			case CLIENT_ERROR_LEAVE_LOBBY:
+				client_error_trigger (
+					CLIENT_ERROR_LEAVE_LOBBY,
+					packet->client, packet->connection,
+					s_error->msg
+				);
+				break;
+			case CLIENT_ERROR_FIND_LOBBY:
+				client_error_trigger (
+					CLIENT_ERROR_FIND_LOBBY,
+					packet->client, packet->connection,
+					s_error->msg
+				);
+				break;
 
-				default:
-					client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown error received from cerver!");
-					break;
-			}
+			case CLIENT_ERROR_GAME_INIT:
+				client_error_trigger (
+					CLIENT_ERROR_GAME_INIT,
+					packet->client, packet->connection,
+					s_error->msg
+				);
+				break;
+			case CLIENT_ERROR_GAME_START:
+				client_error_trigger (
+					CLIENT_ERROR_GAME_START,
+					packet->client, packet->connection,
+					s_error->msg
+				);
+				break;
+
+			default:
+				client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown error received from cerver!");
+				break;
 		}
 	}
 
