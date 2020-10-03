@@ -76,9 +76,10 @@ struct _Connection {
 	size_t received_data_size;
 	Action received_data_delete;
 
-	bool receive_packets;                   // set if the connection will receive packets or not (default true)
-	Action custom_receive;                  // custom receive method to handle incomming packets in the connection
-	void *custom_receive_args;              // arguments to be passed to the custom receive method
+	bool receive_packets;                   		// set if the connection will receive packets or not (default true)
+	Action custom_receive;                 		 	// custom receive method to handle incomming packets in the connection
+	void *custom_receive_args;              		// arguments to be passed to the custom receive method
+	void (*custom_receive_args_delete)(void *);		// method to delete the arguments when the connection gets deleted
 
 	bool authenticated;                     // the connection has been authenticated to the cerver
 	void *auth_data;                        // maybe auth credentials
@@ -126,7 +127,12 @@ CLIENT_PUBLIC void connection_set_received_data (Connection *connection, void *d
 
 // sets a custom receive method to handle incomming packets in the connection
 // a reference to the client and connection will be passed to the action as ClientConnection structure
-CLIENT_PUBLIC void connection_set_custom_receive (Connection *connection, Action custom_receive, void *args);
+// alongside the arguments passed to this method
+CLIENT_PUBLIC void connection_set_custom_receive (
+	Connection *connection,
+	Action custom_receive,
+	void *args, void (*args_delete)(void *)
+);
 
 // sets the connection auth data to send whenever the cerver requires authentication
 // and a method to destroy it once the connection has ended,

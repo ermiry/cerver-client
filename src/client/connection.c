@@ -96,6 +96,7 @@ Connection *connection_new (void) {
 		connection->receive_packets = true;
 		connection->custom_receive = NULL;
 		connection->custom_receive_args = NULL;
+		connection->custom_receive_args_delete = NULL;
 
 		connection->authenticated = false;
 		connection->auth_data = NULL;
@@ -127,6 +128,12 @@ void connection_delete (void *connection_ptr) {
 
 		if (connection->received_data && connection->received_data_delete)
 			connection->received_data_delete (connection->received_data);
+
+		if (connection->custom_receive_args) {
+			if (connection->custom_receive_args_delete) {
+				connection->custom_receive_args_delete (connection->custom_receive_args);
+			}
+		}
 
 		connection_remove_auth_data (connection);
 
@@ -225,11 +232,16 @@ void connection_set_received_data (Connection *connection, void *data, size_t da
 
 // sets a custom receive method to handle incomming packets in the connection
 // a reference to the client and connection will be passed to the action as ClientConnection structure
-void connection_set_custom_receive (Connection *connection, Action custom_receive, void *args) {
+void connection_set_custom_receive (
+	Connection *connection, 
+	Action custom_receive, 
+	void *args, void (*args_delete)(void *)
+) {
 
 	if (connection) {
 		connection->custom_receive = custom_receive;
 		connection->custom_receive_args = args;
+		connection->custom_receive_args_delete = args_delete;
 		if (connection->custom_receive) connection->receive_packets = true;
 	}
 
