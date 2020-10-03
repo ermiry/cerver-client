@@ -3,6 +3,8 @@
 
 #include <fcntl.h>
 
+#include <sys/time.h>
+
 #include "client/network.h"
 
 // enable/disable blocking on a socket
@@ -35,7 +37,7 @@ char *sock_ip_to_string (const struct sockaddr *address) {
 			switch (address->sa_family) {
 				case AF_INET:
 					inet_ntop (
-						AF_INET,
+						AF_INET, 
 						&((struct sockaddr_in *) address)->sin_addr,
 						ipstr, INET6_ADDRSTRLEN
 					);
@@ -43,7 +45,7 @@ char *sock_ip_to_string (const struct sockaddr *address) {
 
 				case AF_INET6:
 					inet_ntop (
-						AF_INET6,
+						AF_INET6, 
 						&((struct sockaddr_in6 *) address)->sin6_addr,
 						ipstr, INET6_ADDRSTRLEN
 					);
@@ -105,5 +107,23 @@ in_port_t sock_ip_port (const struct sockaddr *address) {
 	}
 
 	return retval;
+
+}
+
+// sets a timeout (in seconds) for a socket
+// the socket will still block until the timeout is completed
+// if no data was read, a EAGAIN error is returned
+// returns 0 on success, 1 on error
+int sock_set_timeout (int sock_fd, time_t timeout) {
+
+	struct timeval tv = { 0 };
+	tv.tv_sec = timeout;
+	tv.tv_usec = 0;
+
+	return setsockopt (
+		sock_fd, 
+		SOL_SOCKET, SO_RCVTIMEO, 
+		(const char *) &tv, sizeof (struct timeval)
+	);
 
 }
