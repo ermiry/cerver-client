@@ -85,7 +85,7 @@ Connection *connection_new (void) {
 		connection->sock_receive = NULL;
 
 		connection->update_thread_id = 0;
-		connection->update_sleep = DEFAULT_CONNECTION_UPDATE_SLEEP;
+		connection->update_timeout = DEFAULT_CONNECTION_TIMEOUT;
 
 		connection->full_packet = false;
 
@@ -202,11 +202,12 @@ void connection_set_receive_buffer_size (Connection *connection, u32 size) {
 
 }
 
-// sets the waiting time (sleep) in micro secs between each call to recv () in connection_update () thread
-// the dault value is 200000 (DEFAULT_CONNECTION_UPDATE_SLEEP)
-void connection_set_update_sleep (Connection *connection, u32 sleep) {
+// sets the timeout (in secs) the connection's socket will have
+// this refers to the time the socket will block waiting for new data to araive
+// note that this only has effect in connection_update ()
+void connection_set_update_timeout (Connection *connection, u32 timeout) {
 
-	if (connection) connection->update_sleep = sleep;
+	if (connection) connection->update_timeout = timeout;
 
 }
 
@@ -237,9 +238,11 @@ void connection_set_custom_receive (Connection *connection, Action custom_receiv
 // sets the connection auth data to send whenever the cerver requires authentication
 // and a method to destroy it once the connection has ended,
 // if delete_auth_data is NULL, the auth data won't be deleted
-void connection_set_auth_data (Connection *connection,
+void connection_set_auth_data (
+	Connection *connection,
 	void *auth_data, size_t auth_data_size, Action delete_auth_data,
-	bool admin_auth) {
+	bool admin_auth
+) {
 
 	if (connection && auth_data) {
 		connection_remove_auth_data (connection);
@@ -433,10 +436,14 @@ void connection_update (void *ptr) {
 			}
 		}
 
-		ConnectionCustomReceiveData *custom_data = connection_custom_receive_data_new (cc->client, cc->connection,
-			cc->connection->custom_receive_args);
+		ConnectionCustomReceiveData *custom_data = connection_custom_receive_data_new (
+			cc->client, cc->connection,
+			cc->connection->custom_receive_args
+		);
 
-		cc->connection->sock_receive = sock_receive_new ();
+		if (!cc->connection->sock_receive) cc->connection->sock_receive = sock_receive_new ();
+
+		(void) sock_set_timeout (cc->connection->socket->sock_fd, cc->connection->update_timeout);
 
 		while (cc->client->running && cc->connection->connected) {
 			if (cc->connection->custom_receive) {

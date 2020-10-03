@@ -17,7 +17,7 @@
 #define DEFAULT_CONNECTION_MAX_SLEEP                60
 #define DEFAULT_CONNECTION_PROTOCOL                 PROTOCOL_TCP
 
-#define DEFAULT_CONNECTION_UPDATE_SLEEP             200000
+#define DEFAULT_CONNECTION_TIMEOUT					2
 
 struct _Cerver;
 struct _Client;
@@ -66,7 +66,7 @@ struct _Connection {
 	struct _SockReceive *sock_receive;      // 01/01/2020 - used for inter-cerver communications
 
 	pthread_t update_thread_id;
-	u32 update_sleep;
+	u32 update_timeout;
 
 	// 10/06/2020 - used for direct requests to cerver
 	bool full_packet;
@@ -115,9 +115,10 @@ CLIENT_PUBLIC void connection_set_max_sleep (Connection *connection, u32 max_sle
 // by default the value RECEIVE_PACKET_BUFFER_SIZE is used
 CLIENT_PUBLIC void connection_set_receive_buffer_size (Connection *connection, u32 size);
 
-// sets the waiting time (sleep) in micro secs between each call to recv () in connection_update () thread
-// the dault value is 200000 (DEFAULT_CONNECTION_UPDATE_SLEEP)
-CLIENT_PUBLIC void connection_set_update_sleep (Connection *connection, u32 sleep);
+// sets the timeout (in secs) the connection's socket will have
+// this refers to the time the socket will block waiting for new data to araive
+// note that this only has effect in connection_update ()
+CLIENT_EXPORT void connection_set_update_timeout (Connection *connection, u32 timeout);
 
 // sets the connection received data
 // 01/01/2020 - a place to safely store the request response, like when using client_connection_request_to_cerver ()
@@ -130,9 +131,11 @@ CLIENT_PUBLIC void connection_set_custom_receive (Connection *connection, Action
 // sets the connection auth data to send whenever the cerver requires authentication
 // and a method to destroy it once the connection has ended,
 // if delete_auth_data is NULL, the auth data won't be deleted
-CLIENT_PUBLIC void connection_set_auth_data (Connection *connection,
+CLIENT_PUBLIC void connection_set_auth_data (
+	Connection *connection,
 	void *auth_data, size_t auth_data_size, Action delete_auth_data,
-	bool admin_auth);
+	bool admin_auth
+);
 
 // removes the connection auth data using the connection's delete_auth_data method
 // if not such method, the data won't be deleted
