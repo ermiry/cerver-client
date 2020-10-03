@@ -24,7 +24,7 @@ typedef u32 ProtocolID;
 // gets the current protocol id set in your application
 CLIENT_EXPORT ProtocolID packets_get_protocol_id (void);
 
-// Sets the protocol id that this cerver will use for its packets. 
+// Sets the protocol id that this cerver will use for its packets.
 // The protocol id is a unique number that you can set to only accept packets that are comming from your application
 // If the protocol id coming from the cerver don't match your application's, it will be considered a bad packet
 // This value is only cheked if you enable packet checking for your client
@@ -34,13 +34,13 @@ typedef struct ProtocolVersion {
 
 	u16 major;
 	u16 minor;
-	
+
 } ProtocolVersion;
 
 // gets the current version set in your application
 CLIENT_EXPORT ProtocolVersion packets_get_protocol_version (void);
 
-// Sets the protocol version for the cerver. 
+// Sets the protocol version for the cerver.
 // The version is an identifier to help you manage different versions of your deployed applications
 // If the versions of your packet don't match, it will be considered a bad packet
 // This value is only cheked if you enable packet checking for your client
@@ -129,7 +129,7 @@ struct _PacketHeader {
 	size_t packet_size;
 
 	u8 handler_id;
-	
+
 	u32 request_type;
 
 	u16 sock_fd;
@@ -267,7 +267,7 @@ CLIENT_EXPORT Packet *packet_create (PacketType type, void *data, size_t data_si
 
 // sets the packet destinatary to whom this packet is going to be sent
 CLIENT_EXPORT void packet_set_network_values (
-	Packet *packet, 
+	Packet *packet,
 	struct _Client *client, struct _Connection *connection
 );
 
@@ -320,11 +320,11 @@ CLIENT_EXPORT u8 packet_set_packet_ref (Packet *packet, void *data, size_t packe
 // returns 0 on success, 1 on error
 CLIENT_EXPORT u8 packet_generate (Packet *packet);
 
-// generates a simple request packet of the requested type reday to be sent, 
+// generates a simple request packet of the requested type reday to be sent,
 // and with option to pass some data
 // returns a newly allocated packet that should be deleted after use
 CLIENT_EXPORT Packet *packet_generate_request (
-	PacketType packet_type, u32 req_type, 
+	PacketType packet_type, u32 req_type,
 	void *data, size_t data_size
 );
 
@@ -345,7 +345,7 @@ CLIENT_EXPORT u8 packet_send_to (
 );
 
 // sends a packet to the socket in two parts, first the header & then the data
-// this method can be useful when trying to forward a big received packet without the overhead of 
+// this method can be useful when trying to forward a big received packet without the overhead of
 // performing and additional copy to create a continuos data (packet) buffer
 // the socket's write mutex will be locked to ensure that the packet
 // is sent correctly and to avoid race conditions
@@ -366,9 +366,9 @@ CLIENT_EXPORT u8 packet_send_to_split (
 // socket mutex will be locked for the entire operation
 // returns 0 on success, 1 on error
 CLIENT_EXPORT u8 packet_send_pieces (
-	const Packet *packet, 
-	void **pieces, size_t *sizes, u32 n_pieces, 
-	int flags, 
+	const Packet *packet,
+	void **pieces, size_t *sizes, u32 n_pieces,
+	int flags,
 	size_t *total_sent
 );
 
@@ -376,7 +376,7 @@ CLIENT_EXPORT u8 packet_send_pieces (
 // raw flag to send a raw packet (only the data that was set to the packet, without any header)
 // returns 0 on success, 1 on error
 CLIENT_EXPORT u8 packet_send_to_socket (
-	const Packet *packet, 
+	const Packet *packet,
 	struct _Socket *socket, int flags, size_t *total_sent, bool raw
 );
 
