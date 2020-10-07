@@ -25,6 +25,9 @@ CLIENT_EXPORT DoubleList *files_get_from_dir (const char *dir);
 // reads eachone of the file's lines into a newly created string and returns them inside a dlist
 CLIENT_EXPORT DoubleList *file_get_lines (const char *filename);
 
+// returns true if the filename exists
+CLIENT_EXPORT bool file_exists (const char *filename);
+
 // opens a file and returns it as a FILE
 CLIENT_EXPORT FILE *file_open_as_file (
 	const char *filename,
