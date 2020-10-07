@@ -77,14 +77,20 @@ void client_stats_print (Client *client) {
 		}
 
 		else {
-			client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_CLIENT,
-				"Client does not have a reference to a client stats!");
+			client_log_msg (
+				stderr, 
+				LOG_TYPE_ERROR, LOG_TYPE_CLIENT,
+				"Client does not have a reference to a client stats!"
+			);
 		}
 	}
 
 	else {
-		client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_CLIENT,
-			"Can't get stats of a NULL client!");
+		client_log_msg (
+			stderr,
+			LOG_TYPE_WARNING, LOG_TYPE_CLIENT,
+			"Can't get stats of a NULL client!"
+		);
 	}
 
 }
@@ -120,6 +126,18 @@ static Client *client_new (void) {
 
 		client->session_id = NULL;
 
+		client->n_paths = 0;
+		for (unsigned int i = 0; i < CLIENT_FILES_MAX_PATHS; i++)
+			client->paths[i] = NULL;
+
+		client->uploads_path = NULL;
+
+		client->file_upload_handler = NULL;
+
+		client->file_upload_cb = NULL;
+
+		client->file_stats = NULL;
+
 		client->stats = NULL;
 	}
 
@@ -130,6 +148,8 @@ static Client *client_new (void) {
 static void client_delete (Client *client) {
 
 	if (client) {
+		str_delete (client->name);
+
 		dlist_delete (client->connections);
 
 		for (unsigned int i = 0; i < CLIENT_MAX_EVENTS; i++)
@@ -139,6 +159,13 @@ static void client_delete (Client *client) {
 			if (client->errors[i]) client_error_delete (client->errors[i]);
 
 		str_delete (client->session_id);
+
+		for (unsigned int i = 0; i < CLIENT_FILES_MAX_PATHS; i++)
+			str_delete (client->paths[i]);
+
+		str_delete (client->uploads_path);
+
+		client_file_stats_delete (client->file_stats);
 
 		client_stats_delete (client->stats);
 

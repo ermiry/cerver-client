@@ -15,10 +15,14 @@
 #include "client/connection.h"
 #include "client/packets.h"
 
+#define CLIENT_FILES_MAX_PATHS           32
+
 struct _Client;
 struct _Connection;
 struct _Packet;
 struct _PacketsPerType;
+
+#pragma region stats
 
 struct _ClientStats {
 
@@ -40,6 +44,24 @@ struct _ClientStats {
 typedef struct _ClientStats ClientStats;
 
 CLIENT_PUBLIC void client_stats_print (struct _Client *client);
+
+struct _ClientFileStats {
+
+	u64 n_files_requests;
+	u64 n_success_files_requests;
+	u64 n_bad_files_requests;
+	u64 n_bytes_sent;
+
+	u64 n_files_uploaded;
+	u64 n_success_files_uploaded;
+	u64 n_bad_files_uploaded;
+	u64 n_bytes_received;
+
+};
+
+typedef struct _ClientFilesStats ClientFileStats;
+
+#pragma endregion
 
 struct _Client {
 
@@ -63,6 +85,25 @@ struct _Client {
 	u64 uptime;
 
 	String *session_id;
+
+	// files
+	unsigned int n_paths;
+	String *paths[CLIENT_FILES_MAX_PATHS];
+
+	// default path where received files will be placed
+	String *uploads_path;
+
+	u8 (*file_upload_handler) (
+		struct _Client *, struct _Connection *,
+		struct _FileHeader *, char **saved_filename
+	);
+
+	void (*file_upload_cb) (
+		struct _Client *, struct _Connection *,
+		const char *saved_filename
+	);
+
+	ClientFileStats *file_stats;
 
 	ClientStats *stats;
 
