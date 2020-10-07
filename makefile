@@ -4,8 +4,9 @@ SLIB		:= libclient.so
 PTHREAD 	:= -l pthread
 MATH		:= -lm
 
-# print additional information
-DEFINES = -D CERVER_DEBUG -D CLIENT_DEBUG -D PACKETS_DEBUG -D AUTH_DEBUG
+DEFINES		:= -D _GNU_SOURCE
+
+DEVELOPMENT = -g -D CERVER_DEBUG -D CLIENT_DEBUG -D PACKETS_DEBUG -D AUTH_DEBUG
 
 CC          := gcc
 
@@ -20,7 +21,7 @@ SRCEXT      := c
 DEPEXT      := d
 OBJEXT      := o
 
-CFLAGS      := -g $(DEFINES) -Wall -Wno-unknown-pragmas -fPIC
+CFLAGS      := $(DEVELOPMENT) $(DEFINES) -Wall -Wno-unknown-pragmas -fPIC
 LIB         := $(PTHREAD) $(MATH)
 INC         := -I $(INCDIR) -I /usr/local/include
 INCDEP      := -I $(INCDIR)
