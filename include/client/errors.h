@@ -113,6 +113,20 @@ CLIENT_PRIVATE void error_packet_handler (struct _Packet *packet);
 
 #pragma endregion
 
+#pragma region packets
+
+// creates an error packet ready to be sent
+CLIENT_PUBLIC struct _Packet *error_packet_generate (const ClientErrorType type, const char *msg);
+
+// creates and send a new error packet
+// returns 0 on success, 1 on error
+CLIENT_PUBLIC u8 error_packet_generate_and_send (
+	const ClientErrorType type, const char *msg,
+	struct _Client *client, struct _Connection *connection
+);
+
+#pragma endregion
+
 #pragma region serialization
 
 #define ERROR_MESSAGE_LENGTH        128

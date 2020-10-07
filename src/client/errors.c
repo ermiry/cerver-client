@@ -2,6 +2,8 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include <time.h>
+
 #include "client/types/types.h"
 #include "client/types/string.h"
 
@@ -336,6 +338,60 @@ void error_packet_handler (Packet *packet) {
 				break;
 		}
 	}
+
+}
+
+#pragma endregion
+
+#pragma region packets
+
+// creates an error packet ready to be sent
+Packet *error_packet_generate (const ClientErrorType type, const char *msg) {
+
+	Packet *packet = packet_new ();
+	if (packet) {
+		size_t packet_len = sizeof (PacketHeader) + sizeof (SError);
+
+		packet->packet = malloc (packet_len);
+		packet->packet_size = packet_len;
+
+		char *end = (char *) packet->packet;
+		PacketHeader *header = (PacketHeader *) end;
+		header->packet_type = PACKET_TYPE_ERROR;
+		header->packet_size = packet_len;
+
+		header->request_type = REQUEST_PACKET_TYPE_NONE;
+
+		end += sizeof (PacketHeader);
+
+		SError *s_error = (SError *) end;
+		s_error->error_type = type;
+		s_error->timestamp = time (NULL);
+		memset (s_error->msg, 0, ERROR_MESSAGE_LENGTH);
+		if (msg) strncpy (s_error->msg, msg, ERROR_MESSAGE_LENGTH);
+	}
+
+	return packet;
+
+}
+
+// creates and send a new error packet
+// returns 0 on success, 1 on error
+u8 error_packet_generate_and_send (
+	const ClientErrorType type, const char *msg,
+	Client *client, Connection *connection
+) {
+
+	u8 retval = 1;
+
+	Packet *error_packet = error_packet_generate (type, msg);
+	if (error_packet) {
+		packet_set_network_values (error_packet, client, connection);
+		retval = packet_send (error_packet, 0, NULL, false);
+		packet_delete (error_packet);
+	}
+
+	return retval;
 
 }
 
