@@ -19,8 +19,9 @@
 #include "client/collections/dlist.h"
 
 #include "client/client.h"
+#include "client/errors.h"
+#include "client/files.h"
 #include "client/network.h"
-#include "client/packets.h"
 #include "client/packets.h"
 
 #include "client/utils/utils.h"
@@ -303,7 +304,7 @@ int file_open_as_fd (const char *filename, struct stat *filestatus, int flags) {
 // sends a first packet with file info
 // returns 0 on success, 1 on error
 static u8 file_send_header (
-	Cerver *cerver, Client *client, Connection *connection,
+	Client *client, Connection *connection,
 	const char *filename, size_t filelen
 ) {
 
@@ -329,9 +330,9 @@ static u8 file_send_header (
 		strncpy (file_header->filename, filename, DEFAULT_FILENAME_LEN);
 		file_header->len = filelen;
 
-		packet_set_network_values (packet, cerver, client, connection, NULL);
+		packet_set_network_values (packet, client, connection);
 
-		retval = packet_send (packet, 0, NULL, false);
+		retval = packet_send_unsafe (packet, 0, NULL, false);
 	}
 
 	return retval;
@@ -339,7 +340,7 @@ static u8 file_send_header (
 }
 
 static ssize_t file_send_actual (
-	Cerver *cerver, Client *client, Connection *connection,
+	Client *client, Connection *connection,
 	const char *filename, const char *actual_filename
 ) {
 
@@ -353,7 +354,7 @@ static ssize_t file_send_actual (
 	if (fd >= 0) {
 		// send a first packet with file info
 		if (!file_send_header (
-			cerver, client, connection,
+			client, connection,
 			actual_filename, filestatus.st_size
 		)) {
 			// send the actual file
@@ -361,7 +362,7 @@ static ssize_t file_send_actual (
 		}
 
 		else {
-			cerver_log_msg (
+			client_log_msg (
 				stderr, 
 				LOG_TYPE_ERROR, LOG_TYPE_FILE, 
 				"file_send () - failed to send file header"
@@ -374,13 +375,13 @@ static ssize_t file_send_actual (
 	else {
 		char *s = c_string_create ("file_send () - Failed to open file %s", filename);
 		if (s) {
-			cerver_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_FILE, s);
+			client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_FILE, s);
 			free (s);
 		}
 
 		(void) error_packet_generate_and_send (
-			CERVER_ERROR_GET_FILE, "File not found",
-			cerver, client, connection
+			CLIENT_ERROR_GET_FILE, "File not found",
+			client, connection
 		);
 	}
 
@@ -394,7 +395,7 @@ static ssize_t file_send_actual (
 // first the FileHeader in a regular packet, then the file contents between sockets
 // returns the number of bytes sent
 ssize_t file_send (
-	Cerver *cerver, Client *client, Connection *connection,
+	Client *client, Connection *connection,
 	const char *filename
 ) {
 
@@ -404,13 +405,13 @@ ssize_t file_send (
 		char *actual_filename = strrchr (filename, '/');
 		if (actual_filename) {
 			retval = file_send_actual (
-				cerver, client, connection,
+				client, connection,
 				filename, actual_filename
 			);
 		}
 
 		else {
-			cerver_log_error ("file_send () - failed to get actual filename");
+			client_log_error ("file_send () - failed to get actual filename");
 		}
 	}
 

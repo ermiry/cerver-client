@@ -5,6 +5,8 @@
 
 #include <sys/stat.h>
 
+#include "client/types/types.h"
+
 #include "client/collections/dlist.h"
 
 #include "client/config.h"
@@ -57,9 +59,13 @@ struct _FileHeader {
 
 typedef struct _FileHeader FileHeader;
 
-// sends a file to the sock fd
-// returns 0 on success, 1 on error
-CLIENT_EXPORT int file_send (const char *filename, int sock_fd);
+// opens a file and sends the content back to the client
+// first the FileHeader in a regular packet, then the file contents between sockets
+// returns the number of bytes sent
+CLIENT_PUBLIC ssize_t file_send (
+	Client *client, Connection *connection,
+	const char *filename
+);
 
 #pragma endregion
 
