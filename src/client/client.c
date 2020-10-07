@@ -269,33 +269,19 @@ u8 client_set_session_id (Client *client, const char *session_id) {
 
 }
 
-// inits client with default values
-static u8 client_init (Client *client) {
-
-	u8 retval = 1;
-
-	if (client) {
-		client->connections = dlist_init (connection_delete, connection_comparator_by_sock_fd);
-
-		client->stats = client_stats_new ();
-
-		client->running = false;
-
-		client->file_stats = client_file_stats_new ();
-
-		retval = 0;
-	}
-
-	return retval;
-
-}
-
 Client *client_create (void) {
 
 	Client *client = client_new ();
 	if (client) {
 		client->name = str_new ("no-name");
-		client_init (client);
+
+		client->connections = dlist_init (connection_delete, connection_comparator_by_sock_fd);
+
+		client->running = false;
+
+		client->file_stats = client_file_stats_new ();
+		
+		client->stats = client_stats_new ();
 	}
 
 	return client;
