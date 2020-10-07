@@ -67,6 +67,13 @@ CLIENT_PUBLIC ssize_t file_send (
 	const char *filename
 );
 
+// receives an incomming file in the socket and splice its information to a local file
+// returns 0 on success, 1 on error
+CLIENT_PUBLIC u8 file_receive (
+	Client *client, Connection *connection,
+	FileHeader *file_header, char **saved_filename
+);
+
 #pragma endregion
 
 #endif

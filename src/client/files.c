@@ -420,3 +420,78 @@ ssize_t file_send (
 }
 
 #pragma endregion
+
+#pragma region receive
+
+// receives an incomming file in the socket and splice its information to a local file
+// returns 0 on success, 1 on error
+u8 file_receive (
+	Client *client, Connection *connection,
+	FileHeader *file_header, char **saved_filename
+) {
+
+	u8 retval = 1;
+
+	// FIXME:
+	// generate a custom filename taking into account the uploads path
+	// *saved_filename = c_string_create (
+	// 	"%s/%ld-%s", 
+	// 	file_cerver->uploads_path, 
+	// 	time (NULL), file_header->filename
+	// );
+
+	if (*saved_filename) {
+		int file_fd = open (*saved_filename, O_CREAT);
+		if (file_fd > 0) {
+			ssize_t received = splice (
+				connection->socket->sock_fd, NULL,
+				file_fd, NULL,
+				file_header->len,
+				0
+			);
+
+			switch (received) {
+				case -1: {
+					client_log_error ("file_receive () - splice () = -1");
+
+					free (*saved_filename);
+					*saved_filename = NULL;
+				} break;
+
+				case 0: {
+					client_log_warning ("file_receive () - splice () = 0");
+
+					free (*saved_filename);
+					*saved_filename = NULL;
+				} break;
+
+				default: {
+					char *status = c_string_create (
+						"file_receive () - spliced %ld bytes", received
+					);
+
+					if (status) {
+						client_log_debug (status);
+						free (status);
+					}
+
+					retval = 0;
+				} break;
+			}
+
+			close (file_fd);
+		}
+
+		else {
+			client_log_error ("file_receive () - failed to open file");
+
+			free (*saved_filename);
+			*saved_filename = NULL;
+		}
+	}
+
+	return retval;
+
+}
+
+#pragma endregion
