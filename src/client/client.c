@@ -158,7 +158,10 @@ void client_set_name (Client *client, const char *name) {
 }
 
 // sets a cutom app packet hanlder and a custom app error packet handler
-void client_set_app_handlers (Client *client, Action app_handler, Action app_error_handler) {
+void client_set_app_handlers (
+	Client *client,
+	Action app_handler, Action app_error_handler
+) {
 
 	if (client) {
 		client->app_packet_handler = app_handler;
@@ -323,8 +326,10 @@ Connection *client_connection_get_by_socket (Client *client, i32 sock_fd) {
 // creates a new connection and registers it to the specified client
 // the connection should be ready to be started
 // returns a new connection on success, NULL on error
-Connection *client_connection_create (Client *client,
-	const char *ip_address, u16 port, Protocol protocol, bool use_ipv6) {
+Connection *client_connection_create (
+	Client *client,
+	const char *ip_address, u16 port, Protocol protocol, bool use_ipv6
+) {
 
 	Connection *connection = NULL;
 
@@ -490,104 +495,6 @@ unsigned int client_connect_async (Client *client, Connection *connection) {
 
 #pragma endregion
 
-#pragma region requests
-
-// when a client is already connected to the cerver, a request can be made to the cerver
-// and the result will be returned
-// this is a blocking method, as it will wait until a complete cerver response has been received
-// the response will be handled using the client's packet handler
-// this method only works if your response consists only of one packet
-// neither client nor the connection will be stopped after the request has ended, the request packet won't be deleted
-// retruns 0 when the response has been handled, 1 on error
-unsigned int client_request_to_cerver (Client *client, Connection *connection, Packet *request) {
-
-	unsigned int retval = 1;
-
-	if (client && connection && request) {
-		// send the request to the cerver
-		packet_set_network_values (request, client, connection);
-
-		size_t sent = 0;
-		if (!packet_send (request, 0, &sent, false)) {
-			// printf ("Request to cerver: %ld\n", sent);
-
-			// receive the data directly
-			client_connection_get_next_packet (client, connection);
-
-			retval = 0;
-		}
-
-		else {
-			#ifdef CLIENT_DEBUG
-			client_log_error ("client_request_to_cerver () - failed to send request packet!");
-			#endif
-		}
-	}
-
-	return retval;
-
-}
-
-static void *client_request_to_cerver_thread (void *cc_ptr) {
-
-	if (cc_ptr) {
-		ClientConnection *cc = (ClientConnection *) cc_ptr;
-
-		cc->connection->full_packet = false;
-		while (!cc->connection->full_packet) {
-			client_receive (cc->client, cc->connection);
-		}
-
-		client_connection_aux_delete (cc);
-	}
-
-	return NULL;
-
-}
-
-// when a client is already connected to the cerver, a request can be made to the cerver
-// the result will be placed inside the connection
-// this method will NOT block and the response will be handled using the client's packet handler
-// this method only works if your response consists only of one packet
-// neither client nor the connection will be stopped after the request has ended, the request packet won't be deleted
-// returns 0 on success request, 1 on error
-unsigned int client_request_to_cerver_async (Client *client, Connection *connection, Packet *request) {
-
-	unsigned int retval = 1;
-
-	if (client && connection && request) {
-		// send the request to the cerver
-		packet_set_network_values (request, client, connection);
-		if (!packet_send (request, 0, NULL, false)) {
-			ClientConnection *cc = client_connection_aux_new (client, connection);
-			if (cc) {
-				// create a new thread to receive & handle the response
-				pthread_t thread_id = 0;
-				if (!thread_create_detachable (&thread_id, client_request_to_cerver_thread, cc)) {
-					retval = 0;         // success
-				}
-
-				else {
-					#ifdef CLIENT_DEBUG
-					client_log_error ("Failed to create client_request_to_cerver_thread () detachable thread!");
-					#endif
-				}
-			}
-		}
-
-		else {
-			#ifdef CLIENT_DEBUG
-			client_log_error ("client_request_to_cerver_async () - failed to send request packet!");
-			#endif
-		}
-	}
-
-	return retval;
-
-}
-
-#pragma endregion
-
 #pragma region start
 
 // after a client connection successfully connects to a server,
@@ -690,6 +597,279 @@ u8 client_connect_and_start_async (Client *client, Connection *connection) {
 
 #pragma endregion
 
+#pragma region requests
+
+// when a client is already connected to the cerver, a request can be made to the cerver
+// and the result will be returned
+// this is a blocking method, as it will wait until a complete cerver response has been received
+// the response will be handled using the client's packet handler
+// this method only works if your response consists only of one packet
+// neither client nor the connection will be stopped after the request has ended, the request packet won't be deleted
+// retruns 0 when the response has been handled, 1 on error
+unsigned int client_request_to_cerver (Client *client, Connection *connection, Packet *request) {
+
+	unsigned int retval = 1;
+
+	if (client && connection && request) {
+		// send the request to the cerver
+		packet_set_network_values (request, client, connection);
+
+		size_t sent = 0;
+		if (!packet_send (request, 0, &sent, false)) {
+			// printf ("Request to cerver: %ld\n", sent);
+
+			// receive the data directly
+			client_connection_get_next_packet (client, connection);
+
+			retval = 0;
+		}
+
+		else {
+			#ifdef CLIENT_DEBUG
+			client_log_error ("client_request_to_cerver () - failed to send request packet!");
+			#endif
+		}
+	}
+
+	return retval;
+
+}
+
+static void *client_request_to_cerver_thread (void *cc_ptr) {
+
+	if (cc_ptr) {
+		ClientConnection *cc = (ClientConnection *) cc_ptr;
+
+		cc->connection->full_packet = false;
+		while (!cc->connection->full_packet) {
+			client_receive (cc->client, cc->connection);
+		}
+
+		client_connection_aux_delete (cc);
+	}
+
+	return NULL;
+
+}
+
+// when a client is already connected to the cerver, a request can be made to the cerver
+// the result will be placed inside the connection
+// this method will NOT block and the response will be handled using the client's packet handler
+// this method only works if your response consists only of one packet
+// neither client nor the connection will be stopped after the request has ended, the request packet won't be deleted
+// returns 0 on success request, 1 on error
+unsigned int client_request_to_cerver_async (Client *client, Connection *connection, Packet *request) {
+
+	unsigned int retval = 1;
+
+	if (client && connection && request) {
+		// send the request to the cerver
+		packet_set_network_values (request, client, connection);
+		if (!packet_send (request, 0, NULL, false)) {
+			ClientConnection *cc = client_connection_aux_new (client, connection);
+			if (cc) {
+				// create a new thread to receive & handle the response
+				pthread_t thread_id = 0;
+				if (!thread_create_detachable (&thread_id, client_request_to_cerver_thread, cc)) {
+					retval = 0;         // success
+				}
+
+				else {
+					#ifdef CLIENT_DEBUG
+					client_log_error ("Failed to create client_request_to_cerver_thread () detachable thread!");
+					#endif
+				}
+			}
+		}
+
+		else {
+			#ifdef CLIENT_DEBUG
+			client_log_error ("client_request_to_cerver_async () - failed to send request packet!");
+			#endif
+		}
+	}
+
+	return retval;
+
+}
+
+#pragma endregion
+
+#pragma region files
+
+// requests a file from the server
+// filename: the name of the file to request
+// file complete event will be sent when the file is finished
+// appropiate error is set on bad filename or error in file transmission
+// returns 0 on success sending request, 1 on failed to send request
+u8 client_file_get (Client *client, Connection *connection, const char *filename) {
+
+	u8 retval = 1;
+
+	if (client && connection) {
+		// request the file from the cerver
+		// set our file tray for incoming files
+	}
+
+	return retval;
+
+}
+
+// sends a file to the server
+// filename: the name of the file the cerver will receive
+// file is opened using the filename
+// when file is completly sent, event is set appropriately
+// appropiate error is sent on cerver error or on bad file transmission
+// returns 0 on success sending request, 1 on failed to send request
+u8 client_file_send (Client *client, Connection *connection, const char *filename) {
+
+	u8 retval = 1;
+
+	if (client && connection) {
+		// request the cerver for a file transmission
+		// open the file
+		// send file header
+		// send file in packets
+	}
+
+	return retval;
+
+}
+
+#pragma endregion
+
+#pragma region game
+
+// requets the cerver to create a new lobby
+// game type: is the type of game to create the lobby, the configuration must exist in the cerver
+// returns 0 on success sending request, 1 on failed to send request
+u8 client_game_create_lobby (
+	Client *owner, Connection *connection,
+	const char *game_type
+) {
+
+	u8 retval = 1;
+
+	if (owner && connection && game_type) {
+		String *type = str_new (game_type);
+		void *stype = str_serialize (type, SS_SMALL);
+
+		Packet *packet = packet_generate_request (
+			PACKET_TYPE_GAME, GAME_PACKET_TYPE_LOBBY_CREATE,
+			stype, sizeof (SStringS)
+		);
+		if (packet) {
+			packet_set_network_values (packet, owner, connection);
+			retval = packet_send (packet, 0, NULL, false);
+			packet_delete (packet);
+		}
+
+		str_delete (type);
+		free (stype);
+	}
+
+	return retval;
+
+}
+
+// requests the cerver to join a lobby
+// game type: is the type of game to create the lobby, the configuration must exist in the cerver
+// lobby id: if you know the id of the lobby to join to, if not, the cerver witll search one for you
+// returns 0 on success sending request, 1 on failed to send request
+u8 client_game_join_lobby (
+	Client *client, Connection *connection,
+	const char *game_type, const char *lobby_id
+) {
+
+	u8 retval = 1;
+
+	if (client && connection) {
+		LobbyJoin lobby_join = { 0 };
+		if (game_type) {
+			lobby_join.game_type.len = strlen (game_type);
+			strcpy (lobby_join.game_type.string, game_type);
+		}
+
+		if (lobby_id) {
+			lobby_join.lobby_id.len = strlen (lobby_id);
+			strcpy (lobby_join.lobby_id.string, lobby_id);
+		}
+
+		Packet *packet = packet_generate_request (
+			PACKET_TYPE_GAME, GAME_PACKET_TYPE_LOBBY_JOIN,
+			&lobby_join, sizeof (LobbyJoin)
+		);
+		if (packet) {
+			packet_set_network_values (packet, client, connection);
+			retval = packet_send (packet, 0, NULL, false);
+			packet_delete (packet);
+		}
+	}
+
+	return retval;
+
+}
+
+// request the cerver to leave the current lobby
+// returns 0 on success sending request, 1 on failed to send request
+u8 client_game_leave_lobby (
+	Client *client, Connection *connection,
+	const char *lobby_id
+) {
+
+	u8 retval = 1;
+
+	if (client && connection && lobby_id) {
+		SStringS id = { 0 };
+		id.len = strlen (lobby_id);
+		strcpy (id.string, lobby_id);
+
+		Packet *packet = packet_generate_request (
+			PACKET_TYPE_GAME, GAME_PACKET_TYPE_LOBBY_LEAVE,
+			&id, sizeof (SStringS)
+		);
+		if (packet) {
+			packet_set_network_values (packet, client, connection);
+			retval = packet_send (packet, 0, NULL, false);
+			packet_delete (packet);
+		}
+	}
+
+	return retval;
+
+}
+
+// requests the cerver to start the game in the current lobby
+// returns 0 on success sending request, 1 on failed to send request
+u8 client_game_start_lobby (
+	Client *client, Connection *connection,
+	const char *lobby_id
+) {
+
+	u8 retval = 1;
+
+	if (client && connection && lobby_id) {
+		SStringS id = { 0 };
+		id.len = strlen (lobby_id);
+		strcpy (id.string, lobby_id);
+
+		Packet *packet = packet_generate_request (
+			PACKET_TYPE_GAME, GAME_PACKET_TYPE_GAME_START,
+			&id, sizeof (SStringS)
+		);
+		if (packet) {
+			packet_set_network_values (packet, client, connection);
+			retval = packet_send (packet, 0, NULL, false);
+			packet_delete (packet);
+		}
+	}
+
+	return retval;
+
+}
+
+#pragma endregion
+
 #pragma region end
 
 // ends a connection with a cerver by sending a disconnect packet and the closing the connection
@@ -779,174 +959,7 @@ void client_got_disconnected (Client *client) {
 
 #pragma endregion
 
-#pragma region files
-
-// requests a file from the server
-// filename: the name of the file to request
-// file complete event will be sent when the file is finished
-// appropiate error is set on bad filename or error in file transmission
-// returns 0 on success sending request, 1 on failed to send request
-u8 client_file_get (Client *client, Connection *connection, const char *filename) {
-
-	u8 retval = 1;
-
-	if (client && connection) {
-		// request the file from the cerver
-		// set our file tray for incoming files
-	}
-
-	return retval;
-
-}
-
-// sends a file to the server
-// filename: the name of the file the cerver will receive
-// file is opened using the filename
-// when file is completly sent, event is set appropriately
-// appropiate error is sent on cerver error or on bad file transmission
-// returns 0 on success sending request, 1 on failed to send request
-u8 client_file_send (Client *client, Connection *connection, const char *filename) {
-
-	u8 retval = 1;
-
-	if (client && connection) {
-		// request the cerver for a file transmission
-		// open the file
-		// send file header
-		// send file in packets
-	}
-
-	return retval;
-
-}
-
-#pragma endregion
-
-#pragma region game
-
-// requets the cerver to create a new lobby
-// game type: is the type of game to create the lobby, the configuration must exist in the cerver
-// returns 0 on success sending request, 1 on failed to send request
-u8 client_game_create_lobby (Client *owner, Connection *connection,
-	const char *game_type) {
-
-	u8 retval = 1;
-
-	if (owner && connection && game_type) {
-		String *type = str_new (game_type);
-		void *stype = str_serialize (type, SS_SMALL);
-
-		Packet *packet = packet_generate_request (
-			PACKET_TYPE_GAME, GAME_PACKET_TYPE_LOBBY_CREATE,
-			stype, sizeof (SStringS)
-		);
-		if (packet) {
-			packet_set_network_values (packet, owner, connection);
-			retval = packet_send (packet, 0, NULL, false);
-			packet_delete (packet);
-		}
-
-		str_delete (type);
-		free (stype);
-	}
-
-	return retval;
-
-}
-
-// requests the cerver to join a lobby
-// game type: is the type of game to create the lobby, the configuration must exist in the cerver
-// lobby id: if you know the id of the lobby to join to, if not, the cerver witll search one for you
-// returns 0 on success sending request, 1 on failed to send request
-u8 client_game_join_lobby (Client *client, Connection *connection,
-	const char *game_type, const char *lobby_id) {
-
-	u8 retval = 1;
-
-	if (client && connection) {
-		LobbyJoin lobby_join = { 0 };
-		if (game_type) {
-			lobby_join.game_type.len = strlen (game_type);
-			strcpy (lobby_join.game_type.string, game_type);
-		}
-
-		if (lobby_id) {
-			lobby_join.lobby_id.len = strlen (lobby_id);
-			strcpy (lobby_join.lobby_id.string, lobby_id);
-		}
-
-		Packet *packet = packet_generate_request (
-			PACKET_TYPE_GAME, GAME_PACKET_TYPE_LOBBY_JOIN,
-			&lobby_join, sizeof (LobbyJoin)
-		);
-		if (packet) {
-			packet_set_network_values (packet, client, connection);
-			retval = packet_send (packet, 0, NULL, false);
-			packet_delete (packet);
-		}
-	}
-
-	return retval;
-
-}
-
-// request the cerver to leave the current lobby
-// returns 0 on success sending request, 1 on failed to send request
-u8 client_game_leave_lobby (Client *client, Connection *connection,
-	const char *lobby_id) {
-
-	u8 retval = 1;
-
-	if (client && connection && lobby_id) {
-		SStringS id = { 0 };
-		id.len = strlen (lobby_id);
-		strcpy (id.string, lobby_id);
-
-		Packet *packet = packet_generate_request (
-			PACKET_TYPE_GAME, GAME_PACKET_TYPE_LOBBY_LEAVE,
-			&id, sizeof (SStringS)
-		);
-		if (packet) {
-			packet_set_network_values (packet, client, connection);
-			retval = packet_send (packet, 0, NULL, false);
-			packet_delete (packet);
-		}
-	}
-
-	return retval;
-
-}
-
-// requests the cerver to start the game in the current lobby
-// returns 0 on success sending request, 1 on failed to send request
-u8 client_game_start_lobby (Client *client, Connection *connection,
-	const char *lobby_id) {
-
-	u8 retval = 1;
-
-	if (client && connection && lobby_id) {
-		SStringS id = { 0 };
-		id.len = strlen (lobby_id);
-		strcpy (id.string, lobby_id);
-
-		Packet *packet = packet_generate_request (
-			PACKET_TYPE_GAME, GAME_PACKET_TYPE_GAME_START,
-			&id, sizeof (SStringS)
-		);
-		if (packet) {
-			packet_set_network_values (packet, client, connection);
-			retval = packet_send (packet, 0, NULL, false);
-			packet_delete (packet);
-		}
-	}
-
-	return retval;
-
-}
-
-#pragma endregion
-
-/*** aux ***/
+#pragma region aux
 
 ClientConnection *client_connection_aux_new (Client *client, Connection *connection) {
 
@@ -961,3 +974,5 @@ ClientConnection *client_connection_aux_new (Client *client, Connection *connect
 }
 
 void client_connection_aux_delete (void *ptr) { if (ptr) free (ptr); }
+
+#pragma endregion

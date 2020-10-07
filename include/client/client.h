@@ -76,7 +76,10 @@ typedef struct _Client Client;
 CLIENT_EXPORT void client_set_name (Client *client, const char *name);
 
 // sets a cutom app packet hanlder and a custom app error packet handler
-CLIENT_EXPORT void client_set_app_handlers (Client *client, Action app_handler, Action app_error_handler);
+CLIENT_EXPORT void client_set_app_handlers (
+	Client *client, 
+	Action app_handler, Action app_error_handler
+);
 
 // sets a custom packet handler
 CLIENT_EXPORT void client_set_custom_handler (Client *client, Action custom_handler);
@@ -111,8 +114,10 @@ CLIENT_PUBLIC struct _Connection *client_connection_get_by_name (Client *client,
 // creates a new connection and registers it to the specified client
 // the connection should be ready to be started
 // returns a new connection on success, NULL on error
-CLIENT_EXPORT struct _Connection *client_connection_create (Client *client,
-	const char *ip_address, u16 port, Protocol protocol, bool use_ipv6);
+CLIENT_EXPORT struct _Connection *client_connection_create (
+	Client *client,
+	const char *ip_address, u16 port, Protocol protocol, bool use_ipv6
+);
 
 // registers an existing connection to a client
 // retuns 0 on success, 1 on error
@@ -152,27 +157,6 @@ CLIENT_EXPORT unsigned int client_connect_async (Client *client, struct _Connect
 
 #pragma endregion
 
-#pragma region requests
-
-// when a client is already connected to the cerver, a request can be made to the cerver
-// the result will be passed to the client's handlers
-// this is a blocking method, as it will wait until a complete cerver response has been received
-// the response will be handled using the client's packet handler
-// this method only works if your response consists only of one packet
-// neither client nor the connection will be stopped after the request has ended, the request packet won't be deleted
-// retruns 0 when the response has been handled, 1 on error
-CLIENT_EXPORT unsigned int client_request_to_cerver (Client *client, struct _Connection *connection, struct _Packet *request);
-
-// when a client is already connected to the cerver, a request can be made to the cerver
-// the result will be passed to the client's handlers
-// this method will NOT block, instead EVENT_CONNECTION_DATA will be triggered
-// this method only works if your response consists only of one packet
-// neither client nor the connection will be stopped after the request has ended, the request packet won't be deleted
-// returns 0 on success request, 1 on error
-CLIENT_EXPORT unsigned int client_request_to_cerver_async (Client *client, struct _Connection *connection, struct _Packet *request);
-
-#pragma endregion
-
 #pragma region start
 
 // after a client connection successfully connects to a server,
@@ -194,22 +178,28 @@ CLIENT_EXPORT u8 client_connect_and_start_async (Client *client, struct _Connect
 
 #pragma endregion
 
-#pragma region end
+#pragma region requests
 
-// terminates and destroy a connection registered to a client
-// returns 0 on success, 1 on error
-CLIENT_EXPORT int client_connection_end (Client *client, struct _Connection *connection);
+// when a client is already connected to the cerver, a request can be made to the cerver
+// the result will be passed to the client's handlers
+// this is a blocking method, as it will wait until a complete cerver response has been received
+// the response will be handled using the client's packet handler
+// this method only works if your response consists only of one packet
+// neither client nor the connection will be stopped after the request has ended, the request packet won't be deleted
+// retruns 0 when the response has been handled, 1 on error
+CLIENT_EXPORT unsigned int client_request_to_cerver (Client *client, struct _Connection *connection, struct _Packet *request);
 
-// terminates all of the client connections and deletes them
-// returns 0 on success, 1 on error
-CLIENT_EXPORT int client_disconnect (Client *client);
-
-// the client got disconnected from the cerver, so correctly clear our data
-CLIENT_EXPORT void client_got_disconnected (Client *client);
+// when a client is already connected to the cerver, a request can be made to the cerver
+// the result will be passed to the client's handlers
+// this method will NOT block, instead EVENT_CONNECTION_DATA will be triggered
+// this method only works if your response consists only of one packet
+// neither client nor the connection will be stopped after the request has ended, the request packet won't be deleted
+// returns 0 on success request, 1 on error
+CLIENT_EXPORT unsigned int client_request_to_cerver_async (Client *client, struct _Connection *connection, struct _Packet *request);
 
 #pragma endregion
 
-/*** Files ***/
+#pragma region files
 
 // requests a file from the server
 // filename: the name of the file to request
@@ -226,32 +216,59 @@ CLIENT_EXPORT u8 client_file_get (Client *client, struct _Connection *connection
 // returns 0 on success sending request, 1 on failed to send request
 CLIENT_EXPORT u8 client_file_send (Client *client, struct _Connection *connection, const char *filename);
 
-/*** Game ***/
+#pragma endregion
+
+#pragma region game
 
 // requets the cerver to create a new lobby
 // game type: is the type of game to create the lobby, the configuration must exist in the cerver
 // returns 0 on success sending request, 1 on failed to send request
-CLIENT_EXPORT u8 client_game_create_lobby (Client *owner, struct _Connection *connection,
-	const char *game_type);
+CLIENT_EXPORT u8 client_game_create_lobby (
+	Client *owner, struct _Connection *connection,
+	const char *game_type
+);
 
 // requests the cerver to join a lobby
 // game type: is the type of game to create the lobby, the configuration must exist in the cerver
 // lobby id: if you know the id of the lobby to join to, if not, the cerver witll search one for you
 // returns 0 on success sending request, 1 on failed to send request
-CLIENT_EXPORT u8 client_game_join_lobby (Client *client, struct _Connection *connection,
-	const char *game_type, const char *lobby_id);
+CLIENT_EXPORT u8 client_game_join_lobby (
+	Client *client, struct _Connection *connection,
+	const char *game_type, const char *lobby_id
+);
 
 // request the cerver to leave the currect lobby
 // returns 0 on success sending request, 1 on failed to send request
-CLIENT_EXPORT u8 client_game_leave_lobby (Client *client, struct _Connection *connection,
-	const char *lobby_id);
+CLIENT_EXPORT u8 client_game_leave_lobby (
+	Client *client, struct _Connection *connection,
+	const char *lobby_id
+);
 
 // requests the cerver to start the game in the current lobby
 // returns 0 on success sending request, 1 on failed to send request
-CLIENT_EXPORT u8 client_game_start_lobby (Client *client, struct _Connection *connection,
-	const char *lobby_id);
+CLIENT_EXPORT u8 client_game_start_lobby (
+	Client *client, struct _Connection *connection,
+	const char *lobby_id
+);
 
-/*** aux ***/
+#pragma endregion
+
+#pragma region end
+
+// terminates and destroy a connection registered to a client
+// returns 0 on success, 1 on error
+CLIENT_EXPORT int client_connection_end (Client *client, struct _Connection *connection);
+
+// terminates all of the client connections and deletes them
+// returns 0 on success, 1 on error
+CLIENT_EXPORT int client_disconnect (Client *client);
+
+// the client got disconnected from the cerver, so correctly clear our data
+CLIENT_EXPORT void client_got_disconnected (Client *client);
+
+#pragma endregion
+
+#pragma region aux
 
 typedef struct ClientConnection {
 
@@ -263,6 +280,8 @@ typedef struct ClientConnection {
 CLIENT_PRIVATE ClientConnection *client_connection_aux_new (Client *client, struct _Connection *connection);
 
 CLIENT_PRIVATE void client_connection_aux_delete (void *ptr);
+
+#pragma endregion
 
 #pragma region serialization
 
