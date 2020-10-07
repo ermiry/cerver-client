@@ -109,7 +109,7 @@ CLIENT_PUBLIC void client_error_data_delete (ClientErrorData *error_data);
 #pragma region handler
 
 // handles error packets
-CLIENT_PRIVATE void error_packet_handler (struct _Packet *packet);
+CLIENT_PRIVATE void client_error_packet_handler (struct _Packet *packet);
 
 #pragma endregion
 

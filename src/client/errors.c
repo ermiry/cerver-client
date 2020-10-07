@@ -244,6 +244,8 @@ void error_packet_handler (Packet *packet) {
 		SError *s_error = (SError *) end;
 
 		switch (s_error->error_type) {
+			case CLIENT_ERROR_NONE: break;
+
 			case CLIENT_ERROR_CERVER_ERROR:
 				client_error_trigger (
 					CLIENT_ERROR_CERVER_ERROR,
@@ -333,9 +335,13 @@ void error_packet_handler (Packet *packet) {
 				);
 				break;
 
-			default:
-				client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown error received from cerver!");
-				break;
+			default: {
+				client_error_trigger (
+					CLIENT_ERROR_UNKNOWN,
+					packet->client, packet->connection,
+					NULL
+				);
+			} break;
 		}
 	}
 
