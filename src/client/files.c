@@ -2,12 +2,16 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <time.h>
+#include <unistd.h>
+#include <fcntl.h>
+
 #define _XOPEN_SOURCE 700
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <dirent.h>
 
-#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/sendfile.h>
 
 #include "client/types/types.h"
 #include "client/types/string.h"
@@ -19,6 +23,8 @@
 
 #include "client/utils/utils.h"
 #include "client/utils/log.h"
+
+#pragma region main
 
 // check if a directory already exists, and if not, creates it
 // returns 0 on success, 1 on error
@@ -132,7 +138,7 @@ static String *file_get_line (FILE *file) {
 
 	if (file) {
 		if (!feof (file)) {
-			char line[1024];
+			char line[1024] = { 0 };
 			if (fgets (line, 1024, file)) {
 				size_t curr = strlen(line);
 				if(line[curr - 1] == '\n') line[curr - 1] = '\0';
@@ -272,6 +278,10 @@ int file_open_as_fd (const char *filename, struct stat *filestatus, int flags) {
 
 }
 
+#pragma endregion
+
+#pragma region send
+
 // sends a file to the sock fd
 // returns 0 on success, 1 on error
 int file_send (const char *filename, int sock_fd) {
@@ -301,3 +311,5 @@ int file_send (const char *filename, int sock_fd) {
 	return retval;
 
 }
+
+#pragma endregion

@@ -9,6 +9,8 @@
 
 #include "client/config.h"
 
+#pragma region main
+
 // check if a directory already exists, and if not, creates it
 // returns 0 on success, 1 on error
 CLIENT_EXPORT unsigned int files_create_dir (const char *dir_path, mode_t mode);
@@ -24,8 +26,10 @@ CLIENT_EXPORT DoubleList *files_get_from_dir (const char *dir);
 CLIENT_EXPORT DoubleList *file_get_lines (const char *filename);
 
 // opens a file and returns it as a FILE
-CLIENT_EXPORT FILE *file_open_as_file (const char *filename,
-	const char *modes, struct stat *filestatus);
+CLIENT_EXPORT FILE *file_open_as_file (
+	const char *filename,
+	const char *modes, struct stat *filestatus
+);
 
 // opens and reads a file into a buffer
 // sets file size to the amount of bytes read
@@ -35,8 +39,25 @@ CLIENT_EXPORT char *file_read (const char *filename, size_t *file_size);
 // returns fd on success, -1 on error
 CLIENT_EXPORT int file_open_as_fd (const char *filename, struct stat *filestatus, int flags);
 
+#pragma endregion
+
+#pragma region send
+
+#define DEFAULT_FILENAME_LEN			1024
+
+struct _FileHeader {
+
+	char filename[DEFAULT_FILENAME_LEN];
+	size_t len;
+
+};
+
+typedef struct _FileHeader FileHeader;
+
 // sends a file to the sock fd
 // returns 0 on success, 1 on error
 CLIENT_EXPORT int file_send (const char *filename, int sock_fd);
+
+#pragma endregion
 
 #endif
