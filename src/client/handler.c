@@ -58,24 +58,22 @@ void sock_receive_delete (void *sock_receive_ptr) {
 // handles a client type packet
 static void client_client_packet_handler (Packet *packet) {
 
-	if (packet) {
-		if (packet->header) {
-			switch (packet->header->request_type) {
-				// the cerver close our connection
-				case CLIENT_PACKET_TYPE_CLOSE_CONNECTION:
-					client_connection_end (packet->client, packet->connection);
-					break;
+	if (packet->header) {
+		switch (packet->header->request_type) {
+			// the cerver close our connection
+			case CLIENT_PACKET_TYPE_CLOSE_CONNECTION:
+				client_connection_end (packet->client, packet->connection);
+				break;
 
-				// the cerver has disconneted us
-				case CLIENT_PACKET_TYPE_DISCONNECT:
-					client_got_disconnected (packet->client);
-					client_event_trigger (CLIENT_EVENT_DISCONNECTED, packet->client, NULL);
-					break;
+			// the cerver has disconneted us
+			case CLIENT_PACKET_TYPE_DISCONNECT:
+				client_got_disconnected (packet->client);
+				client_event_trigger (CLIENT_EVENT_DISCONNECTED, packet->client, NULL);
+				break;
 
-				default:
-					client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown client packet type.");
-					break;
-			}
+			default:
+				client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown client packet type.");
+				break;
 		}
 	}
 
@@ -87,15 +85,13 @@ static u8 auth_strip_token (Packet *packet, Client *client) {
 
 	u8 retval = 1;
 
-	if (packet) {
-		// check we have a big enough packet
-		if (packet->data_size > 0) {
-			char *end = (char *) packet->data;
+	// check we have a big enough packet
+	if (packet->data_size > 0) {
+		char *end = (char *) packet->data;
 
-			// check if we have a token
-			if (packet->data_size == (sizeof (SToken))) {
-				retval = client_set_session_id (client, end);
-			}
+		// check if we have a token
+		if (packet->data_size == (sizeof (SToken))) {
+			retval = client_set_session_id (client, end);
 		}
 	}
 
@@ -105,51 +101,47 @@ static u8 auth_strip_token (Packet *packet, Client *client) {
 
 static void client_auth_success_handler (Packet *packet) {
 
-	if (packet) {
-		packet->connection->authenticated = true;
+	packet->connection->authenticated = true;
 
-		if (packet->connection->cerver) {
-			if (packet->connection->cerver->uses_sessions) {
-				if (!auth_strip_token (packet, packet->client)) {
-					#ifdef AUTH_DEBUG
-					char *status = c_string_create ("Got client's <%s> session id <%s>",
-						packet->client->name->str, packet->client->session_id->str);
-					if (status) {
-						client_log_debug (status);
-						free (status);
-					}
-					#endif
+	if (packet->connection->cerver) {
+		if (packet->connection->cerver->uses_sessions) {
+			if (!auth_strip_token (packet, packet->client)) {
+				#ifdef AUTH_DEBUG
+				char *status = c_string_create ("Got client's <%s> session id <%s>",
+					packet->client->name->str, packet->client->session_id->str);
+				if (status) {
+					client_log_debug (status);
+					free (status);
 				}
+				#endif
 			}
 		}
-
-		client_event_trigger (CLIENT_EVENT_SUCCESS_AUTH, packet->client, packet->connection);
 	}
+
+	client_event_trigger (CLIENT_EVENT_SUCCESS_AUTH, packet->client, packet->connection);
 
 }
 
 static void client_auth_packet_handler (Packet *packet) {
 
-	if (packet) {
-		if (packet->header) {
-			switch (packet->header->request_type) {
-				// 24/01/2020 -- cerver requested authentication, if not, we will be disconnected
-				case AUTH_PACKET_TYPE_REQUEST_AUTH:
-					break;
+	if (packet->header) {
+		switch (packet->header->request_type) {
+			// 24/01/2020 -- cerver requested authentication, if not, we will be disconnected
+			case AUTH_PACKET_TYPE_REQUEST_AUTH:
+				break;
 
-				// we recieve a token from the cerver to use in sessions
-				case AUTH_PACKET_TYPE_CLIENT_AUTH:
-					break;
+			// we recieve a token from the cerver to use in sessions
+			case AUTH_PACKET_TYPE_CLIENT_AUTH:
+				break;
 
-				// we have successfully authenticated with the server
-				case AUTH_PACKET_TYPE_SUCCESS:
-					client_auth_success_handler (packet);
-					break;
+			// we have successfully authenticated with the server
+			case AUTH_PACKET_TYPE_SUCCESS:
+				client_auth_success_handler (packet);
+				break;
 
-				default:
-					client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown auth packet type.");
-					break;
-			}
+			default:
+				client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown auth packet type.");
+				break;
 		}
 	}
 
@@ -158,13 +150,11 @@ static void client_auth_packet_handler (Packet *packet) {
 // handles a request made from the cerver
 static void client_request_packet_handler (Packet *packet) {
 
-	if (packet) {
-		if (packet->header) {
-			switch (packet->header->request_type) {
-				default:
-					client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown request from cerver");
-					break;
-			}
+	if (packet->header) {
+		switch (packet->header->request_type) {
+			default:
+				client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown request from cerver");
+				break;
 		}
 	}
 
