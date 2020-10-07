@@ -9,15 +9,15 @@
 
 #include "client/collections/dlist.h"
 
+#include "client/cerver.h"
+#include "client/client.h"
+#include "client/connection.h"
+#include "client/errors.h"
+#include "client/events.h"
+#include "client/game.h"
+#include "client/handler.h"
 #include "client/network.h"
 #include "client/packets.h"
-#include "client/events.h"
-#include "client/errors.h"
-#include "client/client.h"
-#include "client/handler.h"
-#include "client/cerver.h"
-#include "client/connection.h"
-#include "client/game.h"
 
 #include "client/threads/thread.h"
 
@@ -43,7 +43,7 @@ static ClientStats *client_stats_new (void) {
 
 }
 
-static inline void client_stats_delete (ClientStats *client_stats) {
+static void client_stats_delete (ClientStats *client_stats) {
 
 	if (client_stats) {
 		packets_per_type_delete (client_stats->received_packets);
@@ -91,6 +91,41 @@ void client_stats_print (Client *client) {
 			LOG_TYPE_WARNING, LOG_TYPE_CLIENT,
 			"Can't get stats of a NULL client!"
 		);
+	}
+
+}
+
+static ClientFileStats *client_file_stats_new (void) {
+
+	ClientFileStats *file_stats = (ClientFileStats *) malloc (sizeof (ClientFileStats));
+	if (file_stats) {
+		memset (file_stats, 0, sizeof (ClientFileStats));
+	}
+
+	return file_stats;
+
+}
+
+static void client_file_stats_delete (ClientFileStats *file_stats) {
+
+	if (file_stats) free (file_stats);
+
+}
+
+void client_file_stats_print (Client *client) {
+
+	if (client) {
+		if (client->file_stats) {
+			printf ("Files requests:                %ld\n", client->file_stats->n_files_requests);
+			printf ("Success requests:              %ld\n", client->file_stats->n_success_files_requests);
+			printf ("Bad requests:                  %ld\n\n", client->file_stats->n_bad_files_requests);
+			printf ("Files bytes sent:              %ld\n\n", client->file_stats->n_bytes_sent);
+
+			printf ("Files uploads:                 %ld\n", client->file_stats->n_files_uploaded);
+			printf ("Success uploads:               %ld\n", client->file_stats->n_success_files_uploaded);
+			printf ("Bad uploads:                   %ld\n", client->file_stats->n_bad_files_uploaded);
+			printf ("Files bytes received:          %ld\n\n", client->file_stats->n_bytes_received);
+		}
 	}
 
 }
@@ -245,6 +280,8 @@ static u8 client_init (Client *client) {
 		client->stats = client_stats_new ();
 
 		client->running = false;
+
+		client->file_stats = client_file_stats_new ();
 
 		retval = 0;
 	}

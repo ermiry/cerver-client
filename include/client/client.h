@@ -9,10 +9,10 @@
 #include "client/collections/dlist.h"
 
 #include "client/config.h"
-#include "client/network.h"
-#include "client/events.h"
-#include "client/errors.h"
 #include "client/connection.h"
+#include "client/errors.h"
+#include "client/events.h"
+#include "client/network.h"
 #include "client/packets.h"
 
 #define CLIENT_FILES_MAX_PATHS           32
@@ -21,6 +21,7 @@ struct _Client;
 struct _Connection;
 struct _Packet;
 struct _PacketsPerType;
+struct _FileHeader;
 
 #pragma region stats
 
@@ -59,7 +60,9 @@ struct _ClientFileStats {
 
 };
 
-typedef struct _ClientFilesStats ClientFileStats;
+typedef struct _ClientFileStats ClientFileStats;
+
+CLIENT_PUBLIC void client_file_stats_print (struct _Client *client);
 
 #pragma endregion
 
