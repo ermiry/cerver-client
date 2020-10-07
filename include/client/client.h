@@ -245,6 +245,33 @@ CLIENT_EXPORT unsigned int client_request_to_cerver_async (Client *client, struc
 
 #pragma region files
 
+// adds a new file path to take into account when getting a request for a file
+// returns 0 on success, 1 on error
+CLIENT_EXPORT u8 client_files_add_path (Client *client, const char *path);
+
+// sets the default uploads path to be used when receiving a file
+CLIENT_EXPORT void client_files_set_uploads_path (Client *client, const char *uploads_path);
+
+// sets a custom method to be used to handle a file upload (receive)
+// in this method, file contents must be consumed from the sock fd
+// and return 0 on success and 1 on error
+CLIENT_EXPORT void client_files_set_file_upload_handler (
+	Client *client,
+	u8 (*file_upload_handler) (
+		struct _Client *, struct _Connection *,
+		struct _FileHeader *, char **saved_filename
+	)
+);
+
+// sets a callback to be executed after a file has been successfully received
+CLIENT_EXPORT void client_files_set_file_upload_cb (
+	Client *client,
+	void (*file_upload_cb) (
+		struct _Client *, struct _Connection *,
+		const char *saved_filename
+	)
+);
+
 // requests a file from the server
 // filename: the name of the file to request
 // file complete event will be sent when the file is finished
