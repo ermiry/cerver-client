@@ -432,13 +432,12 @@ u8 file_receive (
 
 	u8 retval = 1;
 
-	// FIXME:
 	// generate a custom filename taking into account the uploads path
-	// *saved_filename = c_string_create (
-	// 	"%s/%ld-%s", 
-	// 	file_cerver->uploads_path, 
-	// 	time (NULL), file_header->filename
-	// );
+	*saved_filename = c_string_create (
+		"%s/%ld-%s", 
+		client->uploads_path, 
+		time (NULL), file_header->filename
+	);
 
 	if (*saved_filename) {
 		int file_fd = open (*saved_filename, O_CREAT);
