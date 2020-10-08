@@ -11,6 +11,9 @@
 
 #include "client/config.h"
 
+struct _Client;
+struct _Connection;
+
 #pragma region main
 
 // check if a directory already exists, and if not, creates it
@@ -63,14 +66,14 @@ typedef struct _FileHeader FileHeader;
 // first the FileHeader in a regular packet, then the file contents between sockets
 // returns the number of bytes sent
 CLIENT_PUBLIC ssize_t file_send (
-	Client *client, Connection *connection,
+	struct _Client *client, struct _Connection *connection,
 	const char *filename
 );
 
 // receives an incomming file in the socket and splice its information to a local file
 // returns 0 on success, 1 on error
 CLIENT_PUBLIC u8 file_receive (
-	Client *client, Connection *connection,
+	struct _Client *client, struct _Connection *connection,
 	FileHeader *file_header, char **saved_filename
 );
 
