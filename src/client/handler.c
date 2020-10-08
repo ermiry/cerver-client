@@ -151,7 +151,7 @@ static void client_auth_packet_handler (Packet *packet) {
 // handles a request from a cerver to get a file
 static void client_request_get_file (Packet *packet) {
 
-
+	// TODO:
 
 }
 
@@ -185,6 +185,10 @@ static void client_request_send_file_actual (Packet *packet) {
 	}
 
 	else {
+		#ifdef HANDLER_DEBUG
+		client_log_warning ("client_request_send_file () - missing file header");
+		#endif
+
 		// return a bad request error packet
 		(void) error_packet_generate_and_send (
 			CLIENT_ERROR_SEND_FILE, "Missing file header",
@@ -346,7 +350,7 @@ static void client_packet_handler (void *data) {
 				default:
 					packet->client->stats->received_packets->n_bad_packets += 1;
 					packet->connection->stats->received_packets->n_bad_packets += 1;
-					#ifdef CLIENT_DEBUG
+					#ifdef HANDLER_DEBUG
 					client_log_msg (stdout, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got a packet of unknown type.");
 					#endif
 					break;
@@ -606,7 +610,7 @@ void client_receive (Client *client, Connection *connection) {
 			switch (rc) {
 				case -1: {
 					if (errno != EWOULDBLOCK) {
-						#ifdef CLIENT_DEBUG
+						#ifdef HANDLER_DEBUG
 						char *s = c_string_create ("client_receive () - rc < 0 - sock fd: %d", connection->socket->sock_fd);
 						if (s) {
 							client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, s);
@@ -622,7 +626,7 @@ void client_receive (Client *client, Connection *connection) {
 				case 0: {
 					// man recv -> steam socket perfomed an orderly shutdown
 					// but in dgram it might mean something?
-					#ifdef CLIENT_DEBUG
+					#ifdef HANDLER_DEBUG
 					char *s = c_string_create ("client_receive () - rc == 0 - sock fd: %d",
 						connection->socket->sock_fd);
 					if (s) {
@@ -663,7 +667,7 @@ void client_receive (Client *client, Connection *connection) {
 		}
 
 		else {
-			#ifdef CLIENT_DEBUG
+			#ifdef HANDLER_DEBUG
 			client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_CLIENT,
 				"Failed to allocate a new packet buffer!");
 			#endif
