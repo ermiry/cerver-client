@@ -14,6 +14,7 @@
 #include "client/connection.h"
 #include "client/errors.h"
 #include "client/events.h"
+#include "client/files.h"
 #include "client/game.h"
 #include "client/handler.h"
 #include "client/network.h"
@@ -167,7 +168,7 @@ static Client *client_new (void) {
 
 		client->uploads_path = NULL;
 
-		client->file_upload_handler = NULL;
+		client->file_upload_handler = file_receive;
 
 		client->file_upload_cb = NULL;
 
