@@ -1,4 +1,6 @@
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <unistd.h>
 #include <signal.h>
@@ -8,6 +10,7 @@
 #include "client/client.h"
 #include "client/packets.h"
 
+#include "client/utils/utils.h"
 #include "client/utils/log.h"
 
 static Client *client = NULL;
@@ -67,21 +70,27 @@ static void cerver_disconnect (void) {
 
 #pragma region request
 
-static int request_file (void) {
+static void request_file (const char *filename) {
 
-	int retval = 1;
-
-	if ((client->running) && (connection->connected)) {
-		if (!client_file_get (client, connection, "test.txt")) {
-			client_log_success ("Requested file to cerver!");
-		}
-
-		else {
-			client_log_error ("Failed to request file to cerver!");
-		}
+	if (!client_file_get (client, connection, filename)) {
+		client_log_success ("REQUESTED file to cerver!");
 	}
 
-	return retval;
+	else {
+		client_log_error ("Failed to REQUEST file to cerver!");
+	}
+
+}
+
+static void send_file (const char *filename) {
+
+	if (!client_file_send (client, connection, filename)) {
+		client_log_success ("SENT file to cerver!");
+	}
+
+	else {
+		client_log_error ("Failed to SEND file to cerver!");
+	}
 
 }
 
@@ -101,7 +110,7 @@ static void end (int dummy) {
 
 }
 
-int main (int argc, const char **argv) {
+static void start (const char *action, const char *filename) {
 
 	// register to the quit signal
 	signal (SIGINT, end);
@@ -118,12 +127,33 @@ int main (int argc, const char **argv) {
 
 		sleep (2);
 
-		request_file ();
+		if (!strcmp ("get", action)) request_file (filename);
+		else if (!strcmp ("send", action)) send_file (filename);
+		else {
+			char *status = c_string_create ("Unknown action %s", action);
+			if (status) {
+				printf ("\n");
+				client_log_error (status);
+				printf ("\n");
+				free (status);
+			}
+		}
 
-		// wait for file
 		sleep (5);
 
 		cerver_disconnect ();
+	}
+
+}
+
+int main (int argc, const char **argv) {
+
+	if (argc >= 3) {
+		start (argv[1], argv[2]);
+	}
+
+	else {
+		printf ("\nUsage: %s get/send [filename]\n\n", argv[0]);
 	}
 
 	return 0;
