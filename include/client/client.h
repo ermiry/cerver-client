@@ -272,6 +272,10 @@ CLIENT_EXPORT void client_files_set_file_upload_cb (
 	)
 );
 
+// search for the requested file in the configured paths
+// returns the actual filename (path + directory) where it was found, NULL on error
+CLIENT_PUBLIC String *client_files_search_file (Client *client, const char *filename);
+
 // requests a file from the cerver
 // the client's uploads_path should have been configured before calling this method
 // returns 0 on success sending request, 1 on failed to send request
