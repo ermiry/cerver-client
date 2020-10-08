@@ -151,20 +151,20 @@ static void client_auth_packet_handler (Packet *packet) {
 // handles a request from a cerver to get a file
 static void client_request_get_file (Packet *packet) {
 
+	Client *client = packet->client;
+
 	// get the necessary information to fulfil the request
 	if (packet->data_size >= sizeof (FileHeader)) {
 		char *end = packet->data;
 		FileHeader *file_header = (FileHeader *) end;
 
-		// FIXME:
 		// search for the requested file in the configured paths
-		// String *actual_filename = file_cerver_search_file (file_cerver, file_header->filename);
-		String *actual_filename = NULL;
+		String *actual_filename = client_files_search_file (client, file_header->filename);
 		if (actual_filename) {
 			#ifdef HANDLER_DEBUG
 			char *status = c_string_create ("client_request_get_file () - Sending %s...\n", actual_filename->str);
 			if (status) {
-				cerver_log_debug (status);
+				client_log_debug (status);
 				free (status);
 			}
 			#endif
@@ -172,17 +172,16 @@ static void client_request_get_file (Packet *packet) {
 			// if found, pipe the file contents to the client's socket fd
 			// the socket should be blocked during the entire operation
 			ssize_t sent = file_send (
-				packet->client, packet->connection,
+				client, packet->connection,
 				actual_filename->str
 			);
 
 			if (sent > 0) {
-				// FIXME:
-				// file_cerver->stats->n_bytes_sent += sent;
+				client->file_stats->n_bytes_sent += sent;
 
 				char *status = c_string_create ("Sent file %s", actual_filename->str);
 				if (status) {
-					cerver_log_success (status);
+					client_log_success (status);
 					free (status);
 				}
 			}
@@ -190,7 +189,7 @@ static void client_request_get_file (Packet *packet) {
 			else {
 				char *status = c_string_create ("Failed to send file %s", actual_filename->str);
 				if (status) {
-					cerver_log_error (status);
+					client_log_error (status);
 					free (status);
 				}
 			}
@@ -200,7 +199,7 @@ static void client_request_get_file (Packet *packet) {
 
 		else {
 			#ifdef HANDLER_DEBUG
-			cerver_log_warning ("client_request_get_file () - file not found");
+			client_log_warning ("client_request_get_file () - file not found");
 			#endif
 
 			// TODO: add new error type
@@ -210,14 +209,14 @@ static void client_request_get_file (Packet *packet) {
 				packet->client, packet->connection
 			);
 
-			packet->client->file_stats->n_bad_files_uploaded += 1;
+			client->file_stats->n_bad_files_uploaded += 1;
 		}
 
 	}
 
 	else {
 		#ifdef HANDLER_DEBUG
-		cerver_log_warning ("client_request_get_file () - missing file header");
+		client_log_warning ("client_request_get_file () - missing file header");
 		#endif
 
 		// return a bad request error packet
@@ -226,7 +225,7 @@ static void client_request_get_file (Packet *packet) {
 			packet->client, packet->connection
 		);
 
-		packet->client->file_stats->n_bad_files_uploaded += 1;
+		client->file_stats->n_bad_files_uploaded += 1;
 	}
 
 }
