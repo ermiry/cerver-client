@@ -856,6 +856,7 @@ u8 client_file_get (Client *client, Connection *connection, const char *filename
 
 }
 
+// TODO: handle client stats
 // sends a file to the cerver
 // returns 0 on success sending request, 1 on failed to send request
 u8 client_file_send (Client *client, Connection *connection, const char *filename) {
@@ -863,11 +864,35 @@ u8 client_file_send (Client *client, Connection *connection, const char *filenam
 	u8 retval = 1;
 
 	if (client && connection && filename) {
-		// FIXME: return value
-		retval = file_send (
-			client, connection,
-			filename
-		);
+		char *last = strrchr (filename, '/');
+		const char *actual_filename = last ? last + 1 : NULL;
+		if (actual_filename) {
+			// try to open the file
+			struct stat filestatus = { 0 };
+			int file_fd = file_open_as_fd (filename, &filestatus, O_RDONLY);
+			if (file_fd >= 0) {
+				size_t sent = file_send_by_fd (
+					client, connection,
+					file_fd, actual_filename, filestatus.st_size
+				);
+
+				if (sent == filestatus.st_size) retval = 0;
+
+				close (file_fd);
+			}
+
+			else {
+				char *s = c_string_create ("client_file_send () - Failed to open file %s", filename);
+				if (s) {
+					client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_FILE, s);
+					free (s);
+				}
+			}
+		}
+
+		else {
+			client_log_error ("client_file_send () - failed to get actual filename");
+		}
 	}
 
 	return retval;
