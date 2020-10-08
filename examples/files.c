@@ -10,16 +10,8 @@
 
 #include "client/utils/log.h"
 
-typedef enum AppRequest {
-
-	TEST_MSG		= 0
-
-} AppRequest;
-
 static Client *client = NULL;
 static Connection *connection = NULL;
-
-static void app_handler (void *packet_ptr);
 
 #pragma region connect
 
@@ -32,8 +24,6 @@ static int cerver_connect (const char *ip, unsigned int port) {
 
 		client = client_create ();
 		if (client) {
-			client_set_app_handlers (client, app_handler, NULL);
-
 			connection = client_connection_create (client, ip, port, PROTOCOL_TCP, false);
 			if (connection) {
 				connection_set_name (connection, "main");
@@ -75,48 +65,19 @@ static void cerver_disconnect (void) {
 
 #pragma endregion
 
-#pragma region handler
-
-static void app_handler (void *packet_ptr) {
-
-	if (packet_ptr) {
-		Packet *packet = (Packet *) packet_ptr;
-		if (packet) {
-			switch (packet->header->request_type) {
-				case TEST_MSG: client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Got a test message from cerver!"); break;
-
-				default: 
-					client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown app request.");
-					break;
-			}
-		}
-	}
-
-}
-
-#pragma endregion
-
 #pragma region request
 
-static int test_msg_send (void) {
+static int request_file (void) {
 
 	int retval = 1;
 
 	if ((client->running) && (connection->connected)) {
-		Packet *packet = packet_generate_request (PACKET_TYPE_APP, TEST_MSG, NULL, 0);
-		if (packet) {
-			packet_set_network_values (packet, client, connection);
-			size_t sent = 0;
-			if (packet_send (packet, 0, &sent, false)) {
-				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to send test to cerver");
-			}
+		if (!client_file_get (client, connection, "test.txt")) {
+			client_log_success ("Requested file to cerver!");
+		}
 
-			else {
-				printf ("Test sent to cerver: %ld\n", sent);
-				retval = 0;
-			} 
-
-			packet_delete (packet);
+		else {
+			client_log_error ("Failed to request file to cerver!");
 		}
 	}
 
@@ -147,25 +108,22 @@ int main (int argc, const char **argv) {
 
 	cerver_client_version_print_full ();
 
-	client_log_debug ("Basic Test Message Example");
+	client_log_debug ("Files Example");
 	printf ("\n");
 
 	if (!cerver_connect ("127.0.0.1", 7000)) {
-		while (1) {
-			// send a test message every second
-			test_msg_send ();
-			test_msg_send ();
-			test_msg_send ();
+		// add client's files configuration
+		client_files_add_path (client, "./data");
+		client_files_set_uploads_path (client, "./uploads");
 
-			sleep (1);
-		}
+		sleep (2);
 
-		// for (unsigned int i = 0; i < 5; i++) {
-		//     test_msg_send ();
-		//     sleep (1);
-		// }
+		request_file ();
 
-		// cerver_disconnect ();
+		// wait for file
+		sleep (5);
+
+		cerver_disconnect ();
 	}
 
 	return 0;
