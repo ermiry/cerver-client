@@ -362,6 +362,7 @@ static ssize_t file_send_actual (
 		)) {
 			// send the actual file
 			retval = sendfile (connection->socket->sock_fd, fd, NULL, filestatus.st_size);
+			printf ("\n\nsendfile: %ld\n\n", retval);
 		}
 
 		else {
@@ -382,6 +383,7 @@ static ssize_t file_send_actual (
 			free (s);
 		}
 
+		// TODO: only send this when get a request for file
 		(void) error_packet_generate_and_send (
 			CLIENT_ERROR_GET_FILE, "File not found",
 			client, connection
@@ -405,7 +407,8 @@ ssize_t file_send (
 	ssize_t retval = 0;
 
 	if (filename && connection) {
-		char *actual_filename = strrchr (filename, '/');
+		char *last = strrchr (filename, '/');
+		const char *actual_filename = last ? last + 1 : NULL;
 		if (actual_filename) {
 			retval = file_send_actual (
 				client, connection,
