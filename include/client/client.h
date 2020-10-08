@@ -277,13 +277,9 @@ CLIENT_EXPORT void client_files_set_file_upload_cb (
 // returns 0 on success sending request, 1 on failed to send request
 CLIENT_EXPORT u8 client_file_get (Client *client, Connection *connection, const char *filename);
 
-// sends a file to the server
-// filename: the name of the file the cerver will receive
-// file is opened using the filename
-// when file is completly sent, event is set appropriately
-// appropiate error is sent on cerver error or on bad file transmission
+// sends a file to the cerver
 // returns 0 on success sending request, 1 on failed to send request
-CLIENT_EXPORT u8 client_file_send (Client *client, struct _Connection *connection, const char *filename);
+CLIENT_EXPORT u8 client_file_send (Client *client, Connection *connection, const char *filename);
 
 #pragma endregion
 

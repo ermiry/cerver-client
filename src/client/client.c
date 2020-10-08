@@ -847,21 +847,18 @@ u8 client_file_get (Client *client, Connection *connection, const char *filename
 
 }
 
-// sends a file to the server
-// filename: the name of the file the cerver will receive
-// file is opened using the filename
-// when file is completly sent, event is set appropriately
-// appropiate error is sent on cerver error or on bad file transmission
+// sends a file to the cerver
 // returns 0 on success sending request, 1 on failed to send request
 u8 client_file_send (Client *client, Connection *connection, const char *filename) {
 
 	u8 retval = 1;
 
-	if (client && connection) {
-		// request the cerver for a file transmission
-		// open the file
-		// send file header
-		// send file in packets
+	if (client && connection && filename) {
+		// FIXME: return value
+		retval = file_send (
+			client, connection,
+			filename
+		);
 	}
 
 	return retval;
