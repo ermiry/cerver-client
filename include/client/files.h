@@ -62,12 +62,20 @@ struct _FileHeader {
 
 typedef struct _FileHeader FileHeader;
 
-// opens a file and sends the content back to the client
+// opens a file and sends its contents
 // first the FileHeader in a regular packet, then the file contents between sockets
-// returns the number of bytes sent
+// returns the number of bytes sent, or -1 on error
 CLIENT_PUBLIC ssize_t file_send (
-	struct _Client *client, struct _Connection *connection,
+	Client *client, Connection *connection,
 	const char *filename
+);
+
+// sends the file contents of the file referenced by a fd
+// first the FileHeader in a regular packet, then the file contents between sockets
+// returns the number of bytes sent, or -1 on error
+CLIENT_PUBLIC ssize_t file_send_by_fd (
+	Client *client, Connection *connection,
+	int file_fd, const char *actual_filename, size_t filelen
 );
 
 // receives an incomming file in the socket and splice its information to a local file
