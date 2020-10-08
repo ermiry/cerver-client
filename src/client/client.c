@@ -807,18 +807,40 @@ void client_files_set_file_upload_cb (
 
 }
 
-// requests a file from the server
-// filename: the name of the file to request
-// file complete event will be sent when the file is finished
-// appropiate error is set on bad filename or error in file transmission
+// requests a file from the cerver
+// the client's uploads_path should have been configured before calling this method
 // returns 0 on success sending request, 1 on failed to send request
 u8 client_file_get (Client *client, Connection *connection, const char *filename) {
 
 	u8 retval = 1;
 
-	if (client && connection) {
-		// request the file from the cerver
-		// set our file tray for incoming files
+	if (client && connection && filename) {
+		if (client->uploads_path) {
+			Packet *packet = packet_new ();
+			if (packet) {
+				size_t packet_len = sizeof (PacketHeader) + sizeof (FileHeader);
+
+				packet->packet = malloc (packet_len);
+				packet->packet_size = packet_len;
+
+				char *end = (char *) packet->packet;
+				PacketHeader *header = (PacketHeader *) end;
+				header->packet_type = PACKET_TYPE_REQUEST;
+				header->packet_size = packet_len;
+
+				header->request_type = REQUEST_PACKET_TYPE_GET_FILE;
+
+				end += sizeof (PacketHeader);
+
+				FileHeader *file_header = (FileHeader *) end;
+				strncpy (file_header->filename, filename, DEFAULT_FILENAME_LEN);
+				file_header->len = 0;
+
+				packet_set_network_values (packet, client, connection);
+
+				retval = packet_send (packet, 0, NULL, false);
+			}
+		}
 	}
 
 	return retval;

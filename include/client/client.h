@@ -272,12 +272,10 @@ CLIENT_EXPORT void client_files_set_file_upload_cb (
 	)
 );
 
-// requests a file from the server
-// filename: the name of the file to request
-// file complete event will be sent when the file is finished
-// appropiate error is set on bad filename or error in file transmission
+// requests a file from the cerver
+// the client's uploads_path should have been configured before calling this method
 // returns 0 on success sending request, 1 on failed to send request
-CLIENT_EXPORT u8 client_file_get (Client *client, struct _Connection *connection, const char *filename);
+CLIENT_EXPORT u8 client_file_get (Client *client, Connection *connection, const char *filename);
 
 // sends a file to the server
 // filename: the name of the file the cerver will receive
