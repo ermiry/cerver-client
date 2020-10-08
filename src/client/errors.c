@@ -237,7 +237,7 @@ u8 client_error_trigger (
 #pragma region handler
 
 // handles error packets
-void error_packet_handler (Packet *packet) {
+void client_error_packet_handler (Packet *packet) {
 
 	if (packet->data_size >= sizeof (SError)) {
 		char *end = (char *) packet->data;
