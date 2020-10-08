@@ -142,9 +142,6 @@ CLIENT_PUBLIC u8 client_set_session_id (Client *client, const char *session_id);
 // creates a new client, whcih may be used to create connections
 CLIENT_EXPORT Client *client_create (void);
 
-// stops any activae connection and destroys a client
-CLIENT_EXPORT u8 client_teardown (Client *client);
-
 #pragma endregion
 
 #pragma region connections
@@ -334,6 +331,9 @@ CLIENT_EXPORT int client_disconnect (Client *client);
 
 // the client got disconnected from the cerver, so correctly clear our data
 CLIENT_EXPORT void client_got_disconnected (Client *client);
+
+// stops any activae connection and destroys a client
+CLIENT_EXPORT u8 client_teardown (Client *client);
 
 #pragma endregion
 

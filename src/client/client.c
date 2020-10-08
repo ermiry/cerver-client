@@ -313,23 +313,6 @@ static u8 client_start (Client *client) {
 
 }
 
-// stop any on going process and destroys the client
-u8 client_teardown (Client *client) {
-
-	u8 retval = 1;
-
-	if (client) {
-		client_disconnect (client);
-
-		client_delete (client);
-
-		retval = 0;
-	}
-
-	return retval;
-
-}
-
 #pragma endregion
 
 #pragma region connections
@@ -1109,6 +1092,23 @@ void client_got_disconnected (Client *client) {
 		client->running = false;
 		client->time_started = 0;
 	}
+
+}
+
+// stop any on going process and destroys the client
+u8 client_teardown (Client *client) {
+
+	u8 retval = 1;
+
+	if (client) {
+		client_disconnect (client);
+
+		client_delete (client);
+
+		retval = 0;
+	}
+
+	return retval;
 
 }
 
