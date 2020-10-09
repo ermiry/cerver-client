@@ -78,6 +78,10 @@ CLIENT_PUBLIC ssize_t file_send_by_fd (
 	int file_fd, const char *actual_filename, size_t filelen
 );
 
+#pragma endregion
+
+#pragma region receive
+
 // receives an incomming file in the socket and splice its information to a local file
 // returns 0 on success, 1 on error
 CLIENT_PUBLIC u8 file_receive (
