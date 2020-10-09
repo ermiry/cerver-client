@@ -214,7 +214,7 @@ FILE *file_open_as_file (const char *filename, const char *modes, struct stat *f
 			fp = fopen (filename, modes);
 
 		else {
-			#ifdef CLIENT_DEBUG
+			#ifdef FILES_DEBUG
 			char *s = c_string_create ("File %s not found!", filename);
 			if (s) {
 				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_FILE, s);
@@ -243,7 +243,7 @@ char *file_read (const char *filename, size_t *file_size) {
 
 			// read the entire file into the buffer
 			if (fread (file_contents, filestatus.st_size, 1, fp) != 1) {
-				#ifdef CLIENT_DEBUG
+				#ifdef FILES_DEBUG
 				char *s = c_string_create ("Failed to read file (%s) contents!");
 				if (s) {
 					client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_FILE, s);
@@ -258,7 +258,7 @@ char *file_read (const char *filename, size_t *file_size) {
 		}
 
 		else {
-			#ifdef CLIENT_DEBUG
+			#ifdef FILES_DEBUG
 			char *s = c_string_create ("Unable to open file %s.", filename);
 			if (s) {
 				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_FILE, s);
@@ -284,7 +284,7 @@ int file_open_as_fd (const char *filename, struct stat *filestatus, int flags) {
 			retval = open (filename, flags);
 
 		else {
-			#ifdef CLIENT_DEBUG
+			#ifdef FILES_DEBUG
 			char *s = c_string_create ("File %s not found!", filename);
 			if (s) {
 				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_FILE, s);
