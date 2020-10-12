@@ -120,11 +120,14 @@ void client_file_stats_print (Client *client) {
 			printf ("Files requests:                %ld\n", client->file_stats->n_files_requests);
 			printf ("Success requests:              %ld\n", client->file_stats->n_success_files_requests);
 			printf ("Bad requests:                  %ld\n\n", client->file_stats->n_bad_files_requests);
+			printf ("Files sent:                    %ld\n\n", client->file_stats->n_files_sent);
+			printf ("Failed files sent:             %ld\n\n", client->file_stats->n_bad_files_sent);
 			printf ("Files bytes sent:              %ld\n\n", client->file_stats->n_bytes_sent);
 
-			printf ("Files uploads:                 %ld\n", client->file_stats->n_files_uploaded);
+			printf ("Files upload requests:         %ld\n", client->file_stats->n_files_upload_requests);
 			printf ("Success uploads:               %ld\n", client->file_stats->n_success_files_uploaded);
-			printf ("Bad uploads:                   %ld\n", client->file_stats->n_bad_files_uploaded);
+			printf ("Bad uploads:                   %ld\n", client->file_stats->n_bad_files_upload_requests);
+			printf ("Bad files received:            %ld\n", client->file_stats->n_bad_files_received);
 			printf ("Files bytes received:          %ld\n\n", client->file_stats->n_bytes_received);
 		}
 	}
