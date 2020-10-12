@@ -16,6 +16,41 @@
 static Client *client = NULL;
 static Connection *connection = NULL;
 
+#pragma region events
+
+static void client_error_file_not_found (void *client_error_data_ptr) {
+
+	if (client_error_data_ptr) {
+		ClientErrorData *client_error_data = (ClientErrorData *) client_error_data_ptr;
+
+		client_log_warning ("client_error_file_not_found () - request file was not found!");
+
+		client_error_data_delete (client_error_data);
+	}
+
+}
+
+static void client_event_connection_close (void *client_event_data_ptr) {
+
+	if (client_event_data_ptr) {
+		ClientEventData *client_event_data = (ClientEventData *) client_event_data_ptr;
+
+		if (client_event_data->connection) {
+			char *status = c_string_create ("client_event_connection_close () - connection <%s> has been closed!",
+				client_event_data->connection->name->str);
+			if (status) {
+				client_log_warning (status);
+				free (status);
+			}
+		}
+
+		client_event_data_delete (client_event_data);
+	}
+
+}
+
+#pragma endregion
+
 #pragma region connect
 
 static int cerver_connect (const char *ip, unsigned int port) {
@@ -27,6 +62,20 @@ static int cerver_connect (const char *ip, unsigned int port) {
 
 		client = client_create ();
 		if (client) {
+			client_event_register (
+				client, 
+				CLIENT_EVENT_CONNECTION_CLOSE, 
+				client_event_connection_close, NULL, NULL, 
+				false, false
+			);
+
+			client_error_register (
+				client,
+				CLIENT_ERROR_FILE_NOT_FOUND,
+				client_error_file_not_found, NULL, NULL,
+				false, false
+			);
+
 			connection = client_connection_create (client, ip, port, PROTOCOL_TCP, false);
 			if (connection) {
 				connection_set_name (connection, "main");
