@@ -153,6 +153,8 @@ static void client_request_get_file (Packet *packet) {
 
 	Client *client = packet->client;
 
+	client->file_stats->n_files_requests += 1;
+
 	// get the necessary information to fulfil the request
 	if (packet->data_size >= sizeof (FileHeader)) {
 		char *end = packet->data;
@@ -177,6 +179,8 @@ static void client_request_get_file (Packet *packet) {
 			);
 
 			if (sent > 0) {
+				client->file_stats->n_success_files_requests += 1;
+				client->file_stats->n_files_sent += 1;
 				client->file_stats->n_bytes_sent += sent;
 
 				char *status = c_string_create ("Sent file %s", actual_filename->str);
@@ -192,6 +196,8 @@ static void client_request_get_file (Packet *packet) {
 					client_log_error (status);
 					free (status);
 				}
+
+				client->file_stats->n_bad_files_sent += 1;
 			}
 
 			str_delete (actual_filename);
@@ -202,14 +208,13 @@ static void client_request_get_file (Packet *packet) {
 			client_log_warning ("client_request_get_file () - file not found");
 			#endif
 
-			// TODO: add new error type
 			// if not found, return an error to the client
 			(void) error_packet_generate_and_send (
-				CLIENT_ERROR_GET_FILE, "File not found",
+				CLIENT_ERROR_FILE_NOT_FOUND, "File not found",
 				packet->client, packet->connection
 			);
 
-			client->file_stats->n_bad_files_uploaded += 1;
+			client->file_stats->n_bad_files_requests += 1;
 		}
 
 	}
@@ -225,12 +230,16 @@ static void client_request_get_file (Packet *packet) {
 			packet->client, packet->connection
 		);
 
-		client->file_stats->n_bad_files_uploaded += 1;
+		client->file_stats->n_bad_files_requests += 1;
 	}
 
 }
 
 static void client_request_send_file_actual (Packet *packet) {
+
+	Client *client = packet->client;
+
+	client->file_stats->n_files_upload_requests += 1;
 
 	// get the necessary information to fulfil the request
 	if (packet->data_size >= sizeof (FileHeader)) {
@@ -238,24 +247,28 @@ static void client_request_send_file_actual (Packet *packet) {
 		FileHeader *file_header = (FileHeader *) end;
 
 		char *saved_filename = NULL;
-		if (!packet->client->file_upload_handler (
-			packet->client, packet->connection,
+		if (!client->file_upload_handler (
+			client, packet->connection,
 			file_header, &saved_filename
 		)) {
-			if (packet->client->file_upload_cb) {
-				packet->client->file_upload_cb (
+			client->file_stats->n_success_files_uploaded += 1;
+
+			client->file_stats->n_bytes_received += file_header->len;
+
+			if (client->file_upload_cb) {
+				client->file_upload_cb (
 					packet->client, packet->connection,
 					saved_filename
 				);
 			}
-			
+
 			if (saved_filename) free (saved_filename);
 		}
 
 		else {
-			client_log_error ("Failed to receive file");
+			client_log_error ("client_request_send_file () - Failed to receive file");
 
-			packet->client->file_stats->n_bad_files_uploaded += 1;
+			client->file_stats->n_bad_files_received += 1;
 		}
 	}
 
@@ -267,10 +280,10 @@ static void client_request_send_file_actual (Packet *packet) {
 		// return a bad request error packet
 		(void) error_packet_generate_and_send (
 			CLIENT_ERROR_SEND_FILE, "Missing file header",
-			packet->client, packet->connection
+			client, packet->connection
 		);
 
-		packet->client->file_stats->n_bad_files_uploaded += 1;
+		client->file_stats->n_bad_files_upload_requests += 1;
 	}
 
 }
@@ -284,7 +297,6 @@ static void client_request_send_file (Packet *packet) {
 	}
 
 	else {
-		// TODO: add new error type
 		// return a bad request error packet
 		(void) error_packet_generate_and_send (
 			CLIENT_ERROR_SEND_FILE, "Unable to process request",
