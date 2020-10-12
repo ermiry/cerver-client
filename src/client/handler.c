@@ -148,10 +148,57 @@ static void client_auth_packet_handler (Packet *packet) {
 
 }
 
+static inline void client_request_get_file_handle_sent (
+	ssize_t sent,
+	String *actual_filename,
+	Client *client, Connection *connection
+) {
+
+	switch (sent) {
+		case -1: {
+			// #ifdef HANDLER_DEBUG
+			client_log_warning ("client_request_get_file () - file not found");
+			// #endif
+
+			// if not found, return an error to the client
+			(void) error_packet_generate_and_send (
+				CLIENT_ERROR_FILE_NOT_FOUND, "File not found",
+				client, connection
+			);
+
+			client->file_stats->n_bad_files_requests += 1;
+		} break;
+
+		case 0: {
+			char *status = c_string_create ("Failed to send file %s", actual_filename->str);
+			if (status) {
+				client_log_error (status);
+				free (status);
+			}
+
+			client->file_stats->n_bad_files_sent += 1;
+		} break;
+
+		default: {
+			client->file_stats->n_success_files_requests += 1;
+			client->file_stats->n_files_sent += 1;
+			client->file_stats->n_bytes_sent += sent;
+
+			char *status = c_string_create ("Sent file %s", actual_filename->str);
+			if (status) {
+				client_log_success (status);
+				free (status);
+			}
+		} break;
+	}
+
+}
+
 // handles a request from a cerver to get a file
 static void client_request_get_file (Packet *packet) {
 
 	Client *client = packet->client;
+	Connection *connection = packet->connection;
 
 	client->file_stats->n_files_requests += 1;
 
@@ -173,32 +220,14 @@ static void client_request_get_file (Packet *packet) {
 
 			// if found, pipe the file contents to the client's socket fd
 			// the socket should be blocked during the entire operation
-			ssize_t sent = file_send (
-				client, packet->connection,
-				actual_filename->str
+			client_request_get_file_handle_sent (
+				file_send (
+					client, connection,
+					actual_filename->str
+				),
+				actual_filename,
+				client, connection
 			);
-
-			if (sent > 0) {
-				client->file_stats->n_success_files_requests += 1;
-				client->file_stats->n_files_sent += 1;
-				client->file_stats->n_bytes_sent += sent;
-
-				char *status = c_string_create ("Sent file %s", actual_filename->str);
-				if (status) {
-					client_log_success (status);
-					free (status);
-				}
-			}
-
-			else {
-				char *status = c_string_create ("Failed to send file %s", actual_filename->str);
-				if (status) {
-					client_log_error (status);
-					free (status);
-				}
-
-				client->file_stats->n_bad_files_sent += 1;
-			}
 
 			str_delete (actual_filename);
 		}
@@ -211,7 +240,7 @@ static void client_request_get_file (Packet *packet) {
 			// if not found, return an error to the client
 			(void) error_packet_generate_and_send (
 				CLIENT_ERROR_FILE_NOT_FOUND, "File not found",
-				packet->client, packet->connection
+				client, connection
 			);
 
 			client->file_stats->n_bad_files_requests += 1;
@@ -227,7 +256,7 @@ static void client_request_get_file (Packet *packet) {
 		// return a bad request error packet
 		(void) error_packet_generate_and_send (
 			CLIENT_ERROR_GET_FILE, "Missing file header",
-			packet->client, packet->connection
+			client, connection
 		);
 
 		client->file_stats->n_bad_files_requests += 1;
