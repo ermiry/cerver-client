@@ -859,7 +859,6 @@ u8 client_file_get (Client *client, Connection *connection, const char *filename
 
 }
 
-// TODO: handle client stats
 // sends a file to the cerver
 // returns 0 on success sending request, 1 on failed to send request
 u8 client_file_send (Client *client, Connection *connection, const char *filename) {
@@ -878,6 +877,9 @@ u8 client_file_send (Client *client, Connection *connection, const char *filenam
 					client, connection,
 					file_fd, actual_filename, filestatus.st_size
 				);
+
+				client->file_stats->n_files_sent += 1;
+				client->file_stats->n_bytes_sent += sent;
 
 				if (sent == filestatus.st_size) retval = 0;
 
