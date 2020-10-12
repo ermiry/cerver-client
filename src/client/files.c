@@ -374,6 +374,35 @@ static ssize_t file_send_actual (
 
 }
 
+static int file_send_open (
+	const char *filename, struct stat *filestatus,
+	const char **actual_filename
+) {
+
+	int file_fd = -1;
+
+	char *last = strrchr (filename, '/');
+	*actual_filename = last ? last + 1 : NULL;
+	if (actual_filename) {
+		// try to open the file
+		file_fd = file_open_as_fd (filename, filestatus, O_RDONLY);
+		if (file_fd <= 0) {
+			char *s = c_string_create ("file_send () - Failed to open file %s", filename);
+			if (s) {
+				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_FILE, s);
+				free (s);
+			}
+		}
+	}
+
+	else {
+		client_log_error ("file_send () - failed to get actual filename");
+	}
+
+	return file_fd;
+
+}
+
 // opens a file and sends its contents
 // first the FileHeader in a regular packet, then the file contents between sockets
 // returns the number of bytes sent, or -1 on error
@@ -385,38 +414,16 @@ ssize_t file_send (
 	ssize_t retval = -1;
 
 	if (filename && connection) {
-		char *last = strrchr (filename, '/');
-		const char *actual_filename = last ? last + 1 : NULL;
-		if (actual_filename) {
-			// try to open the file
-			struct stat filestatus = { 0 };
-			int file_fd = file_open_as_fd (filename, &filestatus, O_RDONLY);
-			if (file_fd >= 0) {
-				retval = file_send_actual (
-					client, connection,
-					file_fd, actual_filename, filestatus.st_size
-				);
+		const char *actual_filename = NULL;
+		struct stat filestatus = { 0 };
+		int file_fd = file_send_open (filename, &filestatus, &actual_filename);
+		if (file_fd > 0) {
+			retval = file_send_actual (
+				client, connection,
+				file_fd, actual_filename, filestatus.st_size
+			);
 
-				close (file_fd);
-			}
-
-			else {
-				char *s = c_string_create ("file_send () - Failed to open file %s", filename);
-				if (s) {
-					client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_FILE, s);
-					free (s);
-				}
-
-				// TODO: only send this when get a request for file
-				(void) error_packet_generate_and_send (
-					CLIENT_ERROR_GET_FILE, "File not found",
-					client, connection
-				);
-			}
-		}
-
-		else {
-			client_log_error ("file_send () - failed to get actual filename");
+			close (file_fd);
 		}
 	}
 
