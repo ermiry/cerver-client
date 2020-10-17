@@ -252,6 +252,8 @@ static void end (int dummy) {
 	client_log_success ("Done!");
 	printf ("\n");
 
+	client_end ();
+
 	exit (0);
 
 }
@@ -260,6 +262,8 @@ int main (int argc, const char **argv) {
 
 	// register to the quit signal
 	signal (SIGINT, end);
+
+	client_init ();
 
 	cerver_client_version_print_full ();
 
@@ -276,6 +280,8 @@ int main (int argc, const char **argv) {
 			sleep (1);
 		}
 	}
+
+	client_end ();
 
 	return 0;
 

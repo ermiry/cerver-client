@@ -155,6 +155,8 @@ static void end (int dummy) {
 	client_log_success ("Done!");
 	printf ("\n");
 
+	client_end ();
+
 	exit (0);
 
 }
@@ -197,6 +199,8 @@ static void start (const char *action, const char *filename) {
 
 int main (int argc, const char **argv) {
 
+	client_init ();
+
 	if (argc >= 3) {
 		start (argv[1], argv[2]);
 	}
@@ -204,6 +208,8 @@ int main (int argc, const char **argv) {
 	else {
 		printf ("\nUsage: %s get/send [filename]\n\n", argv[0]);
 	}
+
+	client_end ();
 
 	return 0;
 
