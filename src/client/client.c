@@ -29,6 +29,26 @@ int client_disconnect (Client *client);
 int client_connection_end (Client *client, Connection *connection);
 Connection *client_connection_get_by_socket (Client *client, i32 sock_fd);
 
+#pragma region global
+
+// initializes global client values
+// should be called only once at the start of the program
+void client_init (void) {
+
+	client_log_init ();
+
+}
+
+// correctly disposes global values
+// should be called only once at the very end of the program
+void client_end (void) {
+
+	client_log_end ();
+
+}
+
+#pragma endregion
+
 #pragma region stats
 
 static ClientStats *client_stats_new (void) {
