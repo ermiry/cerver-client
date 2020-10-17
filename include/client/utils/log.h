@@ -78,4 +78,12 @@ CLIENT_PUBLIC void client_log_debug (const char *msg, ...);
 
 #pragma endregion
 
+#pragma region main
+
+CLIENT_PRIVATE void client_log_init (void);
+
+CLIENT_PRIVATE void client_log_end (void);
+
+#pragma endregion
+
 #endif

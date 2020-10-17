@@ -277,3 +277,25 @@ void client_log_debug (const char *msg, ...) {
 }
 
 #pragma endregion
+
+#pragma region main
+
+void client_log_init (void) {
+
+	if (!log_pool) {
+		log_pool = pool_create (client_log_delete);
+		pool_set_create (log_pool, client_log_new);
+		pool_set_produce_if_empty (log_pool, true);
+		pool_init (log_pool, client_log_new, LOG_POOL_INIT);
+	}
+
+}
+
+void client_log_end (void) {
+
+	pool_delete (log_pool);
+	log_pool = NULL;
+
+}
+
+#pragma endregion
