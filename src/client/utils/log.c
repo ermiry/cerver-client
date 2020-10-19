@@ -172,7 +172,7 @@ void client_log (
 ) {
 
 	if (format) {
-		va_list args = { 0 };
+		va_list args;
 		va_start (args, format);
 
 		client_log_internal (
@@ -193,7 +193,7 @@ void client_log_msg (
 ) {
 
 	if (__stream && msg) {
-		va_list args = { 0 };
+		va_list args;
 
 		client_log_internal (
 			__stream,
@@ -208,7 +208,7 @@ void client_log_msg (
 void client_log_error (const char *msg, ...) {
 
 	if (msg) {
-		va_list args = { 0 };
+		va_list args;
 		va_start (args, msg);
 
 		client_log_internal (
@@ -226,7 +226,7 @@ void client_log_error (const char *msg, ...) {
 void client_log_warning (const char *msg, ...) {
 
 	if (msg) {
-		va_list args = { 0 };
+		va_list args;
 		va_start (args, msg);
 
 		client_log_internal (
@@ -244,7 +244,7 @@ void client_log_warning (const char *msg, ...) {
 void client_log_success (const char *msg, ...) {
 
 	if (msg) {
-		va_list args = { 0 };
+		va_list args;
 		va_start (args, msg);
 
 		client_log_internal (
@@ -262,7 +262,7 @@ void client_log_success (const char *msg, ...) {
 void client_log_debug (const char *msg, ...) {
 
 	if (msg) {
-		va_list args = { 0 };
+		va_list args;
 		va_start (args, msg);
 
 		client_log_internal (
