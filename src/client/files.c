@@ -586,7 +586,9 @@ static u8 file_receive_internal (Connection *connection, size_t filelen, int fil
 // returns 0 on success, 1 on error
 u8 file_receive (
 	Client *client, Connection *connection,
-	FileHeader *file_header, char **saved_filename
+	FileHeader *file_header,
+	const char *file_data, size_t file_data_len,
+	char **saved_filename
 ) {
 
 	u8 retval = 1;
@@ -608,21 +610,52 @@ u8 file_receive (
 			// 	SPLICE_F_MOVE | SPLICE_F_MORE
 			// );
 
-			if (!file_receive_internal (
-				connection,
-				file_header->len,
-				file_fd
-			)) {
-				#ifdef FILES_DEBUG
-				client_log_success ("file_receive_internal () has finished");
-				#endif
+			// we received some part of the file when reading packets,
+			// they should be the first ones to be saved into the file
+			if (file_data && file_data_len) {
+				ssize_t wrote = write (file_fd, file_data, file_data_len);
+				if (wrote < 0) {
+					client_log_error ("file_receive_actual () - write () has failed!");
+					perror ("Error");
+					printf ("\n");
+				}
 
-				retval = 0;
+				else {
+					#ifdef FILES_DEBUG
+					printf (
+						"\n\nwrote %ld of file_data_len %ld\n\n",
+						wrote,
+						file_data_len
+					);
+					#endif
+				}
 			}
 
-			else {
-				free (*saved_filename);
-				*saved_filename = NULL;
+			// there is still more data to be received
+			if (file_data_len < file_header->len) {
+				size_t real_filelen = file_header->len - file_data_len;
+				#ifdef FILES_DEBUG
+				printf (
+					"\nfilelen: %ld - file data len %ld = %ld\n\n", 
+					file_header->len, file_data_len, real_filelen
+				);
+				#endif
+				if (!file_receive_internal (
+					connection,
+					real_filelen,
+					file_fd
+				)) {
+					#ifdef FILES_DEBUG
+					client_log_success ("file_receive_internal () has finished");
+					#endif
+
+					retval = 0;
+				}
+
+				else {
+					free (*saved_filename);
+					*saved_filename = NULL;
+				}
 			}
 
 			close (file_fd);
