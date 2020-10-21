@@ -768,7 +768,9 @@ void client_files_set_file_upload_handler (
 	Client *client,
 	u8 (*file_upload_handler) (
 		struct _Client *, struct _Connection *,
-		struct _FileHeader *, char **saved_filename
+		struct _FileHeader *,
+		const char *file_data, size_t file_data_len,
+		char **saved_filename
 	)
 ) {
 
