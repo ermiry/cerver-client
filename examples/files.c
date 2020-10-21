@@ -22,6 +22,8 @@ typedef enum AppRequest {
 static Client *client = NULL;
 static Connection *connection = NULL;
 
+static void app_handler (void *packet_ptr);
+
 #pragma region events
 
 static void client_error_file_not_found (void *client_error_data_ptr) {
@@ -68,6 +70,8 @@ static int cerver_connect (const char *ip, unsigned int port) {
 
 		client = client_create ();
 		if (client) {
+			client_set_app_handlers (client, app_handler, NULL);
+
 			client_event_register (
 				client, 
 				CLIENT_EVENT_CONNECTION_CLOSE, 
@@ -118,6 +122,27 @@ static void cerver_disconnect (void) {
 	if (!client_teardown (client)) {
 		client_log_success ("client_teardown ()!");
 	}
+
+}
+
+#pragma endregion
+
+#pragma region handler
+
+static void app_handler (void *packet_ptr) {
+
+	if (packet_ptr) {
+        Packet *packet = (Packet *) packet_ptr;
+        if (packet) {
+            switch (packet->header->request_type) {
+                case TEST_MSG: client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Got a test message from cerver!"); break;
+
+                default: 
+                    client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown app request.");
+                    break;
+            }
+        }
+    }
 
 }
 
@@ -208,8 +233,9 @@ static void start (const char *action, const char *filename) {
 
 		sleep (2);
 
-		test_msg_send ();
-		test_msg_send ();
+		for (unsigned int i = 0; i < 10; i++) {
+			test_msg_send ();
+		}
 
 		if (!strcmp ("get", action)) request_file (filename);
 		else if (!strcmp ("send", action)) send_file (filename);
@@ -223,8 +249,9 @@ static void start (const char *action, const char *filename) {
 			}
 		}
 
-		test_msg_send ();
-		test_msg_send ();
+		for (unsigned int i = 0; i < 10; i++) {
+			test_msg_send ();
+		}
 
 		sleep (5);
 
