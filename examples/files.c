@@ -218,6 +218,8 @@ static void end (int dummy) {
 
 static void start (const char *action, const char *filename) {
 
+	srand (time (NULL));
+
 	// register to the quit signal
 	signal (SIGINT, end);
 
