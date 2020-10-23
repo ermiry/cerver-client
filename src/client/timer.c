@@ -7,7 +7,7 @@
 #include "client/types/types.h"
 #include "client/types/string.h"
 
-#include "client/time.h"
+#include "client/timer.h"
 
 static TimeSpec *timespec_new (void) {
 

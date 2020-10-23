@@ -1,5 +1,5 @@
-#ifndef _CLIENT_TIME_H_
-#define _CLIENT_TIME_H_
+#ifndef _CLIENT_TIMER_H_
+#define _CLIENT_TIMER_H_
 
 #ifndef __USE_POSIX199309
 	#define __USE_POSIX199309
