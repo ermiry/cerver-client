@@ -328,7 +328,7 @@ static u8 connection_init (Connection *connection) {
 				break;
 
 			default:
-				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Unkonw protocol type!");
+				client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Unkonw protocol type!");
 				return 1;
 		}
 
@@ -351,7 +351,7 @@ static u8 connection_init (Connection *connection) {
 		}
 
 		else {
-			client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create new socket!");
+			client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create new socket!");
 		}
 	}
 
@@ -379,7 +379,7 @@ Connection *connection_create (const char *ip_address, u16 port, Protocol protoc
 			// set up the new connection to be ready to be started
 			if (connection_init (connection)) {
 				#ifdef CLIENT_DEBUG
-				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to init the new connection!");
+				client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to init the new connection!");
 				#endif
 				connection_delete (connection);
 				connection = NULL;

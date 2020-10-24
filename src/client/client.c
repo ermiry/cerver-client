@@ -98,8 +98,7 @@ void client_stats_print (Client *client) {
 		}
 
 		else {
-			client_log_msg (
-				stderr, 
+			client_log (
 				LOG_TYPE_ERROR, LOG_TYPE_CLIENT,
 				"Client does not have a reference to a client stats!"
 			);
@@ -107,8 +106,7 @@ void client_stats_print (Client *client) {
 	}
 
 	else {
-		client_log_msg (
-			stderr,
+		client_log (
 			LOG_TYPE_WARNING, LOG_TYPE_CLIENT,
 			"Can't get stats of a NULL client!"
 		);
@@ -397,12 +395,14 @@ Connection *client_connection_create (
 				dlist_insert_after (client->connections, dlist_end (client->connections), connection);
 			}
 
-			else client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create new connection!");
+			else client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create new connection!");
 		}
 
 		else {
-			client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE,
-				"Failed to create new connection, no ip provided!");
+			client_log (
+				LOG_TYPE_ERROR, LOG_TYPE_NONE,
+				"Failed to create new connection, no ip provided!"
+			);
 		}
 	}
 
@@ -575,22 +575,18 @@ int client_connection_start (Client *client, Connection *connection) {
 				}
 
 				else {
-					char *s = c_string_create ("client_connection_start () - Failed to create update thread for client %s",
-						client->name->str);
-					if (s) {
-						client_log_error (s);
-						free (s);
-					}
+					client_log_error (
+						"client_connection_start () - Failed to create update thread for client %s",
+						client->name->str
+					);
 				}
 			}
 
 			else {
-				char *s = c_string_create ("client_connection_start () - Failed to start client %s",
-					client->name->str);
-				if (s) {
-					client_log_error (s);
-					free (s);
-				}
+				client_log_error (
+					"client_connection_start () - Failed to start client %s",
+					client->name->str
+				);
 			}
 		}
 	}
@@ -615,12 +611,10 @@ int client_connect_and_start (Client *client, Connection *connection) {
 		}
 
 		else {
-			char *s = c_string_create ("client_connect_and_start () - Client %s failed to connect",
-				client->name->str);
-			if (s) {
-				client_log_error (s);
-				free (s);
-			}
+			client_log_error (
+				"client_connect_and_start () - Client %s failed to connect",
+				client->name->str
+			);
 		}
 	}
 
@@ -907,11 +901,10 @@ u8 client_file_send (Client *client, Connection *connection, const char *filenam
 			}
 
 			else {
-				char *s = c_string_create ("client_file_send () - Failed to open file %s", filename);
-				if (s) {
-					client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_FILE, s);
-					free (s);
-				}
+				client_log (
+					LOG_TYPE_ERROR, LOG_TYPE_FILE,
+					"client_file_send () - Failed to open file %s", filename
+				);
 			}
 		}
 
