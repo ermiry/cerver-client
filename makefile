@@ -85,5 +85,6 @@ examples: $(EXAMPLES)
 	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/auth.c -o ./examples/bin/auth -l client
 	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/sessions.c -o ./examples/bin/sessions -l client
 	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/admin.c -o ./examples/bin/admin -l client
+	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/balancer.c -o ./examples/bin/balancer -l client
 
 .PHONY: all clean examples
