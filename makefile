@@ -90,11 +90,6 @@ $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 
 examples: $(EXOBJS)
 	@mkdir -p ./examples/bin
-	@mkdir -p ./examples/bin/client
-	@mkdir -p ./examples/bin/web
-
-examples: $(EXAMPLES)
-	@mkdir -p ./examples/bin
 	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/test.o -o ./$(EXATARGET)/test -l client
 	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/handlers.o -o ./$(EXATARGET)/handlers -l client
 	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/multi.o -o ./$(EXATARGET)/multi -l client
