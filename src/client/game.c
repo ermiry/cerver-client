@@ -16,175 +16,175 @@
 
 static GameSettings *game_settings_new (void) {
 
-    GameSettings *settings = (GameSettings *) malloc (sizeof (GameSettings));
-    if (settings) {
-        memset (settings, 0, sizeof (GameSettings));
-        settings->game_type = NULL;
-    }
+	GameSettings *settings = (GameSettings *) malloc (sizeof (GameSettings));
+	if (settings) {
+		memset (settings, 0, sizeof (GameSettings));
+		settings->game_type = NULL;
+	}
 
-    return settings;
+	return settings;
 
 }
 
 static void game_settings_delete (GameSettings *settings) {
 
-    if (settings) {
-        str_delete (settings->game_type);
-        free (settings);
-    }
+	if (settings) {
+		str_delete (settings->game_type);
+		free (settings);
+	}
 
 }
 
 // FIXME: dlist
 static Lobby *lobby_new (void) {
 
-    Lobby *lobby = (Lobby *) malloc (sizeof (Lobby));
-    if (lobby) {
-        memset (lobby, 0, sizeof (Lobby));
-        lobby->id = NULL;
-        lobby->game_settings = game_settings_new ();
-        lobby->players = dlist_init (NULL, NULL);
-    }
+	Lobby *lobby = (Lobby *) malloc (sizeof (Lobby));
+	if (lobby) {
+		memset (lobby, 0, sizeof (Lobby));
+		lobby->id = NULL;
+		lobby->game_settings = game_settings_new ();
+		lobby->players = dlist_init (NULL, NULL);
+	}
 
-    return lobby;
+	return lobby;
 
 }
 
 void lobby_delete (void *lobby_ptr) {
 
-    if (lobby_ptr) {
-        Lobby *lobby = (Lobby *) lobby_ptr;
+	if (lobby_ptr) {
+		Lobby *lobby = (Lobby *) lobby_ptr;
 
-        str_delete (lobby->id);
-        game_settings_delete (lobby->game_settings);
-        dlist_delete (lobby->players);
+		str_delete (lobby->id);
+		game_settings_delete (lobby->game_settings);
+		dlist_delete (lobby->players);
 
-        free (lobby);
-    }
+		free (lobby);
+	}
 
 }
 
 static Lobby *lobby_deserialize (SLobby *slobby) {
 
-    Lobby *lobby = NULL;
+	Lobby *lobby = NULL;
 
-    if (slobby) {
-        lobby = lobby_new ();
-        
-        lobby->id = str_new (slobby->id.string);
-        lobby->creation_timestamp = slobby->creation_timestamp;
+	if (slobby) {
+		lobby = lobby_new ();
 
-        lobby->running = slobby->running;
-        lobby->in_game = slobby->in_game;
+		lobby->id = str_new (slobby->id.string);
+		lobby->creation_timestamp = slobby->creation_timestamp;
 
-        lobby->game_settings->game_type = str_new (slobby->settings.game_type.string);
-        lobby->game_settings->player_timeout = slobby->settings.player_timeout;
-        lobby->game_settings->fps = slobby->settings.fps;
-        lobby->game_settings->min_players = slobby->settings.min_players;
-        lobby->game_settings->max_players = slobby->settings.max_players;
-        lobby->game_settings->duration = slobby->settings.duration;
+		lobby->running = slobby->running;
+		lobby->in_game = slobby->in_game;
 
-        lobby->n_players = slobby->n_players;
-    }
+		lobby->game_settings->game_type = str_new (slobby->settings.game_type.string);
+		lobby->game_settings->player_timeout = slobby->settings.player_timeout;
+		lobby->game_settings->fps = slobby->settings.fps;
+		lobby->game_settings->min_players = slobby->settings.min_players;
+		lobby->game_settings->max_players = slobby->settings.max_players;
+		lobby->game_settings->duration = slobby->settings.duration;
 
-    return lobby;
+		lobby->n_players = slobby->n_players;
+	}
+
+	return lobby;
 
 }
 
 static void client_game_lobby_create (Packet *packet) {
 
-    if (packet) {
-        if (packet->data_size >= sizeof (SLobby)) {
-            // get the lobby data from the cerver
-            char *end = (char *) packet->data;
-            SLobby *slobby = (SLobby *) end;
+	if (packet) {
+		if (packet->data_size >= sizeof (SLobby)) {
+			// get the lobby data from the cerver
+			char *end = (char *) packet->data;
+			SLobby *slobby = (SLobby *) end;
 
-            // deserialize the lobby
-            Lobby *lobby = lobby_deserialize (slobby);
+			// deserialize the lobby
+			Lobby *lobby = lobby_deserialize (slobby);
 
-            // trigger the event
-            client_event_set_response (packet->client, CLIENT_EVENT_LOBBY_CREATE, 
-                lobby, lobby_delete);
-            client_event_trigger (CLIENT_EVENT_LOBBY_CREATE, packet->client, packet->connection);
-        }
+			// trigger the event
+			client_event_set_response (packet->client, CLIENT_EVENT_LOBBY_CREATE,
+				lobby, lobby_delete);
+			client_event_trigger (CLIENT_EVENT_LOBBY_CREATE, packet->client, packet->connection);
+		}
 
-        else {
-            // TODO: trigger error, bad packet
-            client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, 
-                "client_game_lobby_create () - packets to small to get a lobby!");
-        }
-    }
+		else {
+			// TODO: trigger error, bad packet
+			client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE,
+				"client_game_lobby_create () - packets to small to get a lobby!");
+		}
+	}
 
 }
 
 static void client_game_lobby_join (Packet *packet) {
 
-    if (packet) {
-        if (packet->data_size >= sizeof (SLobby)) {
-            // get the lobby data from the cerver
-            char *end = (char *) packet->data;
-            SLobby *slobby = (SLobby *) end;
+	if (packet) {
+		if (packet->data_size >= sizeof (SLobby)) {
+			// get the lobby data from the cerver
+			char *end = (char *) packet->data;
+			SLobby *slobby = (SLobby *) end;
 
-            // deserialize the lobby
-            Lobby *lobby = lobby_deserialize (slobby);
+			// deserialize the lobby
+			Lobby *lobby = lobby_deserialize (slobby);
 
-            // trigger the event
-            client_event_set_response (packet->client, CLIENT_EVENT_LOBBY_JOIN, 
-                lobby, lobby_delete);
-            client_event_trigger (CLIENT_EVENT_LOBBY_JOIN, packet->client, packet->connection);
-        }
+			// trigger the event
+			client_event_set_response (packet->client, CLIENT_EVENT_LOBBY_JOIN,
+				lobby, lobby_delete);
+			client_event_trigger (CLIENT_EVENT_LOBBY_JOIN, packet->client, packet->connection);
+		}
 
-        else {
-            // TODO: trigger error, bad packet
-            client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, 
-                "client_game_lobby_join () - packets to small to get a lobby!");
-        }
-    }
+		else {
+			// TODO: trigger error, bad packet
+			client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE,
+				"client_game_lobby_join () - packets to small to get a lobby!");
+		}
+	}
 
 }
 
 // TODO:
 static void client_game_lobby_leave (Packet *packet) {
 
-    if (packet) {
-        if (packet->data_size > 0) {
-            // get the lobby data from the cerver
+	if (packet) {
+		if (packet->data_size > 0) {
+			// get the lobby data from the cerver
 
-            // trigger the event
-            client_event_trigger (CLIENT_EVENT_LOBBY_JOIN, packet->client, packet->connection);
-        }
-    }
+			// trigger the event
+			client_event_trigger (CLIENT_EVENT_LOBBY_JOIN, packet->client, packet->connection);
+		}
+	}
 
 }
 
 static void client_game_lobby_start (Packet *packet) {
 
-    if (packet) {
-        // trigger the event
-        client_event_trigger (CLIENT_EVENT_LOBBY_START, packet->client, packet->connection);
-    }
+	if (packet) {
+		// trigger the event
+		client_event_trigger (CLIENT_EVENT_LOBBY_START, packet->client, packet->connection);
+	}
 
 }
 
 // handles a game packet from the cerver
 void client_game_packet_handler (Packet *packet) {
 
-    if (packet->header) {
-        switch (packet->header->request_type) {
-            case GAME_PACKET_TYPE_GAME_INIT: break;
-            case GAME_PACKET_TYPE_GAME_START: client_game_lobby_start (packet); break;
+	if (packet->header) {
+		switch (packet->header->request_type) {
+			case GAME_PACKET_TYPE_GAME_INIT: break;
+			case GAME_PACKET_TYPE_GAME_START: client_game_lobby_start (packet); break;
 
-            case GAME_PACKET_TYPE_LOBBY_CREATE: client_game_lobby_create (packet); break;
-            case GAME_PACKET_TYPE_LOBBY_JOIN: client_game_lobby_join (packet); break;
-            case GAME_PACKET_TYPE_LOBBY_LEAVE: client_game_lobby_leave (packet); break;
-            case GAME_PACKET_TYPE_LOBBY_UPDATE: break;
-            case GAME_PACKET_TYPE_LOBBY_DESTROY: break;
+			case GAME_PACKET_TYPE_LOBBY_CREATE: client_game_lobby_create (packet); break;
+			case GAME_PACKET_TYPE_LOBBY_JOIN: client_game_lobby_join (packet); break;
+			case GAME_PACKET_TYPE_LOBBY_LEAVE: client_game_lobby_leave (packet); break;
+			case GAME_PACKET_TYPE_LOBBY_UPDATE: break;
+			case GAME_PACKET_TYPE_LOBBY_DESTROY: break;
 
-            default:
-                client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_CLIENT,
-                    "Got a game packet of unknown type!");
-                break;
-        }
-    }
+			default:
+				client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_CLIENT,
+					"Got a game packet of unknown type!");
+				break;
+		}
+	}
 
 }
