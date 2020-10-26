@@ -110,8 +110,10 @@ static void client_game_lobby_create (Packet *packet) {
 
         else {
             // TODO: trigger error, bad packet
-            client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, 
-                "client_game_lobby_create () - packets to small to get a lobby!");
+            client_log (
+                LOG_TYPE_ERROR, LOG_TYPE_NONE, 
+                "client_game_lobby_create () - packets to small to get a lobby!"
+            );
         }
     }
 
@@ -136,8 +138,10 @@ static void client_game_lobby_join (Packet *packet) {
 
         else {
             // TODO: trigger error, bad packet
-            client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, 
-                "client_game_lobby_join () - packets to small to get a lobby!");
+            client_log (
+                LOG_TYPE_ERROR, LOG_TYPE_NONE, 
+                "client_game_lobby_join () - packets to small to get a lobby!"
+            );
         }
     }
 
@@ -181,8 +185,10 @@ void client_game_packet_handler (Packet *packet) {
             case GAME_PACKET_TYPE_LOBBY_DESTROY: break;
 
             default:
-                client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_CLIENT,
-                    "Got a game packet of unknown type!");
+                client_log (
+                    LOG_TYPE_WARNING, LOG_TYPE_CLIENT,
+                    "Got a game packet of unknown type!"
+                );
                 break;
         }
     }
