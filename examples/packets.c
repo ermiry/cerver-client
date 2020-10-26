@@ -285,7 +285,7 @@ static unsigned int app_msg_send_generate_split (const char *message) {
 			packet->data = malloc (data_size);
 			packet->data_size = data_size;
 			
-			char *end = packet->data;
+			char *end = (char *) packet->data;
 			AppData *app_data = (AppData *) end;
 			memset (app_data, 0, sizeof (AppData));
 			time (&app_data->timestamp);
@@ -330,7 +330,7 @@ static unsigned int app_msg_send_generate_pieces (void) {
 
 		packet->header->request_type = MULTI_MSG;
 
-		void **messages = calloc (n_messages, sizeof (AppData));
+		void **messages = (void **) calloc (n_messages, sizeof (AppData));
 		size_t *sizes = (size_t *) calloc (n_messages, sizeof (size_t));
 		if (messages && sizes) {
 			for (u32 i = 0; i < n_messages; i++) {
