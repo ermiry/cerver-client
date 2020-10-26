@@ -113,7 +113,7 @@ CLIENT_EXPORT void client_log_set_local_time (bool value);
 
 // creates and prints a message of custom types
 // based on the first type, the message can be printed with colors to stdout
-CLIENT_PUBLIC void cerver_log (
+CLIENT_PUBLIC void client_log (
 	LogType first_type, LogType second_type,
 	const char *format, ...
 );

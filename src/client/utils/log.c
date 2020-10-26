@@ -442,7 +442,7 @@ static void client_log_internal (
 
 // creates and prints a message of custom types
 // based on the first type, the message can be printed with colors to stdout
-void cerver_log (
+void client_log (
 	LogType first_type, LogType second_type,
 	const char *format, ...
 ) {
@@ -577,9 +577,9 @@ void client_log_init (void) {
 
 			logfile = fopen (filename, "w+");
 			if (logfile) {
-				fprintf (logfile, "\nCerver Version: %s\n", CLIENT_VERSION_NAME);
-				fprintf (logfile, "Release Date & time: %s - %s\n", CLIENT_VERSION_DATE, CLIENT_VERSION_TIME);
-				fprintf (logfile, "Author: %s\n\n", CLIENT_VERSION_AUTHOR);
+				printf ("\n\nCerver Client Version: %s\n", CLIENT_VERSION_NAME);
+				printf ("Release Date & time: %s - %s\n", CLIENT_VERSION_DATE, CLIENT_VERSION_TIME);
+				printf ("Author: %s\n\n", CLIENT_VERSION_AUTHOR);
 			}
 
 			else {
