@@ -133,7 +133,7 @@ static int test_msg_send (void) {
 
             char *end = (char *) packet->packet;
             PacketHeader *header = (PacketHeader *) end;
-            header->packet_type = APP_PACKET;
+            header->packet_type = PACKET_TYPE_APP;
             header->packet_size = packet_len;
 
             header->handler_id = handler_id;
@@ -179,7 +179,7 @@ static int request_message (void) {
 
             char *end = (char *) packet->packet;
             PacketHeader *header = (PacketHeader *) end;
-            header->packet_type = APP_PACKET;
+            header->packet_type = PACKET_TYPE_APP;
             header->packet_size = packet_len;
 
             header->handler_id = handler_id;

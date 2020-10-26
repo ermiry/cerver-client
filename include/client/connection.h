@@ -14,10 +14,10 @@
 #include "client/packets.h"
 
 // used for connection with exponential backoff (secs)
-#define DEFAULT_CONNECTION_MAX_SLEEP                60 
+#define DEFAULT_CONNECTION_MAX_SLEEP                60
 #define DEFAULT_CONNECTION_PROTOCOL                 PROTOCOL_TCP
 
-#define DEFAULT_CONNECTION_UPDATE_SLEEP             200000
+#define DEFAULT_CONNECTION_TIMEOUT					2
 
 struct _Cerver;
 struct _Client;
@@ -26,16 +26,16 @@ struct _PacketsPerType;
 struct _SockReceive;
 
 struct _ConnectionStats {
-    
-    time_t connection_threshold_time;       // every time we want to reset the connection's stats
-    u64 n_receives_done;                    // total amount of actual calls to recv ()
-    u64 total_bytes_received;               // total amount of bytes received from this connection
-    u64 total_bytes_sent;                   // total amount of bytes that have been sent to the connection
-    u64 n_packets_received;                 // total number of packets received from this connection (packet header + data)
-    u64 n_packets_sent;                     // total number of packets sent to this connection
 
-    struct _PacketsPerType *received_packets;
-    struct _PacketsPerType *sent_packets;
+	time_t connection_threshold_time;       // every time we want to reset the connection's stats
+	u64 n_receives_done;                    // total amount of actual calls to recv ()
+	u64 total_bytes_received;               // total amount of bytes received from this connection
+	u64 total_bytes_sent;                   // total amount of bytes that have been sent to the connection
+	u64 n_packets_received;                 // total number of packets received from this connection (packet header + data)
+	u64 n_packets_sent;                     // total number of packets sent to this connection
+
+	struct _PacketsPerType *received_packets;
+	struct _PacketsPerType *sent_packets;
 
 };
 
@@ -43,51 +43,52 @@ typedef struct _ConnectionStats ConnectionStats;
 
 struct _Connection {
 
-    String *name;
+	String *name;
 
-    // i32 sock_fd;
-    Socket *socket;
-    u16 port; 
-    Protocol protocol;
-    bool use_ipv6;  
+	// i32 sock_fd;
+	Socket *socket;
+	u16 port;
+	Protocol protocol;
+	bool use_ipv6;
 
-    String *ip;                         // cerver's ip
-    struct sockaddr_storage address;    // cerver's address
+	String *ip;                         // cerver's ip
+	struct sockaddr_storage address;    // cerver's address
 
-    time_t connected_timestamp;         // when the connection started
+	time_t connected_timestamp;         // when the connection started
 
-    u32 max_sleep;
-    bool connected;                     // is the socket connected?
+	u32 max_sleep;
+	bool connected;                     // is the socket connected?
 
-    // info about the cerver we are connected to
-    struct _Cerver *cerver;
+	// info about the cerver we are connected to
+	struct _Cerver *cerver;
 
-    u32 receive_packet_buffer_size;         // 01/01/2020 - read packets into a buffer of this size in client_receive ()
-    struct _SockReceive *sock_receive;      // 01/01/2020 - used for inter-cerver communications
+	u32 receive_packet_buffer_size;         // 01/01/2020 - read packets into a buffer of this size in client_receive ()
+	struct _SockReceive *sock_receive;      // 01/01/2020 - used for inter-cerver communications
 
-    pthread_t update_thread_id;
-    u32 update_sleep;
+	pthread_t update_thread_id;
+	u32 update_timeout;
 
-    // 10/06/2020 - used for direct requests to cerver
-    bool full_packet;
+	// 10/06/2020 - used for direct requests to cerver
+	bool full_packet;
 
-    // 01/01/2020 - a place to safely store the request response, like when using client_connection_request_to_cerver ()
-    void *received_data;                    
-    size_t received_data_size;
-    Action received_data_delete;
+	// 01/01/2020 - a place to safely store the request response, like when using client_connection_request_to_cerver ()
+	void *received_data;
+	size_t received_data_size;
+	Action received_data_delete;
 
-    bool receive_packets;                   // set if the connection will receive packets or not (default true)
-    Action custom_receive;                  // custom receive method to handle incomming packets in the connection
-    void *custom_receive_args;              // arguments to be passed to the custom receive method
+	bool receive_packets;                   		// set if the connection will receive packets or not (default true)
+	Action custom_receive;                 		 	// custom receive method to handle incomming packets in the connection
+	void *custom_receive_args;              		// arguments to be passed to the custom receive method
+	void (*custom_receive_args_delete)(void *);		// method to delete the arguments when the connection gets deleted
 
-    bool authenticated;                     // the connection has been authenticated to the cerver
-    void *auth_data;                        // maybe auth credentials
-    size_t auth_data_size;
-    Action delete_auth_data;                // destroys the auth data when the connection ends
-    bool admin_auth;                        // attempt to connect as an admin
-    struct _Packet *auth_packet;
+	bool authenticated;                     // the connection has been authenticated to the cerver
+	void *auth_data;                        // maybe auth credentials
+	size_t auth_data_size;
+	Action delete_auth_data;                // destroys the auth data when the connection ends
+	bool admin_auth;                        // attempt to connect as an admin
+	struct _Packet *auth_packet;
 
-    ConnectionStats *stats;
+	ConnectionStats *stats;
 
 };
 
@@ -115,9 +116,10 @@ CLIENT_PUBLIC void connection_set_max_sleep (Connection *connection, u32 max_sle
 // by default the value RECEIVE_PACKET_BUFFER_SIZE is used
 CLIENT_PUBLIC void connection_set_receive_buffer_size (Connection *connection, u32 size);
 
-// sets the waiting time (sleep) in micro secs between each call to recv () in connection_update () thread
-// the dault value is 200000 (DEFAULT_CONNECTION_UPDATE_SLEEP)
-CLIENT_PUBLIC void connection_set_update_sleep (Connection *connection, u32 sleep);
+// sets the timeout (in secs) the connection's socket will have
+// this refers to the time the socket will block waiting for new data to araive
+// note that this only has effect in connection_update ()
+CLIENT_EXPORT void connection_set_update_timeout (Connection *connection, u32 timeout);
 
 // sets the connection received data
 // 01/01/2020 - a place to safely store the request response, like when using client_connection_request_to_cerver ()
@@ -125,14 +127,21 @@ CLIENT_PUBLIC void connection_set_received_data (Connection *connection, void *d
 
 // sets a custom receive method to handle incomming packets in the connection
 // a reference to the client and connection will be passed to the action as ClientConnection structure
-CLIENT_PUBLIC void connection_set_custom_receive (Connection *connection, Action custom_receive, void *args);
+// alongside the arguments passed to this method
+CLIENT_PUBLIC void connection_set_custom_receive (
+	Connection *connection,
+	Action custom_receive,
+	void *args, void (*args_delete)(void *)
+);
 
-// sets the connection auth data to send whenever the cerver requires authentication 
+// sets the connection auth data to send whenever the cerver requires authentication
 // and a method to destroy it once the connection has ended,
 // if delete_auth_data is NULL, the auth data won't be deleted
-CLIENT_PUBLIC void connection_set_auth_data (Connection *connection, 
-    void *auth_data, size_t auth_data_size, Action delete_auth_data,
-    bool admin_auth);
+CLIENT_PUBLIC void connection_set_auth_data (
+	Connection *connection,
+	void *auth_data, size_t auth_data_size, Action delete_auth_data,
+	bool admin_auth
+);
 
 // removes the connection auth data using the connection's delete_auth_data method
 // if not such method, the data won't be deleted
@@ -154,9 +163,9 @@ CLIENT_PUBLIC int connection_start (Connection *connection);
 
 typedef struct ConnectionCustomReceiveData {
 
-    struct _Client *client;
-    struct _Connection *connection;
-    void *args;
+	struct _Client *client;
+	struct _Connection *connection;
+	void *args;
 
 } ConnectionCustomReceiveData;
 

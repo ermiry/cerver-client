@@ -9,31 +9,36 @@
 #include "client/collections/dlist.h"
 
 #include "client/config.h"
-#include "client/network.h"
-#include "client/events.h"
-#include "client/errors.h"
 #include "client/connection.h"
+#include "client/errors.h"
+#include "client/events.h"
+#include "client/network.h"
 #include "client/packets.h"
+
+#define CLIENT_FILES_MAX_PATHS           32
 
 struct _Client;
 struct _Connection;
 struct _Packet;
 struct _PacketsPerType;
+struct _FileHeader;
+
+#pragma region stats
 
 struct _ClientStats {
 
-    time_t threshold_time;                  // every time we want to reset the client's stats
+	time_t threshold_time;                  // every time we want to reset the client's stats
 
-    u64 n_receives_done;                    // n calls to recv ()
+	u64 n_receives_done;                    // n calls to recv ()
 
-    u64 total_bytes_received;               // total amount of bytes received from this client
-    u64 total_bytes_sent;                   // total amount of bytes that have been sent to the client (all of its connections)
+	u64 total_bytes_received;               // total amount of bytes received from this client
+	u64 total_bytes_sent;                   // total amount of bytes that have been sent to the client (all of its connections)
 
-    u64 n_packets_received;                 // total number of packets received from this client (packet header + data)
-    u64 n_packets_sent;                     // total number of packets sent to this client (all connections)
+	u64 n_packets_received;                 // total number of packets received from this client (packet header + data)
+	u64 n_packets_sent;                     // total number of packets sent to this client (all connections)
 
-    struct _PacketsPerType *received_packets;
-    struct _PacketsPerType *sent_packets;
+	struct _PacketsPerType *received_packets;
+	struct _PacketsPerType *sent_packets;
 
 };
 
@@ -41,30 +46,74 @@ typedef struct _ClientStats ClientStats;
 
 CLIENT_PUBLIC void client_stats_print (struct _Client *client);
 
+struct _ClientFileStats {
+
+	u64 n_files_requests;				// n requests to get a file
+	u64 n_success_files_requests;		// fulfilled requests
+	u64 n_bad_files_requests;			// bad requests
+	u64 n_files_sent;					// n files sent
+	u64 n_bad_files_sent;				// n files that failed to send
+	u64 n_bytes_sent;					// total bytes sent
+
+	u64 n_files_upload_requests;		// n requests to upload a file
+	u64 n_success_files_uploaded;		// n files received
+	u64 n_bad_files_upload_requests;	// bad requests to upload files
+	u64 n_bad_files_received;			// files that failed to be received
+	u64 n_bytes_received;				// total bytes received
+
+};
+
+typedef struct _ClientFileStats ClientFileStats;
+
+CLIENT_PUBLIC void client_file_stats_print (struct _Client *client);
+
+#pragma endregion
+
 struct _Client {
 
-    String *name;
+	String *name;
 
-    DoubleList *connections;
+	DoubleList *connections;
 
-    bool running;                   // any connection is active
+	bool running;                   // any connection is active
 
-    DoubleList *registered_events;
-    DoubleList *registered_errors;
+	ClientEvent *events[CLIENT_MAX_EVENTS];
+	ClientError *errors[CLIENT_MAX_ERRORS];
 
-    // custom packet handlers
-    Action app_packet_handler;
-    Action app_error_packet_handler;
-    Action custom_packet_handler;
+	// custom packet handlers
+	Action app_packet_handler;
+	Action app_error_packet_handler;
+	Action custom_packet_handler;
 
-    bool check_packets;              // enable / disbale packet checking
+	bool check_packets;              // enable / disbale packet checking
 
-    time_t time_started;
-    u64 uptime;
+	time_t time_started;
+	u64 uptime;
 
-    String *session_id;
+	String *session_id;
 
-    ClientStats *stats;
+	// files
+	unsigned int n_paths;
+	String *paths[CLIENT_FILES_MAX_PATHS];
+
+	// default path where received files will be placed
+	String *uploads_path;
+
+	u8 (*file_upload_handler) (
+		struct _Client *, struct _Connection *,
+		struct _FileHeader *,
+		const char *file_data, size_t file_data_len,
+		char **saved_filename
+	);
+
+	void (*file_upload_cb) (
+		struct _Client *, struct _Connection *,
+		const char *saved_filename
+	);
+
+	ClientFileStats *file_stats;
+
+	ClientStats *stats;
 
 };
 
@@ -76,7 +125,10 @@ typedef struct _Client Client;
 CLIENT_EXPORT void client_set_name (Client *client, const char *name);
 
 // sets a cutom app packet hanlder and a custom app error packet handler
-CLIENT_EXPORT void client_set_app_handlers (Client *client, Action app_handler, Action app_error_handler);
+CLIENT_EXPORT void client_set_app_handlers (
+	Client *client, 
+	Action app_handler, Action app_error_handler
+);
 
 // sets a custom packet handler
 CLIENT_EXPORT void client_set_custom_handler (Client *client, Action custom_handler);
@@ -95,9 +147,6 @@ CLIENT_PUBLIC u8 client_set_session_id (Client *client, const char *session_id);
 // creates a new client, whcih may be used to create connections
 CLIENT_EXPORT Client *client_create (void);
 
-// stops any activae connection and destroys a client
-CLIENT_EXPORT u8 client_teardown (Client *client);
-
 #pragma endregion
 
 #pragma region connections
@@ -111,8 +160,10 @@ CLIENT_PUBLIC struct _Connection *client_connection_get_by_name (Client *client,
 // creates a new connection and registers it to the specified client
 // the connection should be ready to be started
 // returns a new connection on success, NULL on error
-CLIENT_EXPORT struct _Connection *client_connection_create (Client *client,
-    const char *ip_address, u16 port, Protocol protocol, bool use_ipv6);
+CLIENT_EXPORT struct _Connection *client_connection_create (
+	Client *client,
+	const char *ip_address, u16 port, Protocol protocol, bool use_ipv6
+);
 
 // registers an existing connection to a client
 // retuns 0 on success, 1 on error
@@ -137,7 +188,7 @@ CLIENT_EXPORT void client_connection_get_next_packet (Client *client, struct _Co
 CLIENT_EXPORT unsigned int client_connect (Client *client, struct _Connection *connection);
 
 // connects a client to the host with the specified values in the connection
-// performs a first read to get the cerver info packet 
+// performs a first read to get the cerver info packet
 // this is a blocking method, and works exactly the same as if only calling client_connect ()
 // returns 0 when the connection has been established, 1 on error or failed to connect
 CLIENT_EXPORT unsigned int client_connect_to_cerver (Client *client, Connection *connection);
@@ -149,6 +200,27 @@ CLIENT_EXPORT unsigned int client_connect_to_cerver (Client *client, Connection 
 // user must manually handle how he wants to receive / handle incomming packets and also send requests
 // returns 0 on success connection thread creation, 1 on error
 CLIENT_EXPORT unsigned int client_connect_async (Client *client, struct _Connection *connection);
+
+#pragma endregion
+
+#pragma region start
+
+// after a client connection successfully connects to a server,
+// it will start the connection's update thread to enable the connection to
+// receive & handle packets in a dedicated thread
+// returns 0 on success, 1 on error
+CLIENT_EXPORT int client_connection_start (Client *client, struct _Connection *connection);
+
+// connects a client connection to a server
+// and after a success connection, it will start the connection (create update thread for receiving messages)
+// this is a blocking method, returns only after a success or failed connection
+// returns 0 on success, 1 on error
+CLIENT_EXPORT int client_connect_and_start (Client *client, struct _Connection *connection);
+
+// connects a client connection to a server in a new thread to avoid blocking the calling thread,
+// and after a success connection, it will start the connection (create update thread for receiving messages)
+// returns 0 on success creating connection thread, 1 on error
+CLIENT_EXPORT u8 client_connect_and_start_async (Client *client, struct _Connection *connection);
 
 #pragma endregion
 
@@ -173,24 +245,84 @@ CLIENT_EXPORT unsigned int client_request_to_cerver_async (Client *client, struc
 
 #pragma endregion
 
-#pragma region start
+#pragma region files
 
-// after a client connection successfully connects to a server, 
-// it will start the connection's update thread to enable the connection to
-// receive & handle packets in a dedicated thread
+// adds a new file path to take into account when getting a request for a file
 // returns 0 on success, 1 on error
-CLIENT_EXPORT int client_connection_start (Client *client, struct _Connection *connection);
+CLIENT_EXPORT u8 client_files_add_path (Client *client, const char *path);
 
-// connects a client connection to a server
-// and after a success connection, it will start the connection (create update thread for receiving messages)
-// this is a blocking method, returns only after a success or failed connection
-// returns 0 on success, 1 on error
-CLIENT_EXPORT int client_connect_and_start (Client *client, struct _Connection *connection);
+// sets the default uploads path to be used when receiving a file
+CLIENT_EXPORT void client_files_set_uploads_path (Client *client, const char *uploads_path);
 
-// connects a client connection to a server in a new thread to avoid blocking the calling thread,
-// and after a success connection, it will start the connection (create update thread for receiving messages)
-// returns 0 on success creating connection thread, 1 on error
-CLIENT_EXPORT u8 client_connect_and_start_async (Client *client, struct _Connection *connection);
+// sets a custom method to be used to handle a file upload (receive)
+// in this method, file contents must be consumed from the sock fd
+// and return 0 on success and 1 on error
+CLIENT_EXPORT void client_files_set_file_upload_handler (
+	Client *client,
+	u8 (*file_upload_handler) (
+		struct _Client *, struct _Connection *,
+		struct _FileHeader *,
+		const char *file_data, size_t file_data_len,
+		char **saved_filename
+	)
+);
+
+// sets a callback to be executed after a file has been successfully received
+CLIENT_EXPORT void client_files_set_file_upload_cb (
+	Client *client,
+	void (*file_upload_cb) (
+		struct _Client *, struct _Connection *,
+		const char *saved_filename
+	)
+);
+
+// search for the requested file in the configured paths
+// returns the actual filename (path + directory) where it was found, NULL on error
+CLIENT_PUBLIC String *client_files_search_file (Client *client, const char *filename);
+
+// requests a file from the cerver
+// the client's uploads_path should have been configured before calling this method
+// returns 0 on success sending request, 1 on failed to send request
+CLIENT_EXPORT u8 client_file_get (Client *client, Connection *connection, const char *filename);
+
+// sends a file to the cerver
+// returns 0 on success sending request, 1 on failed to send request
+CLIENT_EXPORT u8 client_file_send (Client *client, Connection *connection, const char *filename);
+
+#pragma endregion
+
+#pragma region game
+
+// requets the cerver to create a new lobby
+// game type: is the type of game to create the lobby, the configuration must exist in the cerver
+// returns 0 on success sending request, 1 on failed to send request
+CLIENT_EXPORT u8 client_game_create_lobby (
+	Client *owner, struct _Connection *connection,
+	const char *game_type
+);
+
+// requests the cerver to join a lobby
+// game type: is the type of game to create the lobby, the configuration must exist in the cerver
+// lobby id: if you know the id of the lobby to join to, if not, the cerver witll search one for you
+// returns 0 on success sending request, 1 on failed to send request
+CLIENT_EXPORT u8 client_game_join_lobby (
+	Client *client, struct _Connection *connection,
+	const char *game_type, const char *lobby_id
+);
+
+// request the cerver to leave the currect lobby
+// returns 0 on success sending request, 1 on failed to send request
+CLIENT_EXPORT u8 client_game_leave_lobby (
+	Client *client, struct _Connection *connection,
+	const char *lobby_id
+);
+
+// requests the cerver to start the game in the current lobby
+// returns 0 on success sending request, 1 on failed to send request
+CLIENT_EXPORT u8 client_game_start_lobby (
+	Client *client, struct _Connection *connection,
+	const char *lobby_id
+);
 
 #pragma endregion
 
@@ -207,62 +339,25 @@ CLIENT_EXPORT int client_disconnect (Client *client);
 // the client got disconnected from the cerver, so correctly clear our data
 CLIENT_EXPORT void client_got_disconnected (Client *client);
 
+// stops any activae connection and destroys a client
+CLIENT_EXPORT u8 client_teardown (Client *client);
+
 #pragma endregion
 
-/*** Files ***/
-
-// requests a file from the server
-// filename: the name of the file to request
-// file complete event will be sent when the file is finished
-// appropiate error is set on bad filename or error in file transmission
-// returns 0 on success sending request, 1 on failed to send request
-CLIENT_EXPORT u8 client_file_get (Client *client, struct _Connection *connection, const char *filename);
-
-// sends a file to the server
-// filename: the name of the file the cerver will receive
-// file is opened using the filename
-// when file is completly sent, event is set appropriately
-// appropiate error is sent on cerver error or on bad file transmission
-// returns 0 on success sending request, 1 on failed to send request
-CLIENT_EXPORT u8 client_file_send (Client *client, struct _Connection *connection, const char *filename);
-
-/*** Game ***/
-
-// requets the cerver to create a new lobby
-// game type: is the type of game to create the lobby, the configuration must exist in the cerver
-// returns 0 on success sending request, 1 on failed to send request
-CLIENT_EXPORT u8 client_game_create_lobby (Client *owner, struct _Connection *connection,
-    const char *game_type);
-
-// requests the cerver to join a lobby
-// game type: is the type of game to create the lobby, the configuration must exist in the cerver
-// lobby id: if you know the id of the lobby to join to, if not, the cerver witll search one for you
-// returns 0 on success sending request, 1 on failed to send request
-CLIENT_EXPORT u8 client_game_join_lobby (Client *client, struct _Connection *connection,
-    const char *game_type, const char *lobby_id);
-
-// request the cerver to leave the currect lobby
-// returns 0 on success sending request, 1 on failed to send request
-CLIENT_EXPORT u8 client_game_leave_lobby (Client *client, struct _Connection *connection,
-    const char *lobby_id);
-
-// requests the cerver to start the game in the current lobby
-// returns 0 on success sending request, 1 on failed to send request
-CLIENT_EXPORT u8 client_game_start_lobby (Client *client, struct _Connection *connection,
-    const char *lobby_id);
-
-/*** aux ***/
+#pragma region aux
 
 typedef struct ClientConnection {
 
-    Client *client;
-    struct _Connection *connection;
+	Client *client;
+	struct _Connection *connection;
 
 } ClientConnection;
 
 CLIENT_PRIVATE ClientConnection *client_connection_aux_new (Client *client, struct _Connection *connection);
 
 CLIENT_PRIVATE void client_connection_aux_delete (void *ptr);
+
+#pragma endregion
 
 #pragma region serialization
 
@@ -271,7 +366,7 @@ CLIENT_PRIVATE void client_connection_aux_delete (void *ptr);
 // serialized session id - token
 struct _SToken {
 
-    char token[TOKEN_SIZE];
+	char token[TOKEN_SIZE];
 
 };
 

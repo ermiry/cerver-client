@@ -5,9 +5,16 @@
 
 #include <sys/stat.h>
 
+#include "client/types/types.h"
+
 #include "client/collections/dlist.h"
 
 #include "client/config.h"
+
+struct _Client;
+struct _Connection;
+
+#pragma region main
 
 // check if a directory already exists, and if not, creates it
 // returns 0 on success, 1 on error
@@ -23,9 +30,14 @@ CLIENT_EXPORT DoubleList *files_get_from_dir (const char *dir);
 // reads eachone of the file's lines into a newly created string and returns them inside a dlist
 CLIENT_EXPORT DoubleList *file_get_lines (const char *filename);
 
+// returns true if the filename exists
+CLIENT_EXPORT bool file_exists (const char *filename);
+
 // opens a file and returns it as a FILE
-CLIENT_EXPORT FILE *file_open_as_file (const char *filename, 
-    const char *modes, struct stat *filestatus);
+CLIENT_EXPORT FILE *file_open_as_file (
+	const char *filename,
+	const char *modes, struct stat *filestatus
+);
 
 // opens and reads a file into a buffer
 // sets file size to the amount of bytes read
@@ -35,8 +47,50 @@ CLIENT_EXPORT char *file_read (const char *filename, size_t *file_size);
 // returns fd on success, -1 on error
 CLIENT_EXPORT int file_open_as_fd (const char *filename, struct stat *filestatus, int flags);
 
-// sends a file to the sock fd
+#pragma endregion
+
+#pragma region send
+
+#define DEFAULT_FILENAME_LEN			1024
+
+struct _FileHeader {
+
+	char filename[DEFAULT_FILENAME_LEN];
+	size_t len;
+
+};
+
+typedef struct _FileHeader FileHeader;
+
+// opens a file and sends its contents
+// first the FileHeader in a regular packet, then the file contents between sockets
+// returns the number of bytes sent, or -1 on error
+CLIENT_PUBLIC ssize_t file_send (
+	Client *client, Connection *connection,
+	const char *filename
+);
+
+// sends the file contents of the file referenced by a fd
+// first the FileHeader in a regular packet, then the file contents between sockets
+// returns the number of bytes sent, or -1 on error
+CLIENT_PUBLIC ssize_t file_send_by_fd (
+	Client *client, Connection *connection,
+	int file_fd, const char *actual_filename, size_t filelen
+);
+
+#pragma endregion
+
+#pragma region receive
+
+// receives an incomming file in the socket and splice its information to a local file
 // returns 0 on success, 1 on error
-CLIENT_EXPORT int file_send (const char *filename, int sock_fd);
+CLIENT_PUBLIC u8 file_receive (
+	struct _Client *client, struct _Connection *connection,
+	FileHeader *file_header,
+	const char *file_data, size_t file_data_len,
+	char **saved_filename
+);
+
+#pragma endregion
 
 #endif

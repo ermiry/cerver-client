@@ -4,8 +4,16 @@ SLIB		:= libclient.so
 PTHREAD 	:= -l pthread
 MATH		:= -lm
 
-# print additional information
-DEFINES = -D CERVER_DEBUG -D CLIENT_DEBUG -D PACKETS_DEBUG -D AUTH_DEBUG
+DEFINES		:= -D _GNU_SOURCE
+
+DEVELOPMENT := -g \
+				-D CERVER_DEBUG 		\
+				-D CLIENT_DEBUG 		\
+				-D CONNECTION_DEBUG 	\
+				-D HANDLER_DEBUG 		\
+				-D PACKETS_DEBUG 		\
+				-D AUTH_DEBUG 			\
+				-D FILES_DEBUG
 
 CC          := gcc
 
@@ -15,20 +23,26 @@ BUILDDIR    := objs
 TARGETDIR   := bin
 
 EXAMDIR		:= examples
+EXABUILD	:= $(EXAMDIR)/objs
+EXATARGET	:= $(EXAMDIR)/bin
 
 SRCEXT      := c
 DEPEXT      := d
 OBJEXT      := o
 
-CFLAGS      := -g $(DEFINES) -Wall -Wno-unknown-pragmas -fPIC
+CFLAGS      := $(DEVELOPMENT) $(DEFINES) -Wall -Wno-unknown-pragmas -fPIC
 LIB         := $(PTHREAD) $(MATH)
 INC         := -I $(INCDIR) -I /usr/local/include
 INCDEP      := -I $(INCDIR)
+
+EXAFLAGS	:= -g $(DEFINES) -Wall -Wno-unknown-pragmas
+EXALIBS		:= -L ./bin -l client
 
 SOURCES     := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS     := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
 EXAMPLES	:= $(shell find $(EXAMDIR) -type f -name *.$(SRCEXT))
+EXOBJS		:= $(patsubst $(EXAMDIR)/%,$(EXABUILD)/%,$(EXAMPLES:.$(SRCEXT)=.$(OBJEXT)))
 
 # all: directories $(TARGET)
 all: directories $(SLIB)
@@ -51,7 +65,8 @@ directories:
 clean:
 	@$(RM) -rf $(BUILDDIR)
 	@$(RM) -rf $(TARGETDIR)
-	@$(RM) -rf ./examples/bin
+	@$(RM) -rf $(EXABUILD)
+	@$(RM) -rf $(EXATARGET)
 
 # pull in dependency info for *existing* .o files
 -include $(OBJECTS:.$(OBJEXT)=.$(DEPEXT))
@@ -63,7 +78,7 @@ clean:
 $(SLIB): $(OBJECTS)
 	$(CC) $^ $(LIB) -shared -o $(TARGETDIR)/$(SLIB)
 
-# compile
+# compile sources
 $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INC) $(LIB) -c -o $@ $<
@@ -73,15 +88,27 @@ $(BUILDDIR)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@sed -e 's/.*://' -e 's/\\$$//' < $(BUILDDIR)/$*.$(DEPEXT).tmp | fmt -1 | sed -e 's/^ *//' -e 's/$$/:/' >> $(BUILDDIR)/$*.$(DEPEXT)
 	@rm -f $(BUILDDIR)/$*.$(DEPEXT).tmp
 
-examples: $(EXAMPLES)
+examples: $(EXOBJS)
 	@mkdir -p ./examples/bin
-	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/test.c -o ./examples/bin/test -l client
-	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/handlers.c -o ./examples/bin/handlers -l client
-	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/multi.c -o ./examples/bin/multi -l client
-	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/requests.c -o ./examples/bin/requests -l client
-	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/auth.c -o ./examples/bin/auth -l client
-	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/sessions.c -o ./examples/bin/sessions -l client
-	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/admin.c -o ./examples/bin/admin -l client
-	$(CC) -g -Wall -Wno-unknown-pragmas -I ./include -L ./bin ./examples/packets.c -o ./examples/bin/packets -l client
+	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/test.o -o ./$(EXATARGET)/test -l client
+	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/handlers.o -o ./$(EXATARGET)/handlers -l client
+	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/multi.o -o ./$(EXATARGET)/multi -l client
+	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/packets.o -o ./$(EXATARGET)/packets -l client
+	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/requests.o -o ./$(EXATARGET)/requests -l client
+	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/files.o -o ./$(EXATARGET)/files -l client
+	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/auth.o -o ./$(EXATARGET)/auth -l client
+	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/sessions.o -o ./$(EXATARGET)/sessions -l client
+	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/admin.o -o ./$(EXATARGET)/admin -l client
+	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/balancer.o -o ./$(EXATARGET)/balancer -l client
+
+# compile examples
+$(EXABUILD)/%.$(OBJEXT): $(EXAMDIR)/%.$(SRCEXT)
+	@mkdir -p $(dir $@)
+	$(CC) $(EXAFLAGS) $(INC) $(EXALIBS) -c -o $@ $<
+	@$(CC) $(EXAFLAGS) $(INCDEP) -MM $(EXAMDIR)/$*.$(SRCEXT) > $(EXABUILD)/$*.$(DEPEXT)
+	@cp -f $(EXABUILD)/$*.$(DEPEXT) $(EXABUILD)/$*.$(DEPEXT).tmp
+	@sed -e 's|.*:|$(EXABUILD)/$*.$(OBJEXT):|' < $(EXABUILD)/$*.$(DEPEXT).tmp > $(EXABUILD)/$*.$(DEPEXT)
+	@sed -e 's/.*://' -e 's/\\$$//' < $(EXABUILD)/$*.$(DEPEXT).tmp | fmt -1 | sed -e 's/^ *//' -e 's/$$/:/' >> $(EXABUILD)/$*.$(DEPEXT)
+	@rm -f $(EXABUILD)/$*.$(DEPEXT).tmp
 
 .PHONY: all clean examples

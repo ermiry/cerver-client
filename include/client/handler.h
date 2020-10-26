@@ -14,14 +14,14 @@ struct _Packet;
 
 struct _SockReceive {
 
-    struct _Packet *spare_packet;
-    size_t missing_packet;
+	struct _Packet *spare_packet;
+	size_t missing_packet;
 
-    void *header;
-    char *header_end;
-    // unsigned int curr_header_pos;
-    unsigned int remaining_header;
-    bool complete_header;
+	void *header;
+	char *header_end;
+	// unsigned int curr_header_pos;
+	unsigned int remaining_header;
+	bool complete_header;
 
 };
 
