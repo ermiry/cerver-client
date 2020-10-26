@@ -73,7 +73,7 @@ static void client_client_packet_handler (Packet *packet) {
 				break;
 
 			default:
-				client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown client packet type.");
+				client_log (LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown client packet type.");
 				break;
 		}
 	}
@@ -108,12 +108,10 @@ static void client_auth_success_handler (Packet *packet) {
 		if (packet->connection->cerver->uses_sessions) {
 			if (!auth_strip_token (packet, packet->client)) {
 				#ifdef AUTH_DEBUG
-				char *status = c_string_create ("Got client's <%s> session id <%s>",
-					packet->client->name->str, packet->client->session_id->str);
-				if (status) {
-					client_log_debug (status);
-					free (status);
-				}
+				client_log_debug (
+					"Got client's <%s> session id <%s>",
+					packet->client->name->str, packet->client->session_id->str
+				);
 				#endif
 			}
 		}
@@ -141,7 +139,7 @@ static void client_auth_packet_handler (Packet *packet) {
 				break;
 
 			default:
-				client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown auth packet type.");
+				client_log (LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown auth packet type.");
 				break;
 		}
 	}
@@ -170,11 +168,9 @@ static inline void client_request_get_file_handle_sent (
 		} break;
 
 		case 0: {
-			char *status = c_string_create ("Failed to send file %s", actual_filename->str);
-			if (status) {
-				client_log_error (status);
-				free (status);
-			}
+			client_log_error (
+				"Failed to send file %s", actual_filename->str
+			);
 
 			client->file_stats->n_bad_files_sent += 1;
 		} break;
@@ -184,11 +180,7 @@ static inline void client_request_get_file_handle_sent (
 			client->file_stats->n_files_sent += 1;
 			client->file_stats->n_bytes_sent += sent;
 
-			char *status = c_string_create ("Sent file %s", actual_filename->str);
-			if (status) {
-				client_log_success (status);
-				free (status);
-			}
+			client_log_success ("Sent file %s", actual_filename->str);
 		} break;
 	}
 
@@ -211,11 +203,10 @@ static void client_request_get_file (Packet *packet) {
 		String *actual_filename = client_files_search_file (client, file_header->filename);
 		if (actual_filename) {
 			#ifdef HANDLER_DEBUG
-			char *status = c_string_create ("client_request_get_file () - Sending %s...\n", actual_filename->str);
-			if (status) {
-				client_log_debug (status);
-				free (status);
-			}
+			client_log_debug (
+				"client_request_get_file () - Sending %s...\n",
+				actual_filename->str
+			);
 			#endif
 
 			// if found, pipe the file contents to the client's socket fd
@@ -346,15 +337,10 @@ static void client_request_send_file (Packet *packet) {
 		);
 
 		#ifdef HANDLER_DEBUG
-		char *status = c_string_create (
+		client_log_warning (
 			"Client %s is unable to handle REQUEST_PACKET_TYPE_SEND_FILE packets!",
 			packet->client->name->str
 		);
-
-		if (status) {
-			client_log_warning (status);
-			free (status);
-		}
 		#endif
 	}
 
@@ -372,7 +358,7 @@ static void client_request_packet_handler (Packet *packet) {
 			case REQUEST_PACKET_TYPE_SEND_FILE: client_request_send_file (packet); break;
 
 			default:
-				client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown request from cerver");
+				client_log (LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown request from cerver");
 				break;
 		}
 	}
@@ -473,14 +459,14 @@ static void client_packet_handler (void *data) {
 				case PACKET_TYPE_TEST:
 					packet->client->stats->received_packets->n_test_packets += 1;
 					packet->connection->stats->received_packets->n_test_packets += 1;
-					client_log_msg (stdout, LOG_TYPE_TEST, LOG_TYPE_NONE, "Got a test packet from cerver.");
+					client_log (LOG_TYPE_TEST, LOG_TYPE_NONE, "Got a test packet from cerver.");
 					break;
 
 				default:
 					packet->client->stats->received_packets->n_bad_packets += 1;
 					packet->connection->stats->received_packets->n_bad_packets += 1;
 					#ifdef HANDLER_DEBUG
-					client_log_msg (stdout, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got a packet of unknown type.");
+					client_log (LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got a packet of unknown type.");
 					#endif
 					break;
 			}
@@ -667,17 +653,18 @@ static void client_receive_handle_buffer (
 					}
 
 					else {
-						client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_CLIENT,
-							"Failed to create a new packet in cerver_handle_receive_buffer ()");
+						client_log (
+							LOG_TYPE_ERROR, LOG_TYPE_CLIENT,
+							"Failed to create a new packet in cerver_handle_receive_buffer ()"
+						);
 					}
 				}
 
 				else {
-					char *status = c_string_create ("Got a packet of invalid size: %ld", packet_size);
-					if (status) {
-						client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_CLIENT, status);
-						free (status);
-					}
+					client_log (
+						LOG_TYPE_WARNING, LOG_TYPE_CLIENT,
+						"Got a packet of invalid size: %ld", packet_size
+					);
 
 					break;
 				}
@@ -749,11 +736,10 @@ void client_receive (Client *client, Connection *connection) {
 				case -1: {
 					if (errno != EWOULDBLOCK) {
 						#ifdef HANDLER_DEBUG
-						char *s = c_string_create ("client_receive () - rc < 0 - sock fd: %d", connection->socket->sock_fd);
-						if (s) {
-							client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, s);
-							free (s);
-						}
+						client_log (
+							LOG_TYPE_ERROR, LOG_TYPE_NONE,
+							"client_receive () - rc < 0 - sock fd: %d", connection->socket->sock_fd
+						);
 						perror ("Error");
 						#endif
 
@@ -765,12 +751,11 @@ void client_receive (Client *client, Connection *connection) {
 					// man recv -> steam socket perfomed an orderly shutdown
 					// but in dgram it might mean something?
 					#ifdef HANDLER_DEBUG
-					char *s = c_string_create ("client_receive () - rc == 0 - sock fd: %d",
-						connection->socket->sock_fd);
-					if (s) {
-						client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, s);
-						free (s);
-					}
+					client_log (
+						LOG_TYPE_DEBUG, LOG_TYPE_NONE,
+						"client_receive () - rc == 0 - sock fd: %d",
+						connection->socket->sock_fd
+					);
 					// perror ("Error");
 					#endif
 
@@ -781,7 +766,7 @@ void client_receive (Client *client, Connection *connection) {
 					// char *s = c_string_create ("Connection %s rc: %ld",
 					//     connection->name->str, rc);
 					// if (s) {
-					//     client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_CLIENT, s);
+					//     client_log (stdout, LOG_TYPE_DEBUG, LOG_TYPE_CLIENT, s);
 					//     free (s);
 					// }
 
@@ -806,8 +791,10 @@ void client_receive (Client *client, Connection *connection) {
 
 		else {
 			#ifdef HANDLER_DEBUG
-			client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_CLIENT,
-				"Failed to allocate a new packet buffer!");
+			client_log (
+				LOG_TYPE_ERROR, LOG_TYPE_CLIENT,
+				"Failed to allocate a new packet buffer!"
+			);
 			#endif
 		}
 	}

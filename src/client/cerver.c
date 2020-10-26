@@ -257,14 +257,14 @@ static u8 cerver_check_info (Cerver *cerver, Client *client, Connection *connect
 
 		if (cerver->use_ipv6) {
 			#ifdef CLIENT_DEBUG
-			client_log (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Cerver is configured to use ipv6");
+			client_log (LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Cerver is configured to use ipv6");
 			#endif
 		}
 
 		#ifdef CLIENT_DEBUG
 		switch (cerver->type) {
 			case CERVER_TYPE_CUSTOM:
-				client_log (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Cerver type: CUSTOM");
+				client_log (LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Cerver type: CUSTOM");
 				break;
 
 			case CERVER_TYPE_GAME:
