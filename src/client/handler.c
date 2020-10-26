@@ -204,7 +204,7 @@ static void client_request_get_file (Packet *packet) {
 
 	// get the necessary information to fulfil the request
 	if (packet->data_size >= sizeof (FileHeader)) {
-		char *end = packet->data;
+		char *end = (char *) packet->data;
 		FileHeader *file_header = (FileHeader *) end;
 
 		// search for the requested file in the configured paths
@@ -272,13 +272,26 @@ static void client_request_send_file_actual (Packet *packet) {
 
 	// get the necessary information to fulfil the request
 	if (packet->data_size >= sizeof (FileHeader)) {
-		char *end = packet->data;
+		char *end = (char *) packet->data;
 		FileHeader *file_header = (FileHeader *) end;
+
+		const char *file_data = NULL;
+		size_t file_data_len = 0;
+		// printf (
+		// 	"\n\npacket->data_size %ld > sizeof (FileHeader) %ld\n\n",
+		// 	packet->data_size, sizeof (FileHeader)
+		// );
+		if (packet->data_size > sizeof (FileHeader)) {
+			file_data = end += sizeof (FileHeader);
+			file_data_len = packet->data_size - sizeof (FileHeader);
+		}
 
 		char *saved_filename = NULL;
 		if (!client->file_upload_handler (
 			client, packet->connection,
-			file_header, &saved_filename
+			file_header,
+			file_data, file_data_len,
+			&saved_filename
 		)) {
 			client->file_stats->n_success_files_uploaded += 1;
 
@@ -527,8 +540,10 @@ static void client_receive_handle_spare_packet (Client *client, Connection *conn
 }
 
 // splits the entry buffer in packets of the correct size
-static void client_receive_handle_buffer (Client *client, Connection *connection,
-	char *buffer, size_t buffer_size) {
+static void client_receive_handle_buffer (
+	Client *client, Connection *connection,
+	char *buffer, size_t buffer_size
+) {
 
 	if (buffer && (buffer_size > 0)) {
 		char *end = buffer;
@@ -626,7 +641,14 @@ static void client_receive_handle_buffer (Client *client, Connection *connection
 						}
 
 						else {
-							to_copy_size = packet_real_size;
+							if ((header->packet_type == PACKET_TYPE_REQUEST) && (header->request_type == REQUEST_PACKET_TYPE_SEND_FILE)) {
+								to_copy_size = remaining_buffer_size - sizeof (PacketHeader);
+							}
+
+							else {
+								to_copy_size = packet_real_size;
+							}
+
 							packet_delete (sock_receive->spare_packet);
 							sock_receive->spare_packet = NULL;
 						}
