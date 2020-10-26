@@ -65,12 +65,10 @@ static void client_event_connection_close (void *client_event_data_ptr) {
 		ClientEventData *client_event_data = (ClientEventData *) client_event_data_ptr;
 
 		if (client_event_data->connection) {
-			char *status = c_string_create ("client_event_connection_close () - connection <%s> has been closed!",
-				client_event_data->connection->name->str);
-			if (status) {
-				client_log_warning (status);
-				free (status);
-			}
+			client_log_warning (
+				"client_event_connection_close () - connection <%s> has been closed!",
+				client_event_data->connection->name->str
+			);
 		}
 
 		client_event_data_delete (client_event_data);
@@ -84,12 +82,10 @@ static void client_error_failed_auth (void *client_error_data_ptr) {
 		ClientErrorData *client_error_data = (ClientErrorData *) client_error_data_ptr;
 
 		if (client_error_data->connection) {
-			char *status = c_string_create ("client_error_failed_auth () - connection <%s> failed to authenticate!",
-				client_error_data->connection->name->str);
-			if (status) {
-				client_log_error (status);
-				free (status);
-			}
+			client_log_error (
+				"client_error_failed_auth () - connection <%s> failed to authenticate!",
+				client_error_data->connection->name->str
+			);
 		}
 
 		client_error_data_delete (client_error_data);
@@ -103,12 +99,10 @@ static void client_event_success_auth (void *client_event_data_ptr) {
 		ClientEventData *client_event_data = (ClientEventData *) client_event_data_ptr;
 
 		if (client_event_data->connection) {
-			char *status = c_string_create ("client_event_success_auth () - connection <%s> has been authenticated!",
-				client_event_data->connection->name->str);
-			if (status) {
-				client_log_success (status);
-				free (status);
-			}
+			client_log_success (
+				"client_event_success_auth () - connection <%s> has been authenticated!",
+				client_event_data->connection->name->str
+			);
 		}
 
 		if (!connection_with_session_id) {
@@ -168,22 +162,22 @@ static int cerver_connect (void) {
 			);
 
 			if (!client_connect_and_start (client, connection)) {
-				client_log_msg (stdout, LOG_TYPE_SUCCESS, LOG_TYPE_NONE, "Connected to cerver!");
+				client_log (LOG_TYPE_SUCCESS, LOG_TYPE_NONE, "Connected to cerver!");
 				retval = 0;
 			}
 
 			else {
-				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to connect to cerver!");
+				client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to connect to cerver!");
 			}
 		}
 
 		else {
-			client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create connection!");
+			client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create connection!");
 		}
 	}
 
 	else {
-		client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create client!");
+		client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create client!");
 	}
 
 	return retval;
@@ -214,12 +208,12 @@ static u8 cerver_connect_with_session_id (void) {
 			);
 
 			if (!client_connect_and_start (client, connection_with_session_id)) {
-				client_log_msg (stdout, LOG_TYPE_SUCCESS, LOG_TYPE_NONE, "Connected to cerver!");
+				client_log (LOG_TYPE_SUCCESS, LOG_TYPE_NONE, "Connected to cerver!");
 				retval = 0;
 			}
 
 			else {
-				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to connect to cerver!");
+				client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to connect to cerver!");
 			}
 		}
 
@@ -229,7 +223,7 @@ static u8 cerver_connect_with_session_id (void) {
 	}
 
 	else {
-		client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create connection!");
+		client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create connection!");
 	}
 
 	return retval;
@@ -257,10 +251,10 @@ static void app_handler (void *packet_ptr) {
 		Packet *packet = (Packet *) packet_ptr;
 
 		switch (packet->header->request_type) {
-			case TEST_MSG: client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Got a test message from cerver!"); break;
+			case TEST_MSG: client_log (LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Got a test message from cerver!"); break;
 
 			default: 
-				client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown app request.");
+				client_log (LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown app request.");
 				break;
 		}
 	}
@@ -281,7 +275,7 @@ static int test_msg_send (Connection *con) {
 			packet_set_network_values (packet, client, con);
 			size_t sent = 0;
 			if (packet_send (packet, 0, &sent, false)) {
-				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to send test to cerver");
+				client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to send test to cerver");
 			}
 
 			else {
