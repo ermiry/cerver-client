@@ -13,8 +13,16 @@
 #include "client/utils/utils.h"
 #include "client/utils/log.h"
 
+typedef enum AppRequest {
+
+	TEST_MSG		= 0
+
+} AppRequest;
+
 static Client *client = NULL;
 static Connection *connection = NULL;
+
+static void app_handler (void *packet_ptr);
 
 #pragma region events
 
@@ -62,6 +70,8 @@ static int cerver_connect (const char *ip, unsigned int port) {
 
 		client = client_create ();
 		if (client) {
+			client_set_app_handlers (client, app_handler, NULL);
+
 			client_event_register (
 				client, 
 				CLIENT_EVENT_CONNECTION_CLOSE, 
@@ -117,7 +127,54 @@ static void cerver_disconnect (void) {
 
 #pragma endregion
 
+#pragma region handler
+
+static void app_handler (void *packet_ptr) {
+
+	if (packet_ptr) {
+        Packet *packet = (Packet *) packet_ptr;
+        if (packet) {
+            switch (packet->header->request_type) {
+                case TEST_MSG: client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Got a test message from cerver!"); break;
+
+                default: 
+                    client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown app request.");
+                    break;
+            }
+        }
+    }
+
+}
+
+#pragma endregion
+
 #pragma region request
+
+static int test_msg_send (void) {
+
+    int retval = 1;
+
+    if ((client->running) && (connection->connected)) {
+        Packet *packet = packet_generate_request (PACKET_TYPE_APP, TEST_MSG, NULL, 0);
+        if (packet) {
+            packet_set_network_values (packet, client, connection);
+            size_t sent = 0;
+            if (packet_send (packet, 0, &sent, false)) {
+                client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to send test to cerver");
+            }
+
+            else {
+                printf ("Test sent to cerver: %ld\n", sent);
+                retval = 0;
+            } 
+
+            packet_delete (packet);
+        }
+    }
+
+    return retval;
+
+}
 
 static void request_file (const char *filename) {
 
@@ -163,6 +220,8 @@ static void end (int dummy) {
 
 static void start (const char *action, const char *filename) {
 
+	srand (time (NULL));
+
 	// register to the quit signal
 	signal (SIGINT, end);
 
@@ -178,6 +237,10 @@ static void start (const char *action, const char *filename) {
 
 		sleep (2);
 
+		for (unsigned int i = 0; i < 10; i++) {
+			test_msg_send ();
+		}
+
 		if (!strcmp ("get", action)) request_file (filename);
 		else if (!strcmp ("send", action)) send_file (filename);
 		else {
@@ -188,6 +251,10 @@ static void start (const char *action, const char *filename) {
 				printf ("\n");
 				free (status);
 			}
+		}
+
+		for (unsigned int i = 0; i < 10; i++) {
+			test_msg_send ();
 		}
 
 		sleep (5);
