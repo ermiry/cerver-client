@@ -782,7 +782,9 @@ void client_files_set_file_upload_handler (
 	Client *client,
 	u8 (*file_upload_handler) (
 		struct _Client *, struct _Connection *,
-		struct _FileHeader *, char **saved_filename
+		struct _FileHeader *,
+		const char *file_data, size_t file_data_len,
+		char **saved_filename
 	)
 ) {
 
@@ -880,14 +882,14 @@ u8 client_file_send (Client *client, Connection *connection, const char *filenam
 	u8 retval = 1;
 
 	if (client && connection && filename) {
-		char *last = strrchr (filename, '/');
+		char *last = strrchr ((char *) filename, '/');
 		const char *actual_filename = last ? last + 1 : NULL;
 		if (actual_filename) {
 			// try to open the file
 			struct stat filestatus = { 0 };
 			int file_fd = file_open_as_fd (filename, &filestatus, O_RDONLY);
 			if (file_fd >= 0) {
-				size_t sent = file_send_by_fd (
+				ssize_t sent = file_send_by_fd (
 					client, connection,
 					file_fd, actual_filename, filestatus.st_size
 				);
@@ -895,7 +897,7 @@ u8 client_file_send (Client *client, Connection *connection, const char *filenam
 				client->file_stats->n_files_sent += 1;
 				client->file_stats->n_bytes_sent += sent;
 
-				if (sent == filestatus.st_size) retval = 0;
+				if (sent == (ssize_t) filestatus.st_size) retval = 0;
 
 				close (file_fd);
 			}
