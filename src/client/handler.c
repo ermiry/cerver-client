@@ -204,7 +204,7 @@ static void client_request_get_file (Packet *packet) {
 
 	// get the necessary information to fulfil the request
 	if (packet->data_size >= sizeof (FileHeader)) {
-		char *end = packet->data;
+		char *end = (char *) packet->data;
 		FileHeader *file_header = (FileHeader *) end;
 
 		// search for the requested file in the configured paths
@@ -272,7 +272,7 @@ static void client_request_send_file_actual (Packet *packet) {
 
 	// get the necessary information to fulfil the request
 	if (packet->data_size >= sizeof (FileHeader)) {
-		char *end = packet->data;
+		char *end = (char *) packet->data;
 		FileHeader *file_header = (FileHeader *) end;
 
 		const char *file_data = NULL;
