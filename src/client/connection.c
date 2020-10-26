@@ -60,6 +60,8 @@ static ConnectionStats *connection_stats_create (void) {
 
 #pragma endregion
 
+#pragma region main
+
 Connection *connection_new (void) {
 
 	Connection *connection = (Connection *) malloc (sizeof (Connection));
@@ -313,6 +315,10 @@ u8 connection_generate_auth_packet (Connection *connection) {
 
 }
 
+#pragma endregion
+
+#pragma region start
+
 // sets up the new connection values
 static u8 connection_init (Connection *connection) {
 
@@ -415,6 +421,10 @@ int connection_start (Connection *connection) {
 
 }
 
+#pragma endregion
+
+#pragma region update
+
 static ConnectionCustomReceiveData *connection_custom_receive_data_new (Client *client, Connection *connection, void *args) {
 
 	ConnectionCustomReceiveData *custom_data = (ConnectionCustomReceiveData *) malloc (sizeof (ConnectionCustomReceiveData));
@@ -475,6 +485,10 @@ void connection_update (void *ptr) {
 
 }
 
+#pragma endregion
+
+#pragma region end
+
 // closes a connection directly
 void connection_close (Connection *connection) {
 
@@ -487,3 +501,5 @@ void connection_close (Connection *connection) {
 	}
 
 }
+
+#pragma endregion
