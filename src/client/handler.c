@@ -73,7 +73,7 @@ static void client_client_packet_handler (Packet *packet) {
 				break;
 
 			default:
-				client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown client packet type.");
+				client_log (LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown client packet type.");
 				break;
 		}
 	}
@@ -108,12 +108,10 @@ static void client_auth_success_handler (Packet *packet) {
 		if (packet->connection->cerver->uses_sessions) {
 			if (!auth_strip_token (packet, packet->client)) {
 				#ifdef AUTH_DEBUG
-				char *status = c_string_create ("Got client's <%s> session id <%s>",
-					packet->client->name->str, packet->client->session_id->str);
-				if (status) {
-					client_log_debug (status);
-					free (status);
-				}
+				client_log_debug (
+					"Got client's <%s> session id <%s>",
+					packet->client->name->str, packet->client->session_id->str
+				);
 				#endif
 			}
 		}
@@ -141,7 +139,7 @@ static void client_auth_packet_handler (Packet *packet) {
 				break;
 
 			default:
-				client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown auth packet type.");
+				client_log (LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown auth packet type.");
 				break;
 		}
 	}
@@ -170,11 +168,9 @@ static inline void client_request_get_file_handle_sent (
 		} break;
 
 		case 0: {
-			char *status = c_string_create ("Failed to send file %s", actual_filename->str);
-			if (status) {
-				client_log_error (status);
-				free (status);
-			}
+			client_log_error (
+				"Failed to send file %s", actual_filename->str
+			);
 
 			client->file_stats->n_bad_files_sent += 1;
 		} break;
@@ -184,11 +180,7 @@ static inline void client_request_get_file_handle_sent (
 			client->file_stats->n_files_sent += 1;
 			client->file_stats->n_bytes_sent += sent;
 
-			char *status = c_string_create ("Sent file %s", actual_filename->str);
-			if (status) {
-				client_log_success (status);
-				free (status);
-			}
+			client_log_success ("Sent file %s", actual_filename->str);
 		} break;
 	}
 
@@ -211,11 +203,10 @@ static void client_request_get_file (Packet *packet) {
 		String *actual_filename = client_files_search_file (client, file_header->filename);
 		if (actual_filename) {
 			#ifdef HANDLER_DEBUG
-			char *status = c_string_create ("client_request_get_file () - Sending %s...\n", actual_filename->str);
-			if (status) {
-				client_log_debug (status);
-				free (status);
-			}
+			client_log_debug (
+				"client_request_get_file () - Sending %s...\n",
+				actual_filename->str
+			);
 			#endif
 
 			// if found, pipe the file contents to the client's socket fd
@@ -346,15 +337,10 @@ static void client_request_send_file (Packet *packet) {
 		);
 
 		#ifdef HANDLER_DEBUG
-		char *status = c_string_create (
+		client_log_warning (
 			"Client %s is unable to handle REQUEST_PACKET_TYPE_SEND_FILE packets!",
 			packet->client->name->str
 		);
-
-		if (status) {
-			client_log_warning (status);
-			free (status);
-		}
 		#endif
 	}
 
@@ -372,7 +358,7 @@ static void client_request_packet_handler (Packet *packet) {
 			case REQUEST_PACKET_TYPE_SEND_FILE: client_request_send_file (packet); break;
 
 			default:
-				client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown request from cerver");
+				client_log (LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown request from cerver");
 				break;
 		}
 	}
@@ -473,14 +459,14 @@ static void client_packet_handler (void *data) {
 				case PACKET_TYPE_TEST:
 					packet->client->stats->received_packets->n_test_packets += 1;
 					packet->connection->stats->received_packets->n_test_packets += 1;
-					client_log_msg (stdout, LOG_TYPE_TEST, LOG_TYPE_NONE, "Got a test packet from cerver.");
+					client_log (LOG_TYPE_TEST, LOG_TYPE_NONE, "Got a test packet from cerver.");
 					break;
 
 				default:
 					packet->client->stats->received_packets->n_bad_packets += 1;
 					packet->connection->stats->received_packets->n_bad_packets += 1;
 					#ifdef HANDLER_DEBUG
-					client_log_msg (stdout, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got a packet of unknown type.");
+					client_log (LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got a packet of unknown type.");
 					#endif
 					break;
 			}
@@ -545,179 +531,178 @@ static void client_receive_handle_buffer (
 	char *buffer, size_t buffer_size
 ) {
 
-	if (buffer && (buffer_size > 0)) {
-		char *end = buffer;
-		size_t buffer_pos = 0;
+	char *end = buffer;
+	size_t buffer_pos = 0;
 
-		SockReceive *sock_receive = connection->sock_receive;
+	SockReceive *sock_receive = connection->sock_receive;
 
-		client_receive_handle_spare_packet (
-			client, connection,
-			buffer_size, &end,
-			&buffer_pos
-		);
+	client_receive_handle_spare_packet (
+		client, connection,
+		buffer_size, &end,
+		&buffer_pos
+	);
 
-		PacketHeader *header = NULL;
-		size_t packet_size = 0;
-		// char *packet_data = NULL;
+	PacketHeader *header = NULL;
+	size_t packet_size = 0;
+	// char *packet_data = NULL;
 
-		size_t remaining_buffer_size = 0;
-		size_t packet_real_size = 0;
-		size_t to_copy_size = 0;
+	size_t remaining_buffer_size = 0;
+	size_t packet_real_size = 0;
+	size_t to_copy_size = 0;
 
-		bool spare_header = false;
+	bool spare_header = false;
 
-		while (buffer_pos < buffer_size) {
-			// printf ("buffer size: %ld\n", buffer_size);
-			remaining_buffer_size = buffer_size - buffer_pos;
-			// printf ("remaining_buffer_size: %ld\n", remaining_buffer_size);
-			// printf ("header size: %ld\n", sizeof (PacketHeader));
+	while (buffer_pos < buffer_size) {
+		// printf ("buffer size: %ld\n", buffer_size);
+		remaining_buffer_size = buffer_size - buffer_pos;
+		// printf ("remaining_buffer_size: %ld\n", remaining_buffer_size);
+		// printf ("header size: %ld\n", sizeof (PacketHeader));
 
-			if (sock_receive->complete_header) {
-				// printf ("\nsock_receive->complete_header\n");
-				packet_header_copy (&header, (PacketHeader *) sock_receive->header);
-				// header = ((PacketHeader *) sock_receive->header);
-				// packet_header_print (header);
+		if (sock_receive->complete_header) {
+			// printf ("\nsock_receive->complete_header\n");
+			packet_header_copy (&header, (PacketHeader *) sock_receive->header);
+			// header = ((PacketHeader *) sock_receive->header);
+			// packet_header_print (header);
 
-				end += sock_receive->remaining_header;
-				buffer_pos += sock_receive->remaining_header;
-				// printf ("buffer pos after copy to header: %ld\n", buffer_pos);
+			end += sock_receive->remaining_header;
+			buffer_pos += sock_receive->remaining_header;
+			// printf ("buffer pos after copy to header: %ld\n", buffer_pos);
 
-				// reset sock header values
-				free (sock_receive->header);
-				sock_receive->header = NULL;
-				sock_receive->header_end = NULL;
-				// sock_receive->curr_header_pos = 0;
-				// sock_receive->remaining_header = 0;
-				sock_receive->complete_header = false;
+			// reset sock header values
+			free (sock_receive->header);
+			sock_receive->header = NULL;
+			sock_receive->header_end = NULL;
+			// sock_receive->curr_header_pos = 0;
+			// sock_receive->remaining_header = 0;
+			sock_receive->complete_header = false;
 
-				spare_header = true;
-			}
+			spare_header = true;
+		}
 
-			else if (remaining_buffer_size >= sizeof (PacketHeader)) {
-				// printf ("\nremaining_buffer_size >= sizeof (PacketHeader)\n");
-				header = (PacketHeader *) end;
-				end += sizeof (PacketHeader);
-				buffer_pos += sizeof (PacketHeader);
+		else if (remaining_buffer_size >= sizeof (PacketHeader)) {
+			// printf ("\nremaining_buffer_size >= sizeof (PacketHeader)\n");
+			header = (PacketHeader *) end;
+			end += sizeof (PacketHeader);
+			buffer_pos += sizeof (PacketHeader);
 
-				// packet_header_print (header);
+			// packet_header_print (header);
 
-				spare_header = false;
-			}
+			spare_header = false;
+		}
 
-			if (header) {
-				// check the packet size
-				packet_size = header->packet_size;
-				if ((packet_size > 0) /* && (packet_size < 65536) */) {
-					// printf ("packet_size: %ld\n", packet_size);
-					// end += sizeof (PacketHeader);
-					// buffer_pos += sizeof (PacketHeader);
-					// printf ("first buffer pos: %ld\n", buffer_pos);
+		if (header) {
+			// check the packet size
+			packet_size = header->packet_size;
+			if ((packet_size > 0) /* && (packet_size < 65536) */) {
+				// printf ("packet_size: %ld\n", packet_size);
+				// end += sizeof (PacketHeader);
+				// buffer_pos += sizeof (PacketHeader);
+				// printf ("first buffer pos: %ld\n", buffer_pos);
 
-					Packet *packet = packet_new ();
-					if (packet) {
-						packet_header_copy (&packet->header, header);
-						packet->packet_size = header->packet_size;
-						// packet->cerver = cerver;
-						// packet->lobby = lobby;
-						packet->client = client;
-						packet->connection = connection;
+				Packet *packet = packet_new ();
+				if (packet) {
+					packet_header_copy (&packet->header, header);
+					packet->packet_size = header->packet_size;
+					// packet->cerver = cerver;
+					// packet->lobby = lobby;
+					packet->client = client;
+					packet->connection = connection;
 
-						if (spare_header) {
-							free (header);
-							header = NULL;
-						}
+					if (spare_header) {
+						free (header);
+						header = NULL;
+					}
 
-						// check for packet size and only copy what is in the current buffer
-						packet_real_size = packet->header->packet_size - sizeof (PacketHeader);
-						to_copy_size = 0;
-						if ((remaining_buffer_size - sizeof (PacketHeader)) < packet_real_size) {
-							sock_receive->spare_packet = packet;
+					// check for packet size and only copy what is in the current buffer
+					packet_real_size = packet->header->packet_size - sizeof (PacketHeader);
+					to_copy_size = 0;
+					if ((remaining_buffer_size - sizeof (PacketHeader)) < packet_real_size) {
+						sock_receive->spare_packet = packet;
 
-							if (spare_header) to_copy_size = buffer_size - sock_receive->remaining_header;
-							else to_copy_size = remaining_buffer_size - sizeof (PacketHeader);
+						if (spare_header) to_copy_size = buffer_size - sock_receive->remaining_header;
+						else to_copy_size = remaining_buffer_size - sizeof (PacketHeader);
 
-							sock_receive->missing_packet = packet_real_size - to_copy_size;
-						}
-
-						else {
-							if ((header->packet_type == PACKET_TYPE_REQUEST) && (header->request_type == REQUEST_PACKET_TYPE_SEND_FILE)) {
-								to_copy_size = remaining_buffer_size - sizeof (PacketHeader);
-							}
-
-							else {
-								to_copy_size = packet_real_size;
-							}
-
-							packet_delete (sock_receive->spare_packet);
-							sock_receive->spare_packet = NULL;
-						}
-
-						// printf ("to copy size: %ld\n", to_copy_size);
-						packet_set_data (packet, (void *) end, to_copy_size);
-
-						end += to_copy_size;
-						buffer_pos += to_copy_size;
-						// printf ("second buffer pos: %ld\n", buffer_pos);
-
-						if (!sock_receive->spare_packet) {
-							connection->full_packet = true;
-							client_packet_handler (packet);
-						}
+						sock_receive->missing_packet = packet_real_size - to_copy_size;
 					}
 
 					else {
-						client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_CLIENT,
-							"Failed to create a new packet in cerver_handle_receive_buffer ()");
+						if ((header->packet_type == PACKET_TYPE_REQUEST) && (header->request_type == REQUEST_PACKET_TYPE_SEND_FILE)) {
+							to_copy_size = remaining_buffer_size - sizeof (PacketHeader);
+						}
+
+						else {
+							to_copy_size = packet_real_size;
+						}
+
+						packet_delete (sock_receive->spare_packet);
+						sock_receive->spare_packet = NULL;
+					}
+
+					// printf ("to copy size: %ld\n", to_copy_size);
+					packet_set_data (packet, (void *) end, to_copy_size);
+
+					end += to_copy_size;
+					buffer_pos += to_copy_size;
+					// printf ("second buffer pos: %ld\n", buffer_pos);
+
+					if (!sock_receive->spare_packet) {
+						connection->full_packet = true;
+						client_packet_handler (packet);
 					}
 				}
 
 				else {
-					char *status = c_string_create ("Got a packet of invalid size: %ld", packet_size);
-					if (status) {
-						client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_CLIENT, status);
-						free (status);
-					}
-
-					break;
+					client_log (
+						LOG_TYPE_ERROR, LOG_TYPE_CLIENT,
+						"Failed to create a new packet in cerver_handle_receive_buffer ()"
+					);
 				}
 			}
 
 			else {
-				if (sock_receive->spare_packet) {
-					// printf ("else sock_receive->spare_packet\n");
-					packet_append_data (sock_receive->spare_packet, (void *) end, remaining_buffer_size);
-				}
+				client_log (
+					LOG_TYPE_WARNING, LOG_TYPE_CLIENT,
+					"Got a packet of invalid size: %ld", packet_size
+				);
 
-				else {
-					// handle part of a new header
-					// #ifdef CERVER_DEBUG
-					// client_log_debug ("Handle part of a new header...");
-					// #endif
+				break;
+			}
+		}
 
-					// printf ("buffer size: %ld\n", buffer_size);
-					// printf ("buffer pos: %ld\n", buffer_pos);
-					// printf ("remaining_buffer_size: %ld\n", remaining_buffer_size);
-
-					// copy the piece of possible header that was cut of between recv ()
-					sock_receive->header = malloc (sizeof (PacketHeader));
-					memcpy (sock_receive->header, (void *) end, remaining_buffer_size);
-
-					sock_receive->header_end = (char *) sock_receive->header;
-					sock_receive->header_end += remaining_buffer_size;
-
-					// sock_receive->curr_header_pos = remaining_buffer_size;
-					sock_receive->remaining_header = sizeof (PacketHeader) - remaining_buffer_size;
-
-					// printf ("curr header pos: %d\n", sock_receive->curr_header_pos);
-					// printf ("remaining header: %d\n", sock_receive->remaining_header);
-
-					buffer_pos += remaining_buffer_size;
-				}
+		else {
+			if (sock_receive->spare_packet) {
+				// printf ("else sock_receive->spare_packet\n");
+				packet_append_data (sock_receive->spare_packet, (void *) end, remaining_buffer_size);
 			}
 
-			header = NULL;
+			else {
+				// handle part of a new header
+				// #ifdef CERVER_DEBUG
+				// client_log_debug ("Handle part of a new header...");
+				// #endif
+
+				// printf ("buffer size: %ld\n", buffer_size);
+				// printf ("buffer pos: %ld\n", buffer_pos);
+				// printf ("remaining_buffer_size: %ld\n", remaining_buffer_size);
+
+				// copy the piece of possible header that was cut of between recv ()
+				sock_receive->header = malloc (sizeof (PacketHeader));
+				memcpy (sock_receive->header, (void *) end, remaining_buffer_size);
+
+				sock_receive->header_end = (char *) sock_receive->header;
+				sock_receive->header_end += remaining_buffer_size;
+
+				// sock_receive->curr_header_pos = remaining_buffer_size;
+				sock_receive->remaining_header = sizeof (PacketHeader) - remaining_buffer_size;
+
+				// printf ("curr header pos: %d\n", sock_receive->curr_header_pos);
+				// printf ("remaining header: %d\n", sock_receive->remaining_header);
+
+				buffer_pos += remaining_buffer_size;
+			}
 		}
+
+		header = NULL;
 	}
 
 }
@@ -737,80 +722,118 @@ static void client_receive_handle_failed (Client *client, Connection *connection
 
 }
 
-// receives incoming data from the socket
-void client_receive (Client *client, Connection *connection) {
+// receive data from connection's socket
+// this method does not perform any checks and expects a valid buffer
+// to handle incomming data
+// returns 0 on success, 1 on error
+unsigned int client_receive_internal (
+	Client *client, Connection *connection,
+	char *buffer, const size_t buffer_size
+) {
+
+	unsigned int retval = 1;
+
+	ssize_t rc = recv (connection->socket->sock_fd, buffer, buffer_size, 0);
+	switch (rc) {
+		case -1: {
+			if (errno == EAGAIN) {
+				#ifdef CONNECTION_DEBUG
+				client_log (
+					LOG_TYPE_DEBUG, LOG_TYPE_CLIENT,
+					"client_receive_internal () - connection %s sock fd: %d timed out",
+					connection->name->str, connection->socket->sock_fd
+				);
+				#endif
+
+				retval = 0;
+			}
+
+			else {
+				#ifdef CONNECTION_DEBUG
+				client_log (
+					LOG_TYPE_ERROR, LOG_TYPE_CLIENT,
+					"client_receive_internal () - rc < 0 - connection %s sock fd: %d",
+					connection->name->str, connection->socket->sock_fd
+				);
+
+				perror ("Error ");
+				#endif
+
+				client_receive_handle_failed (client, connection);
+			}
+		} break;
+
+		case 0: {
+			#ifdef CONNECTION_DEBUG
+			client_log (
+				LOG_TYPE_DEBUG, LOG_TYPE_CLIENT,
+				"client_receive_internal () - rc == 0 - connection %s sock fd: %d",
+				connection->name->str, connection->socket->sock_fd
+			);
+
+			// perror ("Error ");
+			#endif
+
+			client_receive_handle_failed (client, connection);
+		} break;
+
+		default: {
+			// client_log (
+			// 	LOG_TYPE_DEBUG, LOG_TYPE_CLIENT,
+			// 	"Connection %s rc: %ld",
+			// 	connection->name->str, rc
+			// );
+
+			client->stats->n_receives_done += 1;
+			client->stats->total_bytes_received += rc;
+
+			connection->stats->n_receives_done += 1;
+			connection->stats->total_bytes_received += rc;
+
+			// handle the recived packet buffer -> split them in packets of the correct size
+			client_receive_handle_buffer (
+				client,
+				connection,
+				buffer,
+				rc
+			);
+
+			retval = 0;
+		} break;
+	}
+
+	return retval;
+
+}
+
+// allocates a new packet buffer to receive incoming data from the connection's socket
+// returns 0 on success handle, 1 if any error ocurred and must likely the connection was ended
+unsigned int client_receive (Client *client, Connection *connection) {
+
+	unsigned int retval = 1;
 
 	if (client && connection) {
 		char *packet_buffer = (char *) calloc (connection->receive_packet_buffer_size, sizeof (char));
 		if (packet_buffer) {
-			ssize_t rc = recv (connection->socket->sock_fd, packet_buffer, connection->receive_packet_buffer_size, 0);
-
-			switch (rc) {
-				case -1: {
-					if (errno != EWOULDBLOCK) {
-						#ifdef HANDLER_DEBUG
-						char *s = c_string_create ("client_receive () - rc < 0 - sock fd: %d", connection->socket->sock_fd);
-						if (s) {
-							client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, s);
-							free (s);
-						}
-						perror ("Error");
-						#endif
-
-						client_receive_handle_failed (client, connection);
-					}
-				} break;
-
-				case 0: {
-					// man recv -> steam socket perfomed an orderly shutdown
-					// but in dgram it might mean something?
-					#ifdef HANDLER_DEBUG
-					char *s = c_string_create ("client_receive () - rc == 0 - sock fd: %d",
-						connection->socket->sock_fd);
-					if (s) {
-						client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, s);
-						free (s);
-					}
-					// perror ("Error");
-					#endif
-
-					client_receive_handle_failed (client, connection);
-				} break;
-
-				default: {
-					// char *s = c_string_create ("Connection %s rc: %ld",
-					//     connection->name->str, rc);
-					// if (s) {
-					//     client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_CLIENT, s);
-					//     free (s);
-					// }
-
-					client->stats->n_receives_done += 1;
-					client->stats->total_bytes_received += rc;
-
-					connection->stats->n_receives_done += 1;
-					connection->stats->total_bytes_received += rc;
-
-					// handle the recived packet buffer -> split them in packets of the correct size
-					client_receive_handle_buffer (
-						client,
-						connection,
-						packet_buffer,
-						rc
-					);
-				} break;
-			}
+			retval = client_receive_internal (
+				client, connection,
+				packet_buffer, connection->receive_packet_buffer_size
+			);
 
 			free (packet_buffer);
 		}
 
 		else {
-			#ifdef HANDLER_DEBUG
-			client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_CLIENT,
-				"Failed to allocate a new packet buffer!");
-			#endif
+			// #ifdef CLIENT_DEBUG
+			client_log (
+				LOG_TYPE_ERROR, LOG_TYPE_CONNECTION,
+				"client_receive () - Failed to allocate a new packet buffer!"
+			);
+			// #endif
 		}
 	}
+
+	return retval;
 
 }
 

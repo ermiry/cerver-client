@@ -23,6 +23,18 @@ struct _Packet;
 struct _PacketsPerType;
 struct _FileHeader;
 
+#pragma region global
+
+// initializes global client values
+// should be called only once at the start of the program
+CLIENT_EXPORT void client_init (void);
+
+// correctly disposes global values
+// should be called only once at the very end of the program
+CLIENT_EXPORT void client_end (void);
+
+#pragma endregion
+
 #pragma region stats
 
 struct _ClientStats {
