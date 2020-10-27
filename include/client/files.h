@@ -66,7 +66,7 @@ typedef struct _FileHeader FileHeader;
 // first the FileHeader in a regular packet, then the file contents between sockets
 // returns the number of bytes sent, or -1 on error
 CLIENT_PUBLIC ssize_t file_send (
-	Client *client, Connection *connection,
+	struct _Client *client, struct _Connection *connection,
 	const char *filename
 );
 
@@ -74,7 +74,7 @@ CLIENT_PUBLIC ssize_t file_send (
 // first the FileHeader in a regular packet, then the file contents between sockets
 // returns the number of bytes sent, or -1 on error
 CLIENT_PUBLIC ssize_t file_send_by_fd (
-	Client *client, Connection *connection,
+	struct _Client *client, struct _Connection *connection,
 	int file_fd, const char *actual_filename, size_t filelen
 );
 
