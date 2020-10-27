@@ -99,22 +99,22 @@ static int cerver_connect (const char *ip, unsigned int port) {
 				connection_set_max_sleep (connection, 30);
 
 				if (!client_connect_and_start (client, connection)) {
-					client_log_msg (stdout, LOG_TYPE_SUCCESS, LOG_TYPE_NONE, "Connected to cerver!");
+					client_log (LOG_TYPE_SUCCESS, LOG_TYPE_NONE, "Connected to cerver!");
 					retval = 0;
 				}
 
 				else {
-					client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to connect to cerver!");
+					client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to connect to cerver!");
 				}
 			}
 
 			else {
-				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create connection!");
+				client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create connection!");
 			}
 		}
 
 		else {
-			client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create client!");
+			client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create client!");
 		}
 	}
 
@@ -142,10 +142,10 @@ static void app_handler (void *packet_ptr) {
 		Packet *packet = (Packet *) packet_ptr;
 		
 		switch (packet->header->request_type) {
-			case TEST_MSG: client_log_msg (stdout, LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Got a test message from cerver!"); break;
+			case TEST_MSG: client_log (LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Got a test message from cerver!"); break;
 
 			default: 
-				client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown app request.");
+				client_log (LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown app request.");
 				break;
 		}
 	}
@@ -167,7 +167,7 @@ static unsigned int send_packet (Packet *packet) {
 		packet_set_network_values (packet, client, connection);
 		size_t sent = 0;
 		if (packet_send (packet, 0, &sent, false)) {
-			client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to send packet!");
+			client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to send packet!");
 		}
 
 		else {
@@ -298,7 +298,7 @@ static unsigned int app_msg_send_generate_split (const char *message) {
 			packet_set_network_values (packet, client, connection);
 			size_t sent = 0;
 			if (packet_send_split (packet, 0, &sent)) {
-				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to send packet!");
+				client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to send packet!");
 			}
 
 			else {
@@ -373,7 +373,7 @@ static unsigned int app_msg_send_generate_pieces (void) {
 			packet_set_network_values (packet, client, connection);
 			size_t sent = 0;
 			if (packet_send_pieces (packet, messages, sizes, n_messages, 0, &sent)) {
-				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to send packet!");
+				client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to send packet!");
 			}
 
 			else {
@@ -408,6 +408,8 @@ static void end (int dummy) {
 	client_log_success ("Done!");
 	printf ("\n");
 
+	client_end ();
+
 	exit (0);
 
 }
@@ -416,6 +418,8 @@ int main (int argc, const char **argv) {
 
 	// register to the quit signal
 	signal (SIGINT, end);
+
+	client_init ();
 
 	cerver_client_version_print_full ();
 
@@ -457,6 +461,8 @@ int main (int argc, const char **argv) {
 	}
 
 	str_delete (message);
+
+	client_end ();
 
 	return 0;
 
