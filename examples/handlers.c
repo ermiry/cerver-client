@@ -47,22 +47,22 @@ static int cerver_connect (const char *ip, unsigned int port) {
                 connection_set_max_sleep (connection, 30);
 
                 if (!client_connect_and_start (client, connection)) {
-                    client_log_msg (stdout, LOG_TYPE_SUCCESS, LOG_TYPE_NONE, "Connected to cerver!");
+                    client_log (LOG_TYPE_SUCCESS, LOG_TYPE_NONE, "Connected to cerver!");
                     retval = 0;
                 }
 
                 else {
-                    client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to connect to cerver!");
+                    client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to connect to cerver!");
                 }
             }
 
             else {
-                client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create connection!");
+                client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create connection!");
             }
         }
 
         else {
-            client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create client!");
+            client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create client!");
         }
     }
 
@@ -92,7 +92,7 @@ static void my_app_handler (void *data) {
                 break;
 
             default: 
-                client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown PACKET_TYPE_APP request.");
+                client_log (LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown PACKET_TYPE_APP request.");
                 break;
         }
 	}
@@ -109,7 +109,7 @@ static void my_app_error_handler (void *data) {
                 break;
 
             default: 
-                client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown PACKET_TYPE_APP_ERROR request.");
+                client_log (LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown PACKET_TYPE_APP_ERROR request.");
                 break;
         }
 	}
@@ -126,7 +126,7 @@ static void my_custom_handler (void *data) {
                 break;
 
             default: 
-                client_log_msg (stderr, LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown PACKET_TYPE_CUSTOM request.");
+                client_log (LOG_TYPE_WARNING, LOG_TYPE_NONE, "Got an unknown PACKET_TYPE_CUSTOM request.");
                 break;
         }
 	}
@@ -147,7 +147,7 @@ static int test_app_msg_send (void) {
             packet_set_network_values (packet, client, connection);
             size_t sent = 0;
             if (packet_send (packet, 0, &sent, false)) {
-                client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to send test to cerver");
+                client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to send test to cerver");
             }
 
             else {
@@ -173,7 +173,7 @@ static int test_app_error_msg_send (void) {
             packet_set_network_values (packet, client, connection);
             size_t sent = 0;
             if (packet_send (packet, 0, &sent, false)) {
-                client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to send test to cerver");
+                client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to send test to cerver");
             }
 
             else {
@@ -199,7 +199,7 @@ static int test_custom_msg_send (void) {
             packet_set_network_values (packet, client, connection);
             size_t sent = 0;
             if (packet_send (packet, 0, &sent, false)) {
-                client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to send test to cerver");
+                client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to send test to cerver");
             }
 
             else {
@@ -227,6 +227,8 @@ static void end (int dummy) {
     client_log_success ("Done!");
     printf ("\n");
 
+    client_end ();
+
 	exit (0);
 
 }
@@ -235,6 +237,8 @@ int main (int argc, const char **argv) {
 
     // register to the quit signal
 	signal (SIGINT, end);
+
+    client_init ();
 
     cerver_client_version_print_full ();
 
@@ -252,6 +256,8 @@ int main (int argc, const char **argv) {
             sleep (1);
         }
     }
+
+    client_end ();
 
     return 0;
 
