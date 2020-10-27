@@ -724,80 +724,118 @@ static void client_receive_handle_failed (Client *client, Connection *connection
 
 }
 
-// receives incoming data from the socket
-void client_receive (Client *client, Connection *connection) {
+// receive data from connection's socket
+// this method does not perform any checks and expects a valid buffer
+// to handle incomming data
+// returns 0 on success, 1 on error
+unsigned int client_receive_internal (
+	Client *client, Connection *connection,
+	char *buffer, const size_t buffer_size
+) {
 
-	if (client && connection) {
-		char *packet_buffer = (char *) calloc (connection->receive_packet_buffer_size, sizeof (char));
-		if (packet_buffer) {
-			ssize_t rc = recv (connection->socket->sock_fd, packet_buffer, connection->receive_packet_buffer_size, 0);
+	unsigned int retval = 1;
 
-			switch (rc) {
-				case -1: {
-					if (errno != EWOULDBLOCK) {
-						#ifdef HANDLER_DEBUG
-						client_log (
-							LOG_TYPE_ERROR, LOG_TYPE_NONE,
-							"client_receive () - rc < 0 - sock fd: %d", connection->socket->sock_fd
-						);
-						perror ("Error");
-						#endif
+	ssize_t rc = recv (connection->socket->sock_fd, buffer, buffer_size, 0);
+	switch (rc) {
+		case -1: {
+			if (errno == EAGAIN) {
+				#ifdef CONNECTION_DEBUG
+				client_log (
+					LOG_TYPE_DEBUG, LOG_TYPE_CLIENT,
+					"client_receive_internal () - connection %s sock fd: %d timed out",
+					connection->name->str, connection->socket->sock_fd
+				);
+				#endif
 
-						client_receive_handle_failed (client, connection);
+				retval = 0;
+			}
+
+			else {
+				#ifdef CONNECTION_DEBUG
+				client_log (
+					LOG_TYPE_ERROR, LOG_TYPE_CLIENT,
+					"client_receive_internal () - rc < 0 - connection %s sock fd: %d",
+					connection->name->str, connection->socket->sock_fd
+				);
+
+				perror ("Error ");
+				#endif
+
+				client_receive_handle_failed (client, connection);
 					}
-				} break;
+		} break;
 
-				case 0: {
-					// man recv -> steam socket perfomed an orderly shutdown
-					// but in dgram it might mean something?
-					#ifdef HANDLER_DEBUG
-					client_log (
-						LOG_TYPE_DEBUG, LOG_TYPE_NONE,
-						"client_receive () - rc == 0 - sock fd: %d",
-						connection->socket->sock_fd
-					);
-					// perror ("Error");
-					#endif
+		case 0: {
+			#ifdef CONNECTION_DEBUG
+			client_log (
+				LOG_TYPE_DEBUG, LOG_TYPE_CLIENT,
+				"client_receive_internal () - rc == 0 - connection %s sock fd: %d",
+				connection->name->str, connection->socket->sock_fd
+			);
 
-					client_receive_handle_failed (client, connection);
-				} break;
+			// perror ("Error ");
+			#endif
 
-				default: {
-					// char *s = c_string_create ("Connection %s rc: %ld",
-					//     connection->name->str, rc);
-					// if (s) {
-					//     client_log (stdout, LOG_TYPE_DEBUG, LOG_TYPE_CLIENT, s);
-					//     free (s);
-					// }
+			client_receive_handle_failed (client, connection);
+		} break;
 
-					client->stats->n_receives_done += 1;
-					client->stats->total_bytes_received += rc;
+		default: {
+			// client_log (
+			// 	LOG_TYPE_DEBUG, LOG_TYPE_CLIENT,
+			// 	"Connection %s rc: %ld",
+			// 	connection->name->str, rc
+			// );
+
+			client->stats->n_receives_done += 1;
+			client->stats->total_bytes_received += rc;
 
 					connection->stats->n_receives_done += 1;
 					connection->stats->total_bytes_received += rc;
 
 					// handle the recived packet buffer -> split them in packets of the correct size
-					client_receive_handle_buffer (
-						client,
-						connection,
-						packet_buffer,
-						rc
-					);
-				} break;
-			}
+			client_receive_handle_buffer (
+				client,
+				connection,
+				buffer,
+				rc
+			);
+
+			retval = 0;
+		} break;
+	}
+
+	return retval;
+
+}
+
+// allocates a new packet buffer to receive incoming data from the connection's socket
+// returns 0 on success handle, 1 if any error ocurred and must likely the connection was ended
+unsigned int client_receive (Client *client, Connection *connection) {
+
+	unsigned int retval = 1;
+
+	if (client && connection) {
+		char *packet_buffer = (char *) calloc (connection->receive_packet_buffer_size, sizeof (char));
+		if (packet_buffer) {
+			retval = client_receive_internal (
+				client, connection,
+				packet_buffer, connection->receive_packet_buffer_size
+			);
 
 			free (packet_buffer);
 		}
 
 		else {
-			#ifdef HANDLER_DEBUG
+			// #ifdef CLIENT_DEBUG
 			client_log (
-				LOG_TYPE_ERROR, LOG_TYPE_CLIENT,
-				"Failed to allocate a new packet buffer!"
+				LOG_TYPE_ERROR, LOG_TYPE_CONNECTION,
+				"client_receive () - Failed to allocate a new packet buffer!"
 			);
-			#endif
+			// #endif
 		}
 	}
+
+	return retval;
 
 }
 
