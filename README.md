@@ -1,8 +1,19 @@
-# Cerver-Client
+# Cerver Client
 
-**Cever-Client** is just the necesary components from the **Cengine** framework (https://github.com/ermiry/cengine), created and developed by Ermiry, that make the networking module work. It is network client created primarily to work directly with the **Cerver** framework, also created and developed by Ermiry, although a connection and communication with any other server using TCP or UDP protocol will be fully supported soon.
+**Cerver Client** is a development framework, created by Ermiry, designed to be used alongside **cerver** to create high performace applications in C/C++ that require a fast and relaible connection between them to exchange data.
 
-This source is intended to be a starting point to create a successfull connection and data exchnage protocol for your custom application using the **Cerver** framework.
+**Cerver Client** was designed from the beginning to be used to use and to be able to be used with **cerver** in data intensive applications. It support all of **cerver** features right out of the box with minimal configuration such as multiple connections, authentication, sessions & cerver admin connections. It has been tested alongside **cerver** in many high performance applications developed by Ermiry and the results have been wonderful!
+
+## Features
+
+#### Game Applications
+It comes with the tools to develop custom multiplayer games alongside cerver with features such as lobbys & scoreboards
+
+### Files Applications
+Cerver Client comes loaded with custom high performance methods to enable fast and reliable files transmissions
+
+### Custom Applications
+The sky is the limit when it comes to the different kind of applications that you can create, you can pretty much transfer any kinf of data of any size
 
 In this repo you will find some examples on how to perform a success connection as well as how to add your own application code to transfer your custom data.
 
@@ -10,4 +21,4 @@ For a more detailed information on how **Cerver** works, please refer to the off
 
 To download the latest stable version of **Cerver**, please refer to the offical repo: https://github.com/ermiry/cerver
 
-This repo is in constant development and new features will be added in the future. If you want to contribute you are free to make a pull request, and if you find a bug, you can report it here: https://cerver.ermiry.com/bugreport
+This repo is in constant development and new features will be added in the future. If you want to contribute you are free to make a pull request, and if you find a bug, you can report it here: https://client.ermiry.com/bugreport or create a new **Github Issue**.
