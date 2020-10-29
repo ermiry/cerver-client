@@ -19,8 +19,13 @@
 
 struct _Client;
 struct _Connection;
+
+struct _ClientEvent;
+struct _ClientError;
+
 struct _Packet;
 struct _PacketsPerType;
+
 struct _FileHeader;
 
 #pragma region global
@@ -89,8 +94,8 @@ struct _Client {
 
 	bool running;                   // any connection is active
 
-	ClientEvent *events[CLIENT_MAX_EVENTS];
-	ClientError *errors[CLIENT_MAX_ERRORS];
+	struct _ClientEvent *events[CLIENT_MAX_EVENTS];
+	struct _ClientError *errors[CLIENT_MAX_ERRORS];
 
 	// custom packet handlers
 	Action app_packet_handler;

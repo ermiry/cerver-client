@@ -6,7 +6,6 @@
 #include "client/types/types.h"
 
 #include "client/config.h"
-#include "client/client.h"
 
 struct _Client;
 struct _Connection;
@@ -50,7 +49,7 @@ CLIENT_EXPORT const char *client_event_type_description (ClientEventType type);
 
 #pragma region event
 
-typedef struct ClientEvent {
+struct _ClientEvent {
 
 	ClientEventType type;         // the event we are waiting to happen
 	bool create_thread;                 // create a detachable thread to run action
@@ -66,7 +65,9 @@ typedef struct ClientEvent {
 	void *action_args;                  // the action arguments
 	Action delete_action_args;          // how to get rid of the data
 
-} ClientEvent;
+};
+
+typedef struct _ClientEvent ClientEvent;
 
 CLIENT_PRIVATE void client_event_delete (void *ptr);
 
