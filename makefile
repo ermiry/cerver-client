@@ -45,6 +45,9 @@ SRCEXT      := c
 DEPEXT      := d
 OBJEXT      := o
 
+COVDIR		:= coverage
+COVEXT		:= gcov
+
 # common flags
 # -Wconversion
 COMMON		:= -Wall -Wno-unknown-pragmas \
@@ -88,6 +91,10 @@ endif
 CFLAGS += -fPIC $(COMMON)
 
 LIB         := -L /usr/local/lib $(PTHREAD) $(MATH)
+
+ifeq ($(TYPE), test)
+	LIB += -lgcov --coverage
+endif
 
 INC         := -I $(INCDIR) -I /usr/local/include
 INCDEP      := -I $(INCDIR)
@@ -172,7 +179,84 @@ $(EXABUILD)/%.$(OBJEXT): $(EXAMDIR)/%.$(SRCEXT)
 	@sed -e 's/.*://' -e 's/\\$$//' < $(EXABUILD)/$*.$(DEPEXT).tmp | fmt -1 | sed -e 's/^ *//' -e 's/$$/:/' >> $(EXABUILD)/$*.$(DEPEXT)
 	@rm -f $(EXABUILD)/$*.$(DEPEXT).tmp
 
-clear: clean-objects clean-examples
+# tests
+TESTDIR		:= test
+TESTBUILD	:= $(TESTDIR)/objs
+TESTTARGET	:= $(TESTDIR)/bin
+TESTCOVDIR	:= $(COVDIR)/test
+
+TESTFLAGS	:= -g $(DEFINES) -Wall -Wno-unknown-pragmas -Wno-format
+
+ifeq ($(TYPE), test)
+	TESTFLAGS += -fprofile-arcs -ftest-coverage
+endif
+
+ifeq ($(NATIVE), 1)
+	TESTFLAGS += -march=native
+endif
+
+TESTLIBS	:= $(PTHREAD) $(CURL) -L ./$(TARGETDIR) -l cerver
+
+ifeq ($(TYPE), test)
+	TESTLIBS += -lgcov --coverage
+endif
+
+TESTINC		:= -I $(INCDIR) -I ./$(TESTDIR)
+
+TESTS		:= $(shell find $(TESTDIR) -type f -name *.$(SRCEXT))
+TESTOBJS	:= $(patsubst $(TESTDIR)/%,$(TESTBUILD)/%,$(TESTS:.$(SRCEXT)=.$(OBJEXT)))
+
+TESTCOVS	:= $(patsubst $(TESTDIR)/%,$(TESTBUILD)/%,$(TESTS:.$(SRCEXT)=.$(SRCEXT).$(COVEXT)))
+
+test: $(TESTOBJS)
+	@mkdir -p ./$(TESTTARGET)
+	$(CC) $(TESTINC) ./$(TESTBUILD)/collections/*.o -o ./$(TESTTARGET)/collections $(TESTLIBS)
+	$(CC) $(TESTINC) ./$(TESTBUILD)/http/*.o -o ./$(TESTTARGET)/http $(TESTLIBS)
+	$(CC) $(TESTINC) ./$(TESTBUILD)/utils/*.o -o ./$(TESTTARGET)/utils $(TESTLIBS)
+	$(CC) $(TESTINC) ./$(TESTBUILD)/json/*.o -o ./$(TESTTARGET)/json $(TESTLIBS)
+	$(CC) $(TESTINC) ./$(TESTBUILD)/jwt/*.o -o ./$(TESTTARGET)/jwt $(TESTLIBS)
+	$(CC) $(TESTINC) ./$(TESTBUILD)/web/web.o ./$(TESTBUILD)/web/curl.o -o ./$(TESTTARGET)/web $(TESTLIBS)
+	$(CC) $(TESTINC) ./$(TESTBUILD)/web/api.o ./$(TESTBUILD)/web/curl.o -o ./$(TESTTARGET)/api $(TESTLIBS)
+	$(CC) $(TESTINC) ./$(TESTBUILD)/web/upload.o ./$(TESTBUILD)/web/curl.o -o ./$(TESTTARGET)/upload $(TESTLIBS)
+	$(CC) $(TESTINC) ./$(TESTBUILD)/jwt_encode.o ./$(TESTBUILD)/users.o -o ./$(TESTTARGET)/jwt_encode $(TESTLIBS)
+	$(CC) $(TESTINC) ./$(TESTBUILD)/jwt_decode.o ./$(TESTBUILD)/users.o -o ./$(TESTTARGET)/jwt_decode $(TESTLIBS)
+
+# compile tests
+$(TESTBUILD)/%.$(OBJEXT): $(TESTDIR)/%.$(SRCEXT)
+	@mkdir -p $(dir $@)
+	$(CC) $(TESTFLAGS) $(TESTINC) $(TESTLIBS) -c -o $@ $<
+	@$(CC) $(TESTFLAGS) $(INCDEP) -MM $(TESTDIR)/$*.$(SRCEXT) > $(TESTBUILD)/$*.$(DEPEXT)
+	@cp -f $(TESTBUILD)/$*.$(DEPEXT) $(TESTBUILD)/$*.$(DEPEXT).tmp
+	@sed -e 's|.*:|$(TESTBUILD)/$*.$(OBJEXT):|' < $(TESTBUILD)/$*.$(DEPEXT).tmp > $(TESTBUILD)/$*.$(DEPEXT)
+	@sed -e 's/.*://' -e 's/\\$$//' < $(TESTBUILD)/$*.$(DEPEXT).tmp | fmt -1 | sed -e 's/^ *//' -e 's/$$/:/' >> $(TESTBUILD)/$*.$(DEPEXT)
+	@rm -f $(TESTBUILD)/$*.$(DEPEXT).tmp
+
+# test-run:
+# 	@bash test/run.sh
+
+#coverage
+COVOBJS		:= $(SRCCOVS) $(TESTCOVS)
+
+test-coverage: $(COVOBJS)
+
+coverage-init:
+	@mkdir -p ./$(COVDIR)
+	@mkdir -p ./$(TESTCOVDIR)
+
+coverage: coverage-init test-coverage
+
+# get lib coverage reports
+$(BUILDDIR)/%.$(SRCEXT).$(COVEXT): $(SRCDIR)/%.$(SRCEXT)
+	@mkdir -p ./$(COVDIR)/$(dir $<)
+	gcov -r $< --object-directory $(dir $@)
+	mv $(notdir $@) ./$(COVDIR)/$<.gcov
+
+# get tests coverage reports
+$(TESTBUILD)/%.$(SRCEXT).$(COVEXT): $(TESTDIR)/%.$(SRCEXT)
+	gcov -r $< --object-directory $(dir $@)
+	mv $(notdir $@) ./$(TESTCOVDIR)
+
+clear: clean-objects clean-examples clean-tests clean-coverage
 
 clean: clear
 	@$(RM) -rf $(TARGETDIR)
@@ -183,5 +267,12 @@ clean-objects:
 clean-examples:
 	@$(RM) -rf $(EXABUILD)
 	@$(RM) -rf $(EXATARGET)
+
+clean-tests:
+	@$(RM) -rf $(TESTBUILD)
+	@$(RM) -rf $(TESTTARGET)
+
+clean-coverage:
+	@$(RM) -rf $(COVDIR)
 
 .PHONY: all clean clear examples
