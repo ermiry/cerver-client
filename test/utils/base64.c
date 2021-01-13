@@ -3,8 +3,8 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include <cerver/utils/base64.h>
-#include <cerver/utils/utils.h>
+#include <client/utils/base64.h>
+#include <client/utils/utils.h>
 
 #include "../test.h"
 
