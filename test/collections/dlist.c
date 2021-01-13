@@ -7,9 +7,9 @@
 
 #include <pthread.h>
 
-#include <cerver/collections/dlist.h>
+#include <client/collections/dlist.h>
 
-#include <cerver/utils/log.h>
+#include <client/utils/log.h>
 
 #pragma region integer
 
