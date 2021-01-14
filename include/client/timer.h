@@ -12,6 +12,10 @@
 
 #include "client/config.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct timespec TimeSpec;
 
 CLIENT_PUBLIC void timespec_delete (void *timespec_ptr);
@@ -36,6 +40,12 @@ CLIENT_PUBLIC String *timer_date_to_string (struct tm *timeinfo);
 CLIENT_PUBLIC String *timer_date_and_time_to_string (struct tm *timeinfo);
 
 // returns a string representing the time with custom format
-CLIENT_PUBLIC String *timer_time_to_string_custom (struct tm *timeinfo, const char *format);
+CLIENT_PUBLIC String *timer_time_to_string_custom (
+	struct tm *timeinfo, const char *format
+);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

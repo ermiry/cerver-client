@@ -7,6 +7,10 @@
 
 #include "client/config.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _Client;
 struct _Connection;
 
@@ -121,5 +125,9 @@ typedef struct ClientEventData {
 CLIENT_PUBLIC void client_event_data_delete (ClientEventData *event_data);
 
 #pragma endregion
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

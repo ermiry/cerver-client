@@ -9,6 +9,10 @@
 #include "client/config.h"
 #include "client/packets.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _Client;
 struct _Connection;
 struct _Packet;
@@ -144,5 +148,9 @@ typedef struct SError {
 } SError;
 
 #pragma endregion
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

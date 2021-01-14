@@ -8,6 +8,10 @@
 
 #define RECEIVE_PACKET_BUFFER_SIZE          8192
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _Client;
 struct _Connection;
 struct _Packet;
@@ -42,6 +46,12 @@ CLIENT_PRIVATE unsigned int client_receive_internal (
 
 // allocates a new packet buffer to receive incoming data from the connection's socket
 // returns 0 on success handle, 1 if any error ocurred and must likely the connection was ended
-CLIENT_PUBLIC unsigned int client_receive (struct _Client *client, struct _Connection *connection);
+CLIENT_PUBLIC unsigned int client_receive (
+	struct _Client *client, struct _Connection *connection
+);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

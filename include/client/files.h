@@ -11,6 +11,10 @@
 
 #include "client/config.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _Client;
 struct _Connection;
 
@@ -92,5 +96,9 @@ CLIENT_PUBLIC u8 file_receive (
 );
 
 #pragma endregion
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

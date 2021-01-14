@@ -8,6 +8,10 @@
 
 #include "client/packets.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct GameSettings {
 
     // config
@@ -85,5 +89,9 @@ typedef struct LobbyJoin {
     SStringS game_type;
 
 } LobbyJoin;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -17,6 +17,10 @@
 
 #define CLIENT_FILES_MAX_PATHS           32
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _Client;
 struct _Connection;
 
@@ -390,5 +394,9 @@ struct _SToken {
 typedef struct _SToken SToken;
 
 #pragma endregion
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -9,6 +9,10 @@
 #define CLIENT_VERSION_TIME			        "16:56 CST"
 #define CLIENT_VERSION_AUTHOR			    "Erick Salas"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // print full cerver client version information
 CLIENT_EXPORT void cerver_client_version_print_full (void);
 
@@ -17,5 +21,9 @@ CLIENT_EXPORT void cerver_client_version_print_version_id (void);
 
 // print the version name
 CLIENT_EXPORT void cerver_client_version_print_version_name (void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

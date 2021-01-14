@@ -10,6 +10,10 @@
 #include "client/network.h"
 #include "client/packets.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _Cerver;
 struct _Packet;
 struct _Token;
@@ -132,5 +136,9 @@ typedef struct SCerver {
 } SCerver;
 
 #pragma endregion
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
