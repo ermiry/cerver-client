@@ -32,7 +32,7 @@ u8 thread_create_detachable (
 				}
 
 				else {
-					cerver_log (
+					client_log (
 						LOG_TYPE_ERROR, LOG_TYPE_NONE,
 						"Failed to create detachable thread!"
 					);
