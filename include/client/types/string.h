@@ -5,6 +5,10 @@
 
 #include "client/config.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct String {
 
 	unsigned int len;
@@ -99,5 +103,9 @@ typedef struct SStringXL {
 
 // returns a ptr to a serialized string
 CLIENT_PUBLIC void *str_serialize (String *string, SStringSize size);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
