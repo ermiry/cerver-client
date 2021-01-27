@@ -35,6 +35,10 @@
 
 #include "client/utils/json.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wformat="
+
 #ifdef _MSC_VER
 	#ifndef _CRT_SECURE_NO_WARNINGS
 		#define _CRT_SECURE_NO_WARNINGS
@@ -80,7 +84,7 @@ typedef struct {
 static void * default_alloc (size_t size, int zero, void *user_data) {
 
 	return zero ? calloc (1, size) : malloc (size);
-	
+
 }
 
 static void default_free (void *ptr, void *user_data) { free (ptr); }
@@ -994,9 +998,11 @@ void json_value_free_ex (json_settings *settings, json_value *value) {
 }
 
 void json_value_free (json_value * value) {
-	
+
 	json_settings settings = { 0 };
 	settings.mem_free = default_free;
 	json_value_free_ex (&settings, value);
 
 }
+
+#pragma GCC diagnostic pop
