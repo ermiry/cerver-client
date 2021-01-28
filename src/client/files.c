@@ -46,19 +46,11 @@ unsigned int files_create_dir (const char *dir_path, mode_t mode) {
 				}
 
 				else {
-					char *s = c_string_create ("Failed to create dir %s!", dir_path);
-					if (s) {
-						client_log_error (s);
-						free (s);
-					}
+					client_log_error ("Failed to create dir %s!", dir_path);
 				}
 			} break;
 			case 0: {
-				char *s = c_string_create ("Dir %s already exists!", dir_path);
-				if (s) {
-					client_log_warning (s);
-					free (s);
-				}
+				client_log_warning ("Dir %s already exists!", dir_path);
 			} break;
 
 			default: break;
@@ -124,11 +116,7 @@ DoubleList *files_get_from_dir (const char *dir) {
 		}
 
 		else {
-			char *status = c_string_create ("Failed to open dir %s", dir);
-			if (status) {
-				client_log_error (status);
-				free (status);
-			}
+			client_log_error ("Failed to open dir %s", dir);
 		}
 	}
 
@@ -175,11 +163,7 @@ DoubleList *file_get_lines (const char *filename) {
 		}
 
 		else {
-			char *status = c_string_create ("Failed to open file: %s", filename);
-			if (status) {
-				client_log_error (status);
-				free (status);
-			}
+			client_log_error ("Failed to open file: %s", filename);
 		}
 	}
 
@@ -215,11 +199,10 @@ FILE *file_open_as_file (const char *filename, const char *modes, struct stat *f
 
 		else {
 			#ifdef FILES_DEBUG
-			char *s = c_string_create ("File %s not found!", filename);
-			if (s) {
-				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_FILE, s);
-				free (s);
-			}
+			client_log (
+				LOG_TYPE_ERROR, LOG_TYPE_FILE,
+				"File %s not found!", filename
+			);
 			#endif
 		}
 	}
@@ -244,11 +227,10 @@ char *file_read (const char *filename, size_t *file_size) {
 			// read the entire file into the buffer
 			if (fread (file_contents, filestatus.st_size, 1, fp) != 1) {
 				#ifdef FILES_DEBUG
-				char *s = c_string_create ("Failed to read file (%s) contents!");
-				if (s) {
-					client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_FILE, s);
-					free (s);
-				}
+				client_log (
+					LOG_TYPE_ERROR, LOG_TYPE_FILE,
+					"Failed to read file (%s) contents!", filename
+				);
 				#endif
 
 				free (file_contents);
@@ -259,11 +241,10 @@ char *file_read (const char *filename, size_t *file_size) {
 
 		else {
 			#ifdef FILES_DEBUG
-			char *s = c_string_create ("Unable to open file %s.", filename);
-			if (s) {
-				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_FILE, s);
-				free (s);
-			}
+			client_log (
+				LOG_TYPE_ERROR, LOG_TYPE_FILE,
+				"Unable to open file %s.", filename
+			);
 			#endif
 		}
 	}
@@ -285,11 +266,10 @@ int file_open_as_fd (const char *filename, struct stat *filestatus, int flags) {
 
 		else {
 			#ifdef FILES_DEBUG
-			char *s = c_string_create ("File %s not found!", filename);
-			if (s) {
-				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_FILE, s);
-				free (s);
-			}
+			client_log (
+				LOG_TYPE_ERROR, LOG_TYPE_FILE,
+				"File %s not found!", filename
+			);
 			#endif
 		}
 	}
@@ -361,8 +341,7 @@ static ssize_t file_send_actual (
 	}
 
 	else {
-		client_log_msg (
-			stderr, 
+		client_log (
 			LOG_TYPE_ERROR, LOG_TYPE_FILE, 
 			"file_send_actual () - failed to send file header"
 		);
@@ -387,11 +366,10 @@ static int file_send_open (
 		// try to open the file
 		file_fd = file_open_as_fd (filename, filestatus, O_RDONLY);
 		if (file_fd <= 0) {
-			char *s = c_string_create ("file_send () - Failed to open file %s", filename);
-			if (s) {
-				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_FILE, s);
-				free (s);
-			}
+			client_log (
+				LOG_TYPE_ERROR, LOG_TYPE_FILE,
+				"file_send () - Failed to open file %s", filename
+			);
 		}
 	}
 
@@ -486,14 +464,9 @@ static inline u8 file_receive_internal_receive (
 
 		default: {
 			#ifdef FILES_DEBUG
-			char *status = c_string_create (
+			client_log_debug (
 				"file_receive_internal_receive () - spliced %ld bytes", *received
 			);
-
-			if (status) {
-				client_log_debug (status);
-				free (status);
-			}
 			#endif
 
 			retval = 0;
@@ -534,14 +507,7 @@ static inline u8 file_receive_internal_move (
 
 		default: {
 			#ifdef FILES_DEBUG
-			char *status = c_string_create (
-				"file_receive_internal_move () - spliced %ld bytes", *moved
-			);
-
-			if (status) {
-				client_log_debug (status);
-				free (status);
-			}
+			client_log_debug ("file_receive_internal_move () - spliced %ld bytes", *moved);
 			#endif
 
 			retval = 0;
