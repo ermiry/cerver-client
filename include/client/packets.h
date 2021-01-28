@@ -13,6 +13,10 @@
 #include "client/cerver.h"
 #include "client/client.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _Cerver;
 struct _Client;
 struct _Connection;
@@ -390,5 +394,9 @@ CLIENT_EXPORT u8 packet_send_to_socket (
 CLIENT_PUBLIC bool packet_check (Packet *packet);
 
 #pragma endregion
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
