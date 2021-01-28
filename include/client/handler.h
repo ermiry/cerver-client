@@ -8,6 +8,10 @@
 
 #define RECEIVE_PACKET_BUFFER_SIZE          8192
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _Client;
 struct _Connection;
 struct _Packet;
@@ -31,7 +35,23 @@ CLIENT_PRIVATE SockReceive *sock_receive_new (void);
 
 CLIENT_PRIVATE void sock_receive_delete (void *sock_receive_ptr);
 
-// receives incoming data from the socket
-CLIENT_PUBLIC void client_receive (struct _Client *client, struct _Connection *connection);
+// receive data from connection's socket
+// this method does not perform any checks and expects a valid buffer
+// to handle incomming data
+// returns 0 on success, 1 on error
+CLIENT_PRIVATE unsigned int client_receive_internal (
+	struct _Client *client, struct _Connection *connection,
+	char *buffer, const size_t buffer_size
+);
+
+// allocates a new packet buffer to receive incoming data from the connection's socket
+// returns 0 on success handle, 1 if any error ocurred and must likely the connection was ended
+CLIENT_PUBLIC unsigned int client_receive (
+	struct _Client *client, struct _Connection *connection
+);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

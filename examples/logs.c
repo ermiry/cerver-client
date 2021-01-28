@@ -151,25 +151,16 @@ int main (int argc, const char **argv) {
 
     cerver_client_version_print_full ();
 
-    client_log_debug ("Basic Test Message Example");
+    client_log_debug ("Basic test client example with custom logs configurations");
 	printf ("\n");
 
     if (!cerver_connect ("127.0.0.1", 7000)) {
+        // send a test message every second
         while (1) {
-            // send a test message every second
-            test_msg_send ();
-            test_msg_send ();
             test_msg_send ();
 
             sleep (1);
         }
-
-        // for (unsigned int i = 0; i < 5; i++) {
-        //     test_msg_send ();
-        //     sleep (1);
-        // }
-
-        // cerver_disconnect ();
     }
 
     client_end ();

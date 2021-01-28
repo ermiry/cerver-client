@@ -16,9 +16,9 @@
 #include "client/cerver.h"
 #include "client/client.h"
 
-#ifdef PACKETS_DEBUG
+// #ifdef PACKETS_DEBUG
 #include "client/utils/log.h"
-#endif
+// #endif
 
 #pragma region protocol
 
@@ -66,8 +66,11 @@ PacketVersion *packet_version_create (void) {
 void packet_version_print (PacketVersion *version) {
 
 	if (version) {
-		printf ("Protocol id: %d\n", version->protocol_id);
-		printf ("Protocol version: { %d - %d }\n", version->protocol_version.major, version->protocol_version.minor);
+		(void) printf ("Protocol id: %u\n", version->protocol_id);
+		(void) printf (
+			"Protocol version: { %u - %u }\n",
+			version->protocol_version.major, version->protocol_version.minor
+		);
 	}
 
 }
@@ -89,18 +92,18 @@ void packets_per_type_delete (void *ptr) { if (ptr) free (ptr); }
 void packets_per_type_print (PacketsPerType *packets_per_type) {
 
 	if (packets_per_type) {
-		printf ("Cerver:            %ld\n", packets_per_type->n_cerver_packets);
-		printf ("Client:            %ld\n", packets_per_type->n_client_packets);
-		printf ("Error:             %ld\n", packets_per_type->n_error_packets);
-		printf ("Request:           %ld\n", packets_per_type->n_request_packets);
-		printf ("Auth:              %ld\n", packets_per_type->n_auth_packets);
-		printf ("Game:              %ld\n", packets_per_type->n_game_packets);
-		printf ("App:               %ld\n", packets_per_type->n_app_packets);
-		printf ("App Error:         %ld\n", packets_per_type->n_app_error_packets);
-		printf ("Custom:            %ld\n", packets_per_type->n_custom_packets);
-		printf ("Test:              %ld\n", packets_per_type->n_test_packets);
-		printf ("Unknown:           %ld\n", packets_per_type->n_unknown_packets);
-		printf ("Bad:               %ld\n", packets_per_type->n_bad_packets);
+		client_log_msg ("Cerver:            %ld\n", packets_per_type->n_cerver_packets);
+		client_log_msg ("Client:            %ld\n", packets_per_type->n_client_packets);
+		client_log_msg ("Error:             %ld\n", packets_per_type->n_error_packets);
+		client_log_msg ("Request:           %ld\n", packets_per_type->n_request_packets);
+		client_log_msg ("Auth:              %ld\n", packets_per_type->n_auth_packets);
+		client_log_msg ("Game:              %ld\n", packets_per_type->n_game_packets);
+		client_log_msg ("App:               %ld\n", packets_per_type->n_app_packets);
+		client_log_msg ("App Error:         %ld\n", packets_per_type->n_app_error_packets);
+		client_log_msg ("Custom:            %ld\n", packets_per_type->n_custom_packets);
+		client_log_msg ("Test:              %ld\n", packets_per_type->n_test_packets);
+		client_log_msg ("Unknown:           %ld\n", packets_per_type->n_unknown_packets);
+		client_log_msg ("Bad:               %ld\n", packets_per_type->n_bad_packets);
 	}
 
 }
