@@ -19,11 +19,17 @@
 
 #define DEFAULT_CONNECTION_TIMEOUT					2
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _Cerver;
 struct _Client;
 struct _Packet;
 struct _PacketsPerType;
 struct _SockReceive;
+
+#pragma region stats
 
 struct _ConnectionStats {
 
@@ -40,6 +46,10 @@ struct _ConnectionStats {
 };
 
 typedef struct _ConnectionStats ConnectionStats;
+
+#pragma endregion
+
+#pragma region main
 
 struct _Connection {
 
@@ -153,6 +163,8 @@ CLIENT_PUBLIC void connection_remove_auth_data (Connection *connection);
 // returns 0 on success, 1 on error
 CLIENT_PUBLIC u8 connection_generate_auth_packet (Connection *connection);
 
+#pragma region start
+
 // creates a new connection that is ready to be started
 // returns a newly allocated connection on success, NULL if any initial setup has failed
 CLIENT_PUBLIC Connection *connection_create (const char *ip_address, u16 port, Protocol protocol, bool use_ipv6);
@@ -160,6 +172,10 @@ CLIENT_PUBLIC Connection *connection_create (const char *ip_address, u16 port, P
 // starts a connection -> connects to the specified ip and port
 // returns 0 on success, 1 on error
 CLIENT_PUBLIC int connection_start (Connection *connection);
+
+#pragma endregion
+
+#pragma region update
 
 typedef struct ConnectionCustomReceiveData {
 
@@ -172,7 +188,17 @@ typedef struct ConnectionCustomReceiveData {
 // starts listening and receiving data in the connection sock
 CLIENT_PUBLIC void connection_update (void *ptr);
 
+#pragma endregion
+
+#pragma region end
+
 // closes a connection directly
 CLIENT_PUBLIC void connection_close (Connection *connection);
+
+#pragma endregion
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

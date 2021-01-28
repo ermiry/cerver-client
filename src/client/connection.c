@@ -60,6 +60,8 @@ static ConnectionStats *connection_stats_create (void) {
 
 #pragma endregion
 
+#pragma region main
+
 Connection *connection_new (void) {
 
 	Connection *connection = (Connection *) malloc (sizeof (Connection));
@@ -313,6 +315,10 @@ u8 connection_generate_auth_packet (Connection *connection) {
 
 }
 
+#pragma endregion
+
+#pragma region start
+
 // sets up the new connection values
 static u8 connection_init (Connection *connection) {
 
@@ -328,7 +334,7 @@ static u8 connection_init (Connection *connection) {
 				break;
 
 			default:
-				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Unkonw protocol type!");
+				client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Unkonw protocol type!");
 				return 1;
 		}
 
@@ -351,7 +357,7 @@ static u8 connection_init (Connection *connection) {
 		}
 
 		else {
-			client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create new socket!");
+			client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to create new socket!");
 		}
 	}
 
@@ -379,7 +385,7 @@ Connection *connection_create (const char *ip_address, u16 port, Protocol protoc
 			// set up the new connection to be ready to be started
 			if (connection_init (connection)) {
 				#ifdef CLIENT_DEBUG
-				client_log_msg (stderr, LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to init the new connection!");
+				client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to init the new connection!");
 				#endif
 				connection_delete (connection);
 				connection = NULL;
@@ -415,6 +421,10 @@ int connection_start (Connection *connection) {
 
 }
 
+#pragma endregion
+
+#pragma region update
+
 static ConnectionCustomReceiveData *connection_custom_receive_data_new (Client *client, Connection *connection, void *args) {
 
 	ConnectionCustomReceiveData *custom_data = (ConnectionCustomReceiveData *) malloc (sizeof (ConnectionCustomReceiveData));
@@ -435,18 +445,25 @@ static inline void connection_custom_receive_data_delete (void *custom_data_ptr)
 }
 
 // starts listening and receiving data in the connection sock
-void connection_update (void *ptr) {
+void connection_update (void *client_connection_ptr) {
 
-	if (ptr) {
-		ClientConnection *cc = (ClientConnection *) ptr;
+	if (client_connection_ptr) {
+		ClientConnection *cc = (ClientConnection *) client_connection_ptr;
 
-		if (cc->connection->name) {
-			char *s = c_string_create ("connection-%s", cc->connection->name->str);
-			if (s) {
-				thread_set_name (s);
-				free (s);
-			}
-		}
+		String *client_name = str_new (cc->client->name->str);
+		String *connection_name = str_new (cc->connection->name->str);
+
+		char thread_name[128] = { 0 };
+		snprintf (thread_name, 128, "connection-%s", cc->connection->name->str);
+		thread_set_name (thread_name);
+
+		#ifdef CONNECTION_DEBUG
+		client_log (
+			LOG_TYPE_DEBUG, LOG_TYPE_CONNECTION,
+			"Client %s - connection %s connection_update () thread has started",
+			client_name->str, connection_name->str
+		);
+		#endif
 
 		ConnectionCustomReceiveData *custom_data = connection_custom_receive_data_new (
 			cc->client, cc->connection,
@@ -455,25 +472,57 @@ void connection_update (void *ptr) {
 
 		if (!cc->connection->sock_receive) cc->connection->sock_receive = sock_receive_new ();
 
-		(void) sock_set_timeout (cc->connection->socket->sock_fd, cc->connection->update_timeout);
+		size_t buffer_size = cc->connection->receive_packet_buffer_size;
+		char *buffer = (char *) calloc (buffer_size, sizeof (char));
+		if (buffer) {
+			(void) sock_set_timeout (cc->connection->socket->sock_fd, cc->connection->update_timeout);
 
-		while (cc->client->running && cc->connection->connected) {
-			if (cc->connection->custom_receive) {
-				// if a custom receive method is set, use that one directly
-				cc->connection->custom_receive (custom_data);
+			while (cc->client->running && cc->connection->connected) {
+				if (cc->connection->custom_receive) {
+					// if a custom receive method is set, use that one directly
+					cc->connection->custom_receive (custom_data);
+				}
+
+				else {
+					// use the default receive method that expects cerver type packages
+					(void) client_receive_internal (
+						cc->client, cc->connection,
+						buffer, buffer_size
+					);
+				}
 			}
 
-			else {
-				// use the default receive method that expects cerver type packages
-				client_receive (cc->client, cc->connection);
-			}
+			free (buffer);
+		}
+
+		else {
+			client_log (
+				LOG_TYPE_ERROR, LOG_TYPE_CONNECTION,
+				"connection_update () - Failed to allocate buffer for client %s - connection %s!",
+				client_name->str, connection_name->str
+			);
 		}
 
 		connection_custom_receive_data_delete (custom_data);
 		client_connection_aux_delete (cc);
+
+		#ifdef CONNECTION_DEBUG
+		client_log (
+			LOG_TYPE_DEBUG, LOG_TYPE_CONNECTION,
+			"Client %s - connection %s connection_update () thread has ended",
+			client_name->str, connection_name->str
+		);
+		#endif
+
+		str_delete (client_name);
+		str_delete (connection_name);
 	}
 
 }
+
+#pragma endregion
+
+#pragma region end
 
 // closes a connection directly
 void connection_close (Connection *connection) {
@@ -487,3 +536,5 @@ void connection_close (Connection *connection) {
 	}
 
 }
+
+#pragma endregion
