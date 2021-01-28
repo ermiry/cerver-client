@@ -2,25 +2,65 @@ name: Client Continuous Integration
 
 on:
   push:
-    branches:
-      - '*'
+    branches-ignore:
+      - 'master'
+      - '*beta'
   pull_request:
-    branches:
-      - '*'
+    branches-ignore:
+      - 'master'
+      - '*beta'
 
 jobs:
   build:
-    name: Client test build
+    name: Client build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: System Information
+        run: gcc --version && g++ --version
+
       - name: gcc make
         run: make
       - name: gcc examples
         run: make examples
-      - name: clean
-        run: make clean
-      - name: g++ make
-        run: make CC=g++
+      
+      - name: clean examples
+        run: make clean-examples
+
       - name: g++ examples
         run: make CC=g++ examples
+
+      - name: Archive Shared Library
+        uses: actions/upload-artifact@v2
+        with:
+          name: client-lib
+          path: ./bin/libclient.so
+          retention-days: 1
+
+  test:
+    name: Client tests
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get Shared Library
+        uses: actions/download-artifact@v2
+        with:
+          name: client-lib
+          path: ./bin
+
+      - name: gcc tests
+        run: make test
+      - name: gcc run tests
+        run: bash test/run.sh
+
+      - name: clean tests
+        run: make clean-tests
+
+      - name: g++ tests
+        run: make CC=g++ test
+      - name: g++ run tests
+        run: bash test/run.sh
