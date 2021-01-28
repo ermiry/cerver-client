@@ -16,25 +16,6 @@ struct _Client;
 struct _Connection;
 struct _Packet;
 
-struct _SockReceive {
-
-	struct _Packet *spare_packet;
-	size_t missing_packet;
-
-	void *header;
-	char *header_end;
-	// unsigned int curr_header_pos;
-	unsigned int remaining_header;
-	bool complete_header;
-
-};
-
-typedef struct _SockReceive SockReceive;
-
-CLIENT_PRIVATE SockReceive *sock_receive_new (void);
-
-CLIENT_PRIVATE void sock_receive_delete (void *sock_receive_ptr);
-
 // receive data from connection's socket
 // this method does not perform any checks and expects a valid buffer
 // to handle incomming data

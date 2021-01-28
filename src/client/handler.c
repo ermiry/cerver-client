@@ -14,7 +14,6 @@
 #include "client/events.h"
 #include "client/errors.h"
 #include "client/files.h"
-#include "client/game.h"
 #include "client/handler.h"
 #include "client/network.h"
 #include "client/packets.h"
@@ -23,36 +22,6 @@
 
 #include "client/utils/log.h"
 #include "client/utils/utils.h"
-
-#pragma region auxiliary
-
-SockReceive *sock_receive_new (void) {
-
-	SockReceive *sr = (SockReceive *) malloc (sizeof (SockReceive));
-	if (sr) {
-		sr->spare_packet = NULL;
-		sr->missing_packet = 0;
-
-		sr->header = NULL;
-		sr->header_end = NULL;
-		sr->remaining_header = 0;
-		sr->complete_header = false;
-	}
-
-	return sr;
-
-}
-
-void sock_receive_delete (void *sock_receive_ptr) {
-
-	if (sock_receive_ptr) {
-		packet_delete (((SockReceive *) sock_receive_ptr)->spare_packet);
-		free (sock_receive_ptr);
-	}
-
-}
-
-#pragma endregion
 
 #pragma region handlers
 
@@ -428,7 +397,7 @@ static void client_packet_handler (void *data) {
 				case PACKET_TYPE_GAME:
 					packet->client->stats->received_packets->n_game_packets += 1;
 					packet->connection->stats->received_packets->n_game_packets += 1;
-					client_game_packet_handler (packet);
+					/* TODO: */
 					break;
 
 				// user set handler to handler app specific packets
