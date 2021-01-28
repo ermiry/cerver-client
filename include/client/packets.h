@@ -5,13 +5,9 @@
 #include <stdbool.h>
 
 #include "client/types/types.h"
-#include "client/types/string.h"
 
 #include "client/config.h"
 #include "client/network.h"
-#include "client/socket.h"
-#include "client/cerver.h"
-#include "client/client.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,11 +65,22 @@ CLIENT_PUBLIC void packet_version_delete (PacketVersion *version);
 
 CLIENT_PUBLIC PacketVersion *packet_version_create (void);
 
-CLIENT_PUBLIC void packet_version_print (PacketVersion *version);
+// copies the data from the source version to the destination
+// returns 0 on success, 1 on error
+CLIENT_PUBLIC u8 packet_version_copy (
+	PacketVersion *dest, const PacketVersion *source
+);
+
+CLIENT_PUBLIC void packet_version_print (
+	const PacketVersion *version
+);
 
 #pragma endregion
 
 #pragma region types
+
+#define PACKETS_MAX_TYPES					16
+#define PACKETS_CURRENT_TYPES				10
 
 #define PACKET_TYPE_MAP(XX)					\
 	XX(0, 	NONE)							\
@@ -86,7 +93,8 @@ CLIENT_PUBLIC void packet_version_print (PacketVersion *version);
 	XX(7, 	APP)							\
 	XX(8, 	APP_ERROR)						\
 	XX(9, 	CUSTOM)							\
-	XX(10, 	TEST)
+	XX(10, 	TEST)							\
+	XX(11, 	BAD)
 
 // these indicate what type of packet we are sending/recieving
 typedef enum PacketType {
@@ -119,9 +127,17 @@ typedef struct _PacketsPerType PacketsPerType;
 
 CLIENT_PUBLIC PacketsPerType *packets_per_type_new (void);
 
-CLIENT_PUBLIC void packets_per_type_delete (void *ptr);
+CLIENT_PUBLIC void packets_per_type_delete (
+	void *packets_per_type_ptr
+);
 
-CLIENT_PUBLIC void packets_per_type_print (PacketsPerType *packets_per_type);
+CLIENT_PUBLIC void packets_per_type_print (
+	const PacketsPerType *packets_per_type
+);
+
+CLIENT_PUBLIC void packets_per_type_array_print (
+	const u64 packets[PACKETS_MAX_TYPES]
+);
 
 #pragma endregion
 
@@ -129,14 +145,14 @@ CLIENT_PUBLIC void packets_per_type_print (PacketsPerType *packets_per_type);
 
 struct _PacketHeader {
 
-	PacketType packet_type;
-	size_t packet_size;
+	PacketType packet_type;		// the main packet type
+	size_t packet_size;			// total size of the packet (header + data)
 
-	u8 handler_id;
+	u8 handler_id;				// used in cervers with multiple app handlers
 
-	u32 request_type;
+	u32 request_type;			// the packet's subtype
 
-	u16 sock_fd;
+	u16 sock_fd;				// used in when working with load balancers
 
 };
 
@@ -146,28 +162,44 @@ CLIENT_PUBLIC PacketHeader *packet_header_new (void);
 
 CLIENT_PUBLIC void packet_header_delete (PacketHeader *header);
 
-CLIENT_PUBLIC PacketHeader *packet_header_create (PacketType packet_type, size_t packet_size, u32 req_type);
+CLIENT_PUBLIC PacketHeader *packet_header_create (
+	const PacketType packet_type,
+	const size_t packet_size,
+	const u32 req_type
+);
 
-// prints an already existing PacketHeader. Mostly used for debugging
-CLIENT_PUBLIC void packet_header_print (PacketHeader *header);
+// allocates a new packet header and copies the values from source
+CLIENT_PUBLIC PacketHeader *packet_header_create_from (
+	const PacketHeader *source
+);
 
-// allocates space for the dest packet header and copies the data from source
+// copies the data from the source header to the destination
 // returns 0 on success, 1 on error
-CLIENT_PUBLIC u8 packet_header_copy (PacketHeader **dest, PacketHeader *source);
+CLIENT_PUBLIC u8 packet_header_copy (
+	PacketHeader *dest, const PacketHeader *source
+);
+
+CLIENT_PUBLIC void packet_header_print (
+	const PacketHeader *header
+);
+
+CLIENT_PUBLIC void packet_header_log (
+	const PacketHeader *header
+);
 
 #pragma endregion
 
 #pragma region packets
 
-#define CERVER_PACKET_TYPE_MAP(XX)			\
+#define CLIENT_PACKET_TYPE_MAP(XX)			\
 	XX(0, 	NONE)							\
 	XX(1, 	INFO)							\
 	XX(2, 	TEARDOWN)
 
 typedef enum CerverPacketType {
 
-	#define XX(num, name) CERVER_PACKET_TYPE_##name = num,
-	CERVER_PACKET_TYPE_MAP (XX)
+	#define XX(num, name) CLIENT_PACKET_TYPE_##name = num,
+	CLIENT_PACKET_TYPE_MAP (XX)
 	#undef XX
 
 } CerverPacketType;
@@ -248,9 +280,15 @@ struct _Packet {
 	char *data_end;
 	bool data_ref;
 
+	// used to handle big packets
+	// that don't fit inside a single buffer
+	size_t remaining_data;
+
+	PacketHeader header;
+
+	PacketVersion version;
+
 	// the actual packet to be sent
-	PacketHeader *header;
-	PacketVersion *version;
 	size_t packet_size;
 	void *packet;
 	bool packet_ref;

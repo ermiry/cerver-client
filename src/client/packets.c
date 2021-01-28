@@ -1,20 +1,20 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
+#include <stdio.h>
 
-#include <pthread.h>
+#ifdef PACKETS_DEBUG
+#include <errno.h>
+#endif
 
 #include <sys/types.h>
 #include <sys/socket.h>
 
 #include "client/types/types.h"
-#include "client/types/string.h"
 
-#include "client/network.h"
-#include "client/packets.h"
 #include "client/cerver.h"
 #include "client/client.h"
+#include "client/network.h"
+#include "client/packets.h"
 
 // #ifdef PACKETS_DEBUG
 #include "client/utils/log.h"
@@ -25,13 +25,29 @@
 static ProtocolID protocol_id = 0;
 static ProtocolVersion protocol_version = { 0, 0 };
 
-ProtocolID packets_get_protocol_id (void) { return protocol_id; }
+ProtocolID packets_get_protocol_id (void) {
+	
+	return protocol_id;
+	
+}
 
-void packets_set_protocol_id (ProtocolID proto_id) { protocol_id = proto_id; }
+void packets_set_protocol_id (ProtocolID proto_id) {
+	
+	protocol_id = proto_id;
+	
+}
 
-ProtocolVersion packets_get_protocol_version (void) { return protocol_version; }
+ProtocolVersion packets_get_protocol_version (void) {
+	
+	return protocol_version;
+	
+}
 
-void packets_set_protocol_version (ProtocolVersion version) { protocol_version = version; }
+void packets_set_protocol_version (ProtocolVersion version) {
+	
+	protocol_version = version;
+	
+}
 
 #pragma endregion
 
@@ -42,14 +58,19 @@ PacketVersion *packet_version_new (void) {
 	PacketVersion *version = (PacketVersion *) malloc (sizeof (PacketVersion));
 	if (version) {
 		version->protocol_id = 0;
-		version->protocol_version.minor = version->protocol_version.major = 0;
+		version->protocol_version.minor = 0;
+		version->protocol_version.major = 0;
 	}
 
 	return version;
 
 }
 
-void packet_version_delete (PacketVersion *version) { if (version) free (version); }
+void packet_version_delete (PacketVersion *version) {
+	
+	if (version) free (version);
+	
+}
 
 PacketVersion *packet_version_create (void) {
 
@@ -63,13 +84,37 @@ PacketVersion *packet_version_create (void) {
 
 }
 
-void packet_version_print (PacketVersion *version) {
+// copies the data from the source version to the destination
+// returns 0 on success, 1 on error
+u8 packet_version_copy (
+	PacketVersion *dest, const PacketVersion *source
+) {
+
+	u8 retval = 1;
+
+	if (dest && source) {
+		(void) memcpy (dest, source, sizeof (PacketVersion));
+		retval = 0;
+	}
+
+	return retval;
+
+}
+
+void packet_version_print (
+	const PacketVersion *version
+) {
 
 	if (version) {
-		(void) printf ("Protocol id: %u\n", version->protocol_id);
+		(void) printf (
+			"Protocol id: %u\n",
+			version->protocol_id
+		);
+
 		(void) printf (
 			"Protocol version: { %u - %u }\n",
-			version->protocol_version.major, version->protocol_version.minor
+			version->protocol_version.major,
+			version->protocol_version.minor
 		);
 	}
 
@@ -82,29 +127,56 @@ void packet_version_print (PacketVersion *version) {
 PacketsPerType *packets_per_type_new (void) {
 
 	PacketsPerType *packets_per_type = (PacketsPerType *) malloc (sizeof (PacketsPerType));
-	if (packets_per_type) memset (packets_per_type, 0, sizeof (PacketsPerType));
+	if (packets_per_type) {
+		(void) memset (packets_per_type, 0, sizeof (PacketsPerType));
+	}
+
 	return packets_per_type;
 
 }
 
-void packets_per_type_delete (void *ptr) { if (ptr) free (ptr); }
+void packets_per_type_delete (void *packets_per_type_ptr) {
+		
+	if (packets_per_type_ptr) free (packets_per_type_ptr);
 
-void packets_per_type_print (PacketsPerType *packets_per_type) {
+}
+
+void packets_per_type_print (
+	const PacketsPerType *packets_per_type
+) {
 
 	if (packets_per_type) {
-		client_log_msg ("Cerver:            %ld\n", packets_per_type->n_cerver_packets);
-		client_log_msg ("Client:            %ld\n", packets_per_type->n_client_packets);
-		client_log_msg ("Error:             %ld\n", packets_per_type->n_error_packets);
-		client_log_msg ("Request:           %ld\n", packets_per_type->n_request_packets);
-		client_log_msg ("Auth:              %ld\n", packets_per_type->n_auth_packets);
-		client_log_msg ("Game:              %ld\n", packets_per_type->n_game_packets);
-		client_log_msg ("App:               %ld\n", packets_per_type->n_app_packets);
-		client_log_msg ("App Error:         %ld\n", packets_per_type->n_app_error_packets);
-		client_log_msg ("Custom:            %ld\n", packets_per_type->n_custom_packets);
-		client_log_msg ("Test:              %ld\n", packets_per_type->n_test_packets);
-		client_log_msg ("Unknown:           %ld\n", packets_per_type->n_unknown_packets);
-		client_log_msg ("Bad:               %ld\n", packets_per_type->n_bad_packets);
+		client_log_msg ("Cerver:            %ld", packets_per_type->n_cerver_packets);
+		client_log_msg ("Client:            %ld", packets_per_type->n_client_packets);
+		client_log_msg ("Error:             %ld", packets_per_type->n_error_packets);
+		client_log_msg ("Request:           %ld", packets_per_type->n_request_packets);
+		client_log_msg ("Auth:              %ld", packets_per_type->n_auth_packets);
+		client_log_msg ("Game:              %ld", packets_per_type->n_game_packets);
+		client_log_msg ("App:               %ld", packets_per_type->n_app_packets);
+		client_log_msg ("App Error:         %ld", packets_per_type->n_app_error_packets);
+		client_log_msg ("Custom:            %ld", packets_per_type->n_custom_packets);
+		client_log_msg ("Test:              %ld", packets_per_type->n_test_packets);
+		client_log_msg ("Unknown:           %ld", packets_per_type->n_unknown_packets);
+		client_log_msg ("Bad:               %ld", packets_per_type->n_bad_packets);
 	}
+
+}
+
+void packets_per_type_array_print (
+	const u64 packets[PACKETS_MAX_TYPES]
+) {
+
+	client_log_msg ("\tCerver:              %ld", packets[PACKET_TYPE_CERVER]);
+	client_log_msg ("\tClient:              %ld", packets[PACKET_TYPE_CLIENT]);
+	client_log_msg ("\tError:               %ld", packets[PACKET_TYPE_ERROR]);
+	client_log_msg ("\tRequest:             %ld", packets[PACKET_TYPE_REQUEST]);
+	client_log_msg ("\tAuth:                %ld", packets[PACKET_TYPE_AUTH]);
+	client_log_msg ("\tGame:                %ld", packets[PACKET_TYPE_GAME]);
+	client_log_msg ("\tApp:                 %ld", packets[PACKET_TYPE_APP]);
+	client_log_msg ("\tApp Error:           %ld", packets[PACKET_TYPE_APP_ERROR]);
+	client_log_msg ("\tCustom:              %ld", packets[PACKET_TYPE_CUSTOM]);
+	client_log_msg ("\tTest:                %ld", packets[PACKET_TYPE_TEST]);
+	client_log_msg ("\tBad:                 %ld", packets[PACKET_TYPE_BAD]);
 
 }
 
@@ -116,16 +188,24 @@ PacketHeader *packet_header_new (void) {
 
 	PacketHeader *header = (PacketHeader *) malloc (sizeof (PacketHeader));
 	if (header) {
-		memset (header, 0, sizeof (PacketHeader));
+		(void) memset (header, 0, sizeof (PacketHeader));
 	}
 
 	return header;
 
 }
 
-void packet_header_delete (PacketHeader *header) { if (header) free (header); }
+void packet_header_delete (PacketHeader *header) {
+	
+	if (header) free (header);
+	
+}
 
-PacketHeader *packet_header_create (PacketType packet_type, size_t packet_size, u32 req_type) {
+PacketHeader *packet_header_create (
+	const PacketType packet_type,
+	const size_t packet_size,
+	const u32 req_type
+) {
 
 	PacketHeader *header = (PacketHeader *) malloc (sizeof (PacketHeader));
 	if (header) {
@@ -143,33 +223,55 @@ PacketHeader *packet_header_create (PacketType packet_type, size_t packet_size, 
 
 }
 
-void packet_header_print (PacketHeader *header) {
+// allocates a new packet header and copies the values from source
+PacketHeader *packet_header_create_from (const PacketHeader *source) {
+
+	PacketHeader *header = packet_header_new ();
+	if (header && source) {
+		(void) memcpy (header, source, sizeof (PacketHeader));
+	}
+
+	return header;
+
+}
+
+// copies the data from the source header to the destination
+// returns 0 on success, 1 on error
+u8 packet_header_copy (PacketHeader *dest, const PacketHeader *source) {
+
+	u8 retval = 1;
+
+	if (dest && source) {
+		(void) memcpy (dest, source, sizeof (PacketHeader));
+		retval = 0;
+	}
+
+	return retval;
+
+}
+
+void packet_header_print (const PacketHeader *header) {
 
 	if (header) {
-		printf ("Packet type: %d\n", header->packet_type);
-		printf ("Packet size: %ld\n", header->packet_size);
-		printf ("Handler id: %d\n", header->handler_id);
-		printf ("Request type: %d\n", header->request_type);
-		printf ("Sock fd: %d\n", header->sock_fd);
+		(void) printf ("Header size: %lu\n", sizeof (PacketHeader));
+		(void) printf ("Packet type [%lu]: %u\n", sizeof (PacketType), header->packet_type);
+		(void) printf ("Packet size: [%lu] %lu\n", sizeof (size_t), header->packet_size);
+		(void) printf ("Handler id [%lu]: %u\n", sizeof (u8), header->handler_id);
+		(void) printf ("Request type [%lu]: %u\n", sizeof (u32), header->request_type);
+		(void) printf ("Sock fd [%lu]: %u\n", sizeof (u16), header->sock_fd);
 	}
 
 }
 
-// allocates space for the dest packet header and copies the data from source
-// returns 0 on success, 1 on error
-u8 packet_header_copy (PacketHeader **dest, PacketHeader *source) {
+void packet_header_log (const PacketHeader *header) {
 
-	u8 retval = 1;
-
-	if (source) {
-		*dest = (PacketHeader *) malloc (sizeof (PacketHeader));
-		if (*dest) {
-			memcpy (*dest, source, sizeof (PacketHeader));
-			retval = 0;
-		}
+	if (header) {
+		client_log_msg ("Packet type: %u", header->packet_type);
+		client_log_msg ("Packet size: %lu", header->packet_size);
+		client_log_msg ("Handler id: %u", header->handler_id);
+		client_log_msg ("Request type: %u", header->request_type);
+		client_log_msg ("Sock fd: %u", header->sock_fd);
 	}
-
-	return retval;
 
 }
 
