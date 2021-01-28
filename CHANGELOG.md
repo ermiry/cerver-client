@@ -1,23 +1,22 @@
 ## General
-- Refactored build workflow to compile a common shared object
 - Updated makefile to handle compilation types
-- Added workflow to test production integration
-- Added workflow to create release on success merge with master
-- Added script to compile sources with production flags
-- Added beta workflow to test integration with beta branches
+- added dedicated workflows to build different sources types
 - Added workflow to update wiki with documentation
 - Added base codecov configuration
 - Updated main headers with extern "C" modifier
 
-## Client
+
+## Client / Connection
+- Refactor client events & errors structures definitions
+- Using new client event & errors definitions in main client header
+- Split client_receive () to be able to use an already allocated buffer
+- Removed extra check in client_receive_handle_buffer ()
 - Refactored client_connection_get_next_packet ()
+- Refactor connection_update () to allocate a packet buffer
 
 ## Utilities
 - Added new implementation of base64 using avx
-- Updated sha256 sources with latest methods
-- Updated base64 sources with new implementations
-- Updated log sources with latest methods & values
-- Updated json header & source with latest configurations
+- Updated utilities with latest implementations
 
 ## Tests
 - Added test header with custom macros & definitions
