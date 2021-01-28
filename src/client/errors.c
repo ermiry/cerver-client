@@ -268,11 +268,7 @@ void client_error_packet_handler (Packet *packet) {
 					s_error->msg
 				)) {
 					// not error action is registered to handle the error
-					char *status = c_string_create ("Failed to authenticate - %s", s_error->msg);
-					if (status) {
-						client_log_error (status);
-						free (status);
-					}
+					client_log_error ("Failed to authenticate - %s", s_error->msg);
 				}
 			} break;
 

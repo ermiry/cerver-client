@@ -9,6 +9,10 @@
 #include "client/config.h"
 #include "client/packets.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _Client;
 struct _Connection;
 struct _Packet;
@@ -48,7 +52,7 @@ CLIENT_EXPORT const char *client_error_type_description (ClientErrorType type);
 
 #pragma region errors
 
-typedef struct ClientError {
+struct _ClientError {
 
 	ClientErrorType type;
 	bool create_thread;                 // create a detachable thread to run action
@@ -58,7 +62,9 @@ typedef struct ClientError {
 	void *action_args;                  // the action arguments
 	Action delete_action_args;          // how to get rid of the data
 
-} ClientError;
+};
+
+typedef struct _ClientError ClientError;
 
 CLIENT_PRIVATE void client_error_delete (void *client_error_ptr);
 
@@ -142,5 +148,9 @@ typedef struct SError {
 } SError;
 
 #pragma endregion
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
