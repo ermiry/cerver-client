@@ -79,21 +79,21 @@ void client_stats_print (Client *client) {
 
 	if (client) {
 		if (client->stats) {
-			printf ("\nClient's stats:\n");
-			printf ("Threshold time:            %ld\n", client->stats->threshold_time);
+			client_log_msg ("\nClient's stats:\n");
+			client_log_msg ("Threshold time:            %ld\n", client->stats->threshold_time);
 
-			printf ("N receives done:           %ld\n", client->stats->n_receives_done);
+			client_log_msg ("N receives done:           %ld\n", client->stats->n_receives_done);
 
-			printf ("Total bytes received:      %ld\n", client->stats->total_bytes_received);
-			printf ("Total bytes sent:          %ld\n", client->stats->total_bytes_sent);
+			client_log_msg ("Total bytes received:      %ld\n", client->stats->total_bytes_received);
+			client_log_msg ("Total bytes sent:          %ld\n", client->stats->total_bytes_sent);
 
-			printf ("N packets received:        %ld\n", client->stats->n_packets_received);
-			printf ("N packets sent:            %ld\n", client->stats->n_packets_sent);
+			client_log_msg ("N packets received:        %ld\n", client->stats->n_packets_received);
+			client_log_msg ("N packets sent:            %ld\n", client->stats->n_packets_sent);
 
-			printf ("\nReceived packets:\n");
+			client_log_msg ("\nReceived packets:\n");
 			packets_per_type_print (client->stats->received_packets);
 
-			printf ("\nSent packets:\n");
+			client_log_msg ("\nSent packets:\n");
 			packets_per_type_print (client->stats->sent_packets);
 		}
 
@@ -135,18 +135,18 @@ void client_file_stats_print (Client *client) {
 
 	if (client) {
 		if (client->file_stats) {
-			printf ("Files requests:                %ld\n", client->file_stats->n_files_requests);
-			printf ("Success requests:              %ld\n", client->file_stats->n_success_files_requests);
-			printf ("Bad requests:                  %ld\n\n", client->file_stats->n_bad_files_requests);
-			printf ("Files sent:                    %ld\n\n", client->file_stats->n_files_sent);
-			printf ("Failed files sent:             %ld\n\n", client->file_stats->n_bad_files_sent);
-			printf ("Files bytes sent:              %ld\n\n", client->file_stats->n_bytes_sent);
+			client_log_msg ("Files requests:                %ld\n", client->file_stats->n_files_requests);
+			client_log_msg ("Success requests:              %ld\n", client->file_stats->n_success_files_requests);
+			client_log_msg ("Bad requests:                  %ld\n\n", client->file_stats->n_bad_files_requests);
+			client_log_msg ("Files sent:                    %ld\n\n", client->file_stats->n_files_sent);
+			client_log_msg ("Failed files sent:             %ld\n\n", client->file_stats->n_bad_files_sent);
+			client_log_msg ("Files bytes sent:              %ld\n\n", client->file_stats->n_bytes_sent);
 
-			printf ("Files upload requests:         %ld\n", client->file_stats->n_files_upload_requests);
-			printf ("Success uploads:               %ld\n", client->file_stats->n_success_files_uploaded);
-			printf ("Bad uploads:                   %ld\n", client->file_stats->n_bad_files_upload_requests);
-			printf ("Bad files received:            %ld\n", client->file_stats->n_bad_files_received);
-			printf ("Files bytes received:          %ld\n\n", client->file_stats->n_bytes_received);
+			client_log_msg ("Files upload requests:         %ld\n", client->file_stats->n_files_upload_requests);
+			client_log_msg ("Success uploads:               %ld\n", client->file_stats->n_success_files_uploaded);
+			client_log_msg ("Bad uploads:                   %ld\n", client->file_stats->n_bad_files_upload_requests);
+			client_log_msg ("Bad files received:            %ld\n", client->file_stats->n_bad_files_received);
+			client_log_msg ("Files bytes received:          %ld\n\n", client->file_stats->n_bytes_received);
 		}
 	}
 

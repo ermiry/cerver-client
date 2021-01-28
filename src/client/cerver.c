@@ -61,41 +61,41 @@ void cerver_stats_print (Cerver *cerver) {
 
 	if (cerver) {
 		if (cerver->stats) {
-			printf ("\nCerver's %s stats: \n", cerver->name->str);
-			printf ("Threshold time:                %ld\n", cerver->stats->threshold_time);
+			client_log_msg ("\nCerver's %s stats: \n", cerver->name->str);
+			client_log_msg ("Threshold time:                %ld\n", cerver->stats->threshold_time);
 
 			if (cerver->auth_required) {
-				printf ("Client packets received:       %ld\n", cerver->stats->client_n_packets_received);
-				printf ("Client receives done:          %ld\n", cerver->stats->client_receives_done);
-				printf ("Client bytes received:         %ld\n\n", cerver->stats->client_bytes_received);
+				client_log_msg ("Client packets received:       %ld\n", cerver->stats->client_n_packets_received);
+				client_log_msg ("Client receives done:          %ld\n", cerver->stats->client_receives_done);
+				client_log_msg ("Client bytes received:         %ld\n\n", cerver->stats->client_bytes_received);
 
-				printf ("On hold packets received:       %ld\n", cerver->stats->on_hold_n_packets_received);
-				printf ("On hold receives done:          %ld\n", cerver->stats->on_hold_receives_done);
-				printf ("On hold bytes received:         %ld\n\n", cerver->stats->on_hold_bytes_received);
+				client_log_msg ("On hold packets received:       %ld\n", cerver->stats->on_hold_n_packets_received);
+				client_log_msg ("On hold receives done:          %ld\n", cerver->stats->on_hold_receives_done);
+				client_log_msg ("On hold bytes received:         %ld\n\n", cerver->stats->on_hold_bytes_received);
 			}
 
-			printf ("\n");
-			printf ("Total packets received:        %ld\n", cerver->stats->total_n_packets_received);
-			printf ("Total receives done:           %ld\n", cerver->stats->total_n_receives_done);
-			printf ("Total bytes received:          %ld\n\n", cerver->stats->total_bytes_received);
+			client_log_msg ("\n");
+			client_log_msg ("Total packets received:        %ld\n", cerver->stats->total_n_packets_received);
+			client_log_msg ("Total receives done:           %ld\n", cerver->stats->total_n_receives_done);
+			client_log_msg ("Total bytes received:          %ld\n\n", cerver->stats->total_bytes_received);
 
-			printf ("\n");
-			printf ("N packets sent:                %ld\n", cerver->stats->n_packets_sent);
-			printf ("Total bytes sent:              %ld\n", cerver->stats->total_bytes_sent);
+			client_log_msg ("\n");
+			client_log_msg ("N packets sent:                %ld\n", cerver->stats->n_packets_sent);
+			client_log_msg ("Total bytes sent:              %ld\n", cerver->stats->total_bytes_sent);
 
-			printf ("\n");
-			printf ("Current active client connections:         %ld\n", cerver->stats->current_active_client_connections);
-			printf ("Current connected clients:                 %ld\n", cerver->stats->current_n_connected_clients);
-			printf ("Current on hold connections:               %ld\n", cerver->stats->current_n_hold_connections);
-			printf ("Total on hold connections:                 %ld\n", cerver->stats->total_on_hold_connections);
-			printf ("Total clients:                             %ld\n", cerver->stats->total_n_clients);
-			printf ("Unique clients:                            %ld\n", cerver->stats->unique_clients);
-			printf ("Total client connections:                  %ld\n", cerver->stats->total_client_connections);
+			client_log_msg ("\n");
+			client_log_msg ("Current active client connections:         %ld\n", cerver->stats->current_active_client_connections);
+			client_log_msg ("Current connected clients:                 %ld\n", cerver->stats->current_n_connected_clients);
+			client_log_msg ("Current on hold connections:               %ld\n", cerver->stats->current_n_hold_connections);
+			client_log_msg ("Total on hold connections:                 %ld\n", cerver->stats->total_on_hold_connections);
+			client_log_msg ("Total clients:                             %ld\n", cerver->stats->total_n_clients);
+			client_log_msg ("Unique clients:                            %ld\n", cerver->stats->unique_clients);
+			client_log_msg ("Total client connections:                  %ld\n", cerver->stats->total_client_connections);
 
-			printf ("\nReceived packets:\n");
+			client_log_msg ("\nReceived packets:\n");
 			packets_per_type_print (cerver->stats->received_packets);
 
-			printf ("\nSent packets:\n");
+			client_log_msg ("\nSent packets:\n");
 			packets_per_type_print (cerver->stats->sent_packets);
 		}
 
