@@ -17,11 +17,32 @@
 
 #define CLIENT_FILES_MAX_PATHS           32
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _Client;
 struct _Connection;
+
+struct _ClientEvent;
+struct _ClientError;
+
 struct _Packet;
 struct _PacketsPerType;
+
 struct _FileHeader;
+
+#pragma region global
+
+// initializes global client values
+// should be called only once at the start of the program
+CLIENT_EXPORT void client_init (void);
+
+// correctly disposes global values
+// should be called only once at the very end of the program
+CLIENT_EXPORT void client_end (void);
+
+#pragma endregion
 
 #pragma region stats
 
@@ -77,8 +98,8 @@ struct _Client {
 
 	bool running;                   // any connection is active
 
-	ClientEvent *events[CLIENT_MAX_EVENTS];
-	ClientError *errors[CLIENT_MAX_ERRORS];
+	struct _ClientEvent *events[CLIENT_MAX_EVENTS];
+	struct _ClientError *errors[CLIENT_MAX_ERRORS];
 
 	// custom packet handlers
 	Action app_packet_handler;
@@ -373,5 +394,9 @@ struct _SToken {
 typedef struct _SToken SToken;
 
 #pragma endregion
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
