@@ -15,6 +15,10 @@
 #define IP_TO_STR_LEN       16
 #define IPV6_TO_STR_LEN     46
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum Protocol {
 
 	PROTOCOL_TCP = IPPROTO_TCP,
@@ -41,5 +45,9 @@ CLIENT_PUBLIC in_port_t sock_ip_port (const struct sockaddr *address);
 // if no data was read, a EAGAIN error is returned
 // returns 0 on success, 1 on error
 CLIENT_PUBLIC int sock_set_timeout (int sock_fd, time_t timeout);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
