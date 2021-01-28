@@ -6,7 +6,7 @@
 
 #include "client/config.h"
 
-#define LOG_DEFAULT_PATH		"/var/log/cerver-client"
+#define LOG_DEFAULT_PATH		"/var/log/cerver"
 
 #define LOG_POOL_INIT			32
 
@@ -23,6 +23,12 @@
 #define LOG_COLOR_MAGENTA   "\x1b[35m"
 #define LOG_COLOR_CYAN      "\x1b[36m"
 #define LOG_COLOR_RESET     "\x1b[0m"
+
+#define LOG_DEFAULT_UPDATE_INTERVAL			1
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #pragma region types
 
@@ -71,11 +77,21 @@ typedef enum LogOutputType {
 CLIENT_EXPORT LogOutputType client_log_get_output_type (void);
 
 // sets the log output type to use
-CLIENT_EXPORT void client_log_set_output_type (LogOutputType type);
+CLIENT_EXPORT void client_log_set_output_type (
+	LogOutputType type
+);
 
 // sets the path where logs files will be stored
 // returns 0 on success, 1 on error
-CLIENT_EXPORT unsigned int client_log_set_path (const char *pathname);
+CLIENT_EXPORT unsigned int client_log_set_path (
+	const char *pathname
+);
+
+// sets the interval in secs which will be used to sync the contents of the log file to disk
+// the default values is 1 second
+CLIENT_EXPORT void client_log_set_update_interval (
+	unsigned int interval
+);
 
 #define LOG_TIME_TYPE_MAP(XX)										\
 	XX(0, 	NONE, 		None,		Logs without time)				\
@@ -91,9 +107,13 @@ typedef enum LogTimeType {
 
 } LogTimeType;
 
-CLIENT_PUBLIC const char *client_log_time_type_to_string (LogTimeType type);
+CLIENT_PUBLIC const char *client_log_time_type_to_string (
+	LogTimeType type
+);
 
-CLIENT_PUBLIC const char *client_log_time_type_description (LogTimeType type);
+CLIENT_PUBLIC const char *client_log_time_type_description (
+	LogTimeType type
+);
 
 // returns the current log time configuration
 CLIENT_EXPORT LogTimeType client_log_get_time_config (void);
@@ -108,6 +128,11 @@ CLIENT_EXPORT void client_log_set_time_config (LogTimeType type);
 // set if logs datetimes will use local time or not
 CLIENT_EXPORT void client_log_set_local_time (bool value);
 
+// if the log's quiet option is set to TRUE,
+// only success, warning & error messages will be handled
+// any other type will be ignored
+CLIENT_EXPORT void client_log_set_quiet (bool value);
+
 #pragma endregion
 
 #pragma region public
@@ -115,6 +140,23 @@ CLIENT_EXPORT void client_log_set_local_time (bool value);
 // creates and prints a message of custom types
 // based on the first type, the message can be printed with colors to stdout
 CLIENT_PUBLIC void client_log (
+	LogType first_type, LogType second_type,
+	const char *format, ...
+);
+
+// creates and prints a message of custom types
+// and adds the date & time
+// if the log_time_type has been configured, it will be kept
+CLIENT_PUBLIC void client_log_with_date (
+	LogType first_type, LogType second_type,
+	const char *format, ...
+);
+
+// creates and prints a message of custom types
+// to stdout or stderr based on type
+// and to log file if available
+// this messages ignore the quiet flag
+CLIENT_PUBLIC void client_log_both (
 	LogType first_type, LogType second_type,
 	const char *format, ...
 );
@@ -134,6 +176,12 @@ CLIENT_PUBLIC void client_log_success (const char *msg, ...);
 // prints a debug message to stdout
 CLIENT_PUBLIC void client_log_debug (const char *msg, ...);
 
+// prints a message with no type or format
+CLIENT_PUBLIC void client_log_raw (const char *msg, ...);
+
+// prints a line break, equivalent to printf ("\n")
+CLIENT_PUBLIC void client_log_line_break (void);
+
 #pragma endregion
 
 #pragma region main
@@ -143,5 +191,9 @@ CLIENT_PRIVATE void client_log_init (void);
 CLIENT_PRIVATE void client_log_end (void);
 
 #pragma endregion
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

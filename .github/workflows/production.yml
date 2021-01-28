@@ -1,0 +1,62 @@
+name: Client Production Integration
+
+on:
+  push:
+    branches:
+      - 'master'
+  pull_request:
+    branches:
+      - 'master'
+
+jobs:
+  build:
+    # build sources with production flags
+    name: Client production build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: gcc make
+        run: make TYPE=production
+      - name: gcc examples
+        run: make TYPE=production examples
+
+      - name: clean examples
+        run: make clean-examples
+
+      - name: g++ examples
+        run: make TYPE=production CC=g++ examples
+
+      - name: Archive Shared Library
+        uses: actions/upload-artifact@v2
+        with:
+          name: client-lib
+          path: ./bin/libclient.so
+          retention-days: 1
+  
+  test:
+    # run tests with production sources
+    name: Client production tests
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get Shared Library
+        uses: actions/download-artifact@v2
+        with:
+          name: client-lib
+          path: ./bin
+
+      - name: gcc tests
+        run: make TYPE=production test
+      - name: gcc run tests
+        run: bash test/run.sh
+
+      - name: clean tests
+        run: make clean-tests
+
+      - name: g++ tests
+        run: make TYPE=production CC=g++ test
+      - name: g++ run tests
+        run: bash test/run.sh

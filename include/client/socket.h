@@ -5,6 +5,10 @@
 
 #include "client/config.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _Socket {
 
     int sock_fd;
@@ -24,5 +28,9 @@ CLIENT_PRIVATE void socket_delete (void *socket_ptr);
 CLIENT_PRIVATE void *socket_create_empty (void);
 
 CLIENT_PRIVATE Socket *socket_create (int fd);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

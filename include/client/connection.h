@@ -19,6 +19,10 @@
 
 #define DEFAULT_CONNECTION_TIMEOUT					2
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _Cerver;
 struct _Client;
 struct _Packet;
@@ -192,5 +196,9 @@ CLIENT_PUBLIC void connection_update (void *ptr);
 CLIENT_PUBLIC void connection_close (Connection *connection);
 
 #pragma endregion
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
