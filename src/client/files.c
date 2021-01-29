@@ -2,13 +2,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "client/config.h"
+
+#include <dirent.h>
+#include <fcntl.h>
 #include <time.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
-
-#define _XOPEN_SOURCE 700
-#include <dirent.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -361,7 +360,7 @@ static u8 file_send_header (
 		end += sizeof (PacketHeader);
 
 		FileHeader *file_header = (FileHeader *) end;
-		strncpy (file_header->filename, filename, DEFAULT_FILENAME_LEN);
+		(void) strncpy (file_header->filename, filename, DEFAULT_FILENAME_LEN);
 		file_header->len = filelen;
 
 		packet_set_network_values (packet, client, connection);
@@ -382,7 +381,7 @@ static ssize_t file_send_actual (
 
 	ssize_t retval = 0;
 
-	pthread_mutex_lock (connection->socket->write_mutex);
+	(void) pthread_mutex_lock (connection->socket->write_mutex);
 
 	// send a first packet with file info
 	if (!file_send_header (
@@ -400,7 +399,7 @@ static ssize_t file_send_actual (
 		);
 	}
 
-	pthread_mutex_unlock (connection->socket->write_mutex);
+	(void) pthread_mutex_unlock (connection->socket->write_mutex);
 
 	return retval;
 
@@ -454,7 +453,7 @@ ssize_t file_send (
 				file_fd, actual_filename, filestatus.st_size
 			);
 
-			close (file_fd);
+			(void) close (file_fd);
 		}
 	}
 
@@ -518,7 +517,8 @@ static inline u8 file_receive_internal_receive (
 		default: {
 			#ifdef FILES_DEBUG
 			client_log_debug (
-				"file_receive_internal_receive () - spliced %ld bytes", *received
+				"file_receive_internal_receive () - spliced %ld bytes",
+				*received
 			);
 			#endif
 
@@ -560,7 +560,10 @@ static inline u8 file_receive_internal_move (
 
 		default: {
 			#ifdef FILES_DEBUG
-			client_log_debug ("file_receive_internal_move () - spliced %ld bytes", *moved);
+			client_log_debug (
+				"file_receive_internal_move () - spliced %ld bytes",
+				*moved
+			);
 			#endif
 
 			retval = 0;
@@ -571,7 +574,9 @@ static inline u8 file_receive_internal_move (
 
 }
 
-static u8 file_receive_internal (Connection *connection, size_t filelen, int file_fd) {
+static u8 file_receive_internal (
+	Connection *connection, size_t filelen, int file_fd
+) {
 
 	u8 retval = 1;
 
@@ -584,15 +589,19 @@ static u8 file_receive_internal (Connection *connection, size_t filelen, int fil
 		while (len > 0) {
 			if (buff_size > len) buff_size = len;
 
-			if (file_receive_internal_receive (connection, pipefds[1], buff_size, &received)) break;
+			if (file_receive_internal_receive (
+				connection, pipefds[1], buff_size, &received
+			)) break;
 
-			if (file_receive_internal_move (pipefds[0], file_fd, buff_size, &moved)) break;
+			if (file_receive_internal_move (
+				pipefds[0], file_fd, buff_size, &moved
+			)) break;
 
 			len -= buff_size;
 		}
 
-		close (pipefds[0]);
-    	close (pipefds[1]);
+		(void) close (pipefds[0]);
+    	(void) close (pipefds[1]);
 
 		if (len <= 0) retval = 0;
 	}
@@ -601,9 +610,12 @@ static u8 file_receive_internal (Connection *connection, size_t filelen, int fil
 
 }
 
-// receives an incomming file in the socket and splice its information to a local file
-// returns 0 on success, 1 on error
-u8 file_receive (
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+// opens the file using an already created filename
+// and use the fd to receive and save the file
+u8 file_receive_actual (
 	Client *client, Connection *connection,
 	FileHeader *file_header,
 	const char *file_data, size_t file_data_len,
@@ -612,85 +624,77 @@ u8 file_receive (
 
 	u8 retval = 1;
 
-	// generate a custom filename taking into account the uploads path
-	*saved_filename = c_string_create (
-		"%s/%ld-%d-%s", 
-		client->uploads_path->str, 
-		time (NULL), random_int_in_range (0, 1000),
-		file_header->filename
-	);
+	int file_fd = open (*saved_filename, O_CREAT | O_WRONLY | O_TRUNC, 0777);
+	if (file_fd > 0) {
+		// ssize_t received = splice (
+		// 	connection->socket->sock_fd, NULL,
+		// 	file_fd, NULL,
+		// 	file_header->len,
+		// 	0
+		// );
 
-	if (*saved_filename) {
-		int file_fd = open (*saved_filename, O_CREAT | O_WRONLY | O_TRUNC, 0777);
-		if (file_fd > 0) {
-			// ssize_t received = splice (
-			// 	connection->socket->sock_fd, NULL,
-			// 	file_fd, NULL,
-			// 	file_header->len,
-			// 	SPLICE_F_MOVE | SPLICE_F_MORE
-			// );
-
-			// we received some part of the file when reading packets,
-			// they should be the first ones to be saved into the file
-			if (file_data && file_data_len) {
-				ssize_t wrote = write (file_fd, file_data, file_data_len);
-				if (wrote < 0) {
-					client_log_error ("file_receive_actual () - write () has failed!");
-					perror ("Error");
-					printf ("\n");
-				}
-
-				else {
-					#ifdef FILES_DEBUG
-					printf (
-						"\n\nwrote %ld of file_data_len %ld\n\n",
-						wrote,
-						file_data_len
-					);
-					#endif
-				}
+		// we received some part of the file when reading packets,
+		// they should be the first ones to be saved into the file
+		if (file_data && file_data_len) {
+			ssize_t wrote = write (file_fd, file_data, file_data_len);
+			if (wrote < 0) {
+				client_log_error ("file_receive_actual () - write () has failed!");
+				perror ("Error");
+				client_log_line_break ();
 			}
 
-			// there is still more data to be received
-			if (file_data_len < file_header->len) {
-				size_t real_filelen = file_header->len - file_data_len;
+			else {
 				#ifdef FILES_DEBUG
-				printf (
-					"\nfilelen: %ld - file data len %ld = %ld\n\n", 
-					file_header->len, file_data_len, real_filelen
+				client_log_debug (
+					"\n\nwrote %ld of file_data_len %ld\n\n",
+					wrote,
+					file_data_len
 				);
 				#endif
-				if (!file_receive_internal (
-					connection,
-					real_filelen,
-					file_fd
-				)) {
-					#ifdef FILES_DEBUG
-					client_log_success ("file_receive_internal () has finished");
-					#endif
+			}
+		}
 
-					retval = 0;
-				}
+		// there is still more data to be received
+		if (file_data_len < file_header->len) {
+			size_t real_filelen = file_header->len - file_data_len;
+			#ifdef FILES_DEBUG
+			client_log_debug (
+				"\nfilelen: %ld - file data len %ld = %ld\n\n",
+				file_header->len, file_data_len, real_filelen
+			);
+			#endif
+			if (!file_receive_internal (
+				connection,
+				real_filelen,
+				file_fd
+			)) {
+				#ifdef FILES_DEBUG
+				client_log_success ("file_receive_internal () has finished");
+				#endif
 
-				else {
-					free (*saved_filename);
-					*saved_filename = NULL;
-				}
+				retval = 0;
 			}
 
-			close (file_fd);
+			else {
+				free (*saved_filename);
+				*saved_filename = NULL;
+			}
 		}
 
-		else {
-			client_log_error ("file_receive () - failed to open file");
+		(void) close (file_fd);
+	}
 
-			free (*saved_filename);
-			*saved_filename = NULL;
-		}
+	else {
+		client_log_error ("file_receive_actual () - failed to open file");
+
+		free (*saved_filename);
+		*saved_filename = NULL;
 	}
 
 	return retval;
 
 }
+
+#pragma GCC diagnostic pop
 
 #pragma endregion

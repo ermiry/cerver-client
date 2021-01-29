@@ -106,9 +106,9 @@ CLIENT_PUBLIC ssize_t file_send_by_fd (
 
 #pragma region receive
 
-// receives an incomming file in the socket and splice its information to a local file
-// returns 0 on success, 1 on error
-CLIENT_PUBLIC u8 file_receive (
+// opens the file using an already created filename
+// and use the fd to receive and save the file
+CLIENT_PUBLIC u8 file_receive_actual (
 	struct _Client *client, struct _Connection *connection,
 	FileHeader *file_header,
 	const char *file_data, size_t file_data_len,
