@@ -9,6 +9,8 @@
 #include "client/config.h"
 #include "client/packets.h"
 
+#define CLIENT_MAX_ERRORS				32
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -16,10 +18,6 @@ extern "C" {
 struct _Client;
 struct _Connection;
 struct _Packet;
-
-#pragma region types
-
-#define CLIENT_MAX_ERRORS				32
 
 #define CLIENT_ERROR_MAP(XX)													\
 	XX(0,	NONE, 				No error)										\
@@ -46,11 +44,9 @@ typedef enum ClientErrorType {
 } ClientErrorType;
 
 // get the description for the current error type
-CLIENT_EXPORT const char *client_error_type_description (ClientErrorType type);
-
-#pragma endregion
-
-#pragma region errors
+CLIENT_EXPORT const char *client_error_type_description (
+	const ClientErrorType type
+);
 
 struct _ClientError {
 
@@ -58,8 +54,8 @@ struct _ClientError {
 	bool create_thread;                 // create a detachable thread to run action
 	bool drop_after_trigger;            // if we only want to trigger the event once
 
-	Action action;                      // the action to be triggered
-	void *action_args;                  // the action arguments
+	Work work;                      	// the action to be triggered
+	void *work_args;                  // the action arguments
 	Action delete_action_args;          // how to get rid of the data
 
 };
@@ -70,32 +66,30 @@ CLIENT_PRIVATE void client_error_delete (void *client_error_ptr);
 
 // registers an action to be triggered when the specified error occurs
 // if there is an existing action registered to an error, it will be overrided
-// a newly allocated ClientErrorData structure will be passed to your method 
+// a newly allocated ClientErrorData structure will be passed to your method
 // that should be free using the client_error_data_delete () method
 // returns 0 on success, 1 on error
 CLIENT_EXPORT u8 client_error_register (
 	struct _Client *client,
 	const ClientErrorType error_type,
-	Action action, void *action_args, Action delete_action_args, 
+	Work work, void *work_args, Action delete_action_args,
 	bool create_thread, bool drop_after_trigger
 );
 
 // unregisters the action associated with the error types
 // deletes the action args using the delete_action_args () if NOT NULL
 // returns 0 on success, 1 on error or if error is NOT registered
-CLIENT_EXPORT u8 client_error_unregister (struct _Client *client, const ClientErrorType error_type);
+CLIENT_EXPORT u8 client_error_unregister (
+	struct _Client *client, const ClientErrorType error_type
+);
 
 // triggers all the actions that are registred to an error
 // returns 0 on success, 1 on error
 CLIENT_PRIVATE u8 client_error_trigger (
-	const ClientErrorType error_type, 
-	const struct _Client *client, const struct _Connection *connection, 
+	const ClientErrorType error_type,
+	const struct _Client *client, const struct _Connection *connection,
 	const char *error_message
 );
-
-#pragma endregion
-
-#pragma region data
 
 // structure that is passed to the user registered method
 typedef struct ClientErrorData {
@@ -109,28 +103,26 @@ typedef struct ClientErrorData {
 
 } ClientErrorData;
 
-CLIENT_PUBLIC void client_error_data_delete (ClientErrorData *error_data);
+CLIENT_PUBLIC void client_error_data_delete (
+	ClientErrorData *error_data
+);
 
-#pragma endregion
+// creates an error packet ready to be sent
+CLIENT_PUBLIC struct _Packet *client_error_packet_generate (
+	const ClientErrorType type, const char *msg
+);
+
+// creates and send a new error packet
+// returns 0 on success, 1 on error
+CLIENT_PUBLIC u8 client_error_packet_generate_and_send (
+	const ClientErrorType type, const char *msg,
+	struct _Client *client, struct _Connection *connection
+);
 
 #pragma region handler
 
 // handles error packets
-CLIENT_PRIVATE void client_error_packet_handler (struct _Packet *packet);
-
-#pragma endregion
-
-#pragma region packets
-
-// creates an error packet ready to be sent
-CLIENT_PUBLIC struct _Packet *error_packet_generate (const ClientErrorType type, const char *msg);
-
-// creates and send a new error packet
-// returns 0 on success, 1 on error
-CLIENT_PUBLIC u8 error_packet_generate_and_send (
-	const ClientErrorType type, const char *msg,
-	struct _Client *client, struct _Connection *connection
-);
+CLIENT_PRIVATE void client_error_packet_handler (Packet *packet);
 
 #pragma endregion
 
@@ -146,6 +138,8 @@ typedef struct SError {
 	char msg[ERROR_MESSAGE_LENGTH];
 
 } SError;
+
+#pragma endregion
 
 #pragma endregion
 
