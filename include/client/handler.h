@@ -1,10 +1,9 @@
 #ifndef _CLIENT_HANDLER_H_
 #define _CLIENT_HANDLER_H_
 
-#include "client/client.h"
 #include "client/config.h"
-#include "client/connection.h"
 #include "client/packets.h"
+#include "client/receive.h"
 
 #include "client/threads/jobs.h"
 
@@ -153,6 +152,27 @@ CLIENT_PUBLIC const char *client_handler_error_to_string (
 
 CLIENT_PUBLIC const char *client_handler_error_description (
 	const ClientHandlerError error
+);
+
+CLIENT_PRIVATE u8 client_packet_handler (Packet *packet);
+
+// performs the actual recv () method on the connection's sock fd
+// handles if the receive method failed
+// the amount of bytes read from the socket is placed in rc
+CLIENT_PRIVATE ReceiveError client_receive_actual (
+	struct _Client *client, struct _Connection *connection,
+	char *buffer, const size_t buffer_size,
+	size_t *rc
+);
+
+// request to read x amount of bytes from the connection's sock fd
+// into the specified buffer
+// this method will only return once the requested bytes
+// have been received or on any error
+CLIENT_PRIVATE ReceiveError client_receive_data (
+	struct _Client *client, struct _Connection *connection,
+	char *buffer, const size_t buffer_size,
+	size_t requested_data
 );
 
 // receive data from connection's socket

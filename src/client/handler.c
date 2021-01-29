@@ -277,7 +277,7 @@ int handler_start (Handler *handler) {
 				(void *) handler
 			)) {
 				#ifdef HANDLER_DEBUG
-				cerver_log (
+				client_log (
 					LOG_TYPE_DEBUG, LOG_TYPE_HANDLER,
 					"Created handler %d thread!",
 					handler->unique_id
@@ -289,7 +289,7 @@ int handler_start (Handler *handler) {
 		}
 
 		else {
-			cerver_log_error (
+			client_log_error (
 				"handler_start () - Handler %d is of invalid type!",
 				handler->unique_id
 			);
@@ -297,35 +297,6 @@ int handler_start (Handler *handler) {
 	}
 
 	return retval;
-
-}
-
-
-const char *client_handler_error_to_string (
-	const ClientHandlerError error
-) {
-
-	switch (error) {
-		#define XX(num, name, string, description) case CLIENT_HANDLER_ERROR_##name: return #string;
-		CLIENT_HANDLER_ERROR_MAP(XX)
-		#undef XX
-	}
-
-	return client_handler_error_to_string (CLIENT_HANDLER_ERROR_NONE);
-
-}
-
-const char *client_handler_error_description (
-	const ClientHandlerError error
-) {
-
-	switch (error) {
-		#define XX(num, name, string, description) case CLIENT_HANDLER_ERROR_##name: return #description;
-		CLIENT_HANDLER_ERROR_MAP(XX)
-		#undef XX
-	}
-
-	return client_handler_error_description (CLIENT_HANDLER_ERROR_NONE);
 
 }
 
@@ -366,8 +337,8 @@ static void client_cerver_packet_handle_info (Packet *packet) {
 		client_log (LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Received a cerver info packet.");
 		#endif
 
-		CerverReport *cerver_report = cerver_deserialize ((SCerver *) end);
-		if (cerver_report_check_info (
+		Cerver *cerver_report = cerver_deserialize ((SCerver *) end);
+		if (cerver_check_info (
 			cerver_report, packet->client, packet->connection
 		)) {
 			client_log (
@@ -475,7 +446,7 @@ static void client_request_get_file (Packet *packet) {
 			// if found, pipe the file contents to the client's socket fd
 			// the socket should be blocked during the entire operation
 			ssize_t sent = file_send (
-				NULL, client, packet->connection,
+				client, packet->connection,
 				actual_filename->str
 			);
 
@@ -680,8 +651,8 @@ static void client_auth_success_handler (Packet *packet) {
 
 	packet->connection->authenticated = true;
 
-	if (packet->connection->cerver_report) {
-		if (packet->connection->cerver_report->uses_sessions) {
+	if (packet->connection->cerver) {
+		if (packet->connection->cerver->uses_sessions) {
 			if (!auth_strip_token (packet, packet->client)) {
 				#ifdef AUTH_DEBUG
 				client_log_debug (
@@ -961,7 +932,7 @@ static ClientHandlerError client_packet_handler_check_version (
 
 }
 
-static u8 client_packet_handler (Packet *packet) {
+u8 client_packet_handler (Packet *packet) {
 
 	u8 retval = 1;
 
