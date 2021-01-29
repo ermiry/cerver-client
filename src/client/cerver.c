@@ -7,13 +7,13 @@
 #include "client/types/string.h"
 
 #include "client/cerver.h"
+#include "client/client.h"
 #include "client/connection.h"
+#include "client/events.h"
 #include "client/packets.h"
 
 #include "client/utils/utils.h"
 #include "client/utils/log.h"
-
-static Cerver *cerver_deserialize (SCerver *scerver);
 
 #pragma region types
 
@@ -37,7 +37,7 @@ static CerverStats *cerver_stats_new (void) {
 
 	CerverStats *cerver_stats = (CerverStats *) malloc (sizeof (CerverStats));
 	if (cerver_stats) {
-		memset (cerver_stats, 0, sizeof (CerverStats));
+		(void) memset (cerver_stats, 0, sizeof (CerverStats));
 		cerver_stats->received_packets = packets_per_type_new ();
 		cerver_stats->sent_packets = packets_per_type_new ();
 	}
@@ -152,7 +152,9 @@ void cerver_delete (void *ptr) {
 
 }
 
-static void cerver_check_info_handle_auth (Cerver *cerver, Client *client, Connection *connection) {
+static void cerver_check_info_handle_auth (
+	Cerver *cerver, Client *client, Connection *connection
+) {
 
 	if (cerver && connection) {
 		if (cerver->auth_required) {
@@ -168,14 +170,14 @@ static void cerver_check_info_handle_auth (Cerver *cerver, Client *client, Conne
 					if (!connection_generate_auth_packet (connection)) {
 						client_log_success (
 							"cerver_check_info () - Generated connection %s auth packet!",
-							connection->name->str
+							connection->name
 						);
 					}
 
 					else {
 						client_log_error (
 							"cerver_check_info () - Failed to generate connection %s auth packet!",
-							connection->name->str
+							connection->name
 						);
 					}
 				}
@@ -186,7 +188,7 @@ static void cerver_check_info_handle_auth (Cerver *cerver, Client *client, Conne
 					if (!packet_send (connection->auth_packet, 0, NULL, false)) {
 						client_log_success (
 							"cerver_check_info () - Sent connection %s auth packet!",
-							connection->name->str
+							connection->name
 						);
 
 						client_event_trigger (CLIENT_EVENT_AUTH_SENT, client, connection);
@@ -195,7 +197,7 @@ static void cerver_check_info_handle_auth (Cerver *cerver, Client *client, Conne
 					else {
 						client_log_error (
 							"cerver_check_info () - Failed to send connection %s auth packet!",
-							connection->name->str
+							connection->name
 						);
 					}
 				}
@@ -208,7 +210,7 @@ static void cerver_check_info_handle_auth (Cerver *cerver, Client *client, Conne
 			else {
 				client_log_error (
 					"Connection %s does NOT have an auth packet!",
-					connection->name->str
+					connection->name
 				);
 			}
 		}
@@ -224,7 +226,9 @@ static void cerver_check_info_handle_auth (Cerver *cerver, Client *client, Conne
 
 // compare the info the server sent us with the one we expected
 // and ajust our connection values if necessary
-static u8 cerver_check_info (Cerver *cerver, Client *client, Connection *connection) {
+u8 cerver_check_info (
+	Cerver *cerver, Client *client, Connection *connection
+) {
 
 	u8 retval = 1;
 
@@ -298,54 +302,9 @@ static u8 cerver_check_info (Cerver *cerver, Client *client, Connection *connect
 
 #pragma endregion
 
-#pragma region handler
-
-static void cerver_packet_handle_info (Packet *packet) {
-
-	if (packet->data && (packet->data_size > 0)) {
-		char *end = (char *) packet->data;
-
-		#ifdef CLIENT_DEBUG
-		client_log (LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Received a cerver info packet.");
-		#endif
-		Cerver *cerver = cerver_deserialize ((SCerver *) end);
-		if (cerver_check_info (cerver, packet->client, packet->connection))
-			client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to correctly check cerver info!");
-	}
-
-}
-
-// handles cerver type packets
-void cerver_packet_handler (Packet *packet) {
-
-	if (packet->header) {
-		switch (packet->header->request_type) {
-			case CERVER_PACKET_TYPE_INFO:
-				cerver_packet_handle_info (packet);
-				break;
-
-			// the cerves is going to be teardown, we have to disconnect
-			case CERVER_PACKET_TYPE_TEARDOWN:
-				#ifdef CLIENT_DEBUG
-				client_log (LOG_TYPE_WARNING, LOG_TYPE_NONE, "---> Server teardown! <---");
-				#endif
-				client_got_disconnected (packet->client);
-				client_event_trigger (CLIENT_EVENT_DISCONNECTED, packet->client, NULL);
-				break;
-
-			default:
-				client_log (LOG_TYPE_WARNING, LOG_TYPE_NONE, "Unknown cerver type packet.");
-				break;
-		}
-	}
-
-}
-
-#pragma endregion
-
 #pragma region serialization
 
-static Cerver *cerver_deserialize (SCerver *scerver) {
+Cerver *cerver_deserialize (SCerver *scerver) {
 
 	Cerver *cerver = NULL;
 
