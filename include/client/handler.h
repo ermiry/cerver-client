@@ -16,6 +16,27 @@ struct _Client;
 struct _Connection;
 struct _Packet;
 
+#define CLIENT_HANDLER_ERROR_MAP(XX)										\
+	XX(0,	NONE,		None,				No handler error)				\
+	XX(1,	PACKET,		Bad Packet,			Packet check failed)			\
+	XX(2,	CLOSED,		Closed Connection, 	The connection has been ended)
+
+typedef enum ClientHandlerError {
+
+	#define XX(num, name, string, description) CLIENT_HANDLER_ERROR_##name = num,
+	CLIENT_HANDLER_ERROR_MAP (XX)
+	#undef XX
+
+} ClientHandlerError;
+
+CLIENT_PUBLIC const char *client_handler_error_to_string (
+	const ClientHandlerError error
+);
+
+CLIENT_PUBLIC const char *client_handler_error_description (
+	const ClientHandlerError error
+);
+
 // receive data from connection's socket
 // this method does not perform any checks and expects a valid buffer
 // to handle incomming data
