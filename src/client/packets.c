@@ -279,7 +279,10 @@ void packet_header_log (const PacketHeader *header) {
 
 #pragma region packets
 
-u8 packet_append_data (Packet *packet, void *data, size_t data_size);
+u8 packet_append_data (
+	Packet *packet,
+	const void *data, const size_t data_size
+);
 
 Packet *packet_new (void) {
 
@@ -298,8 +301,24 @@ Packet *packet_new (void) {
 		packet->data_end = NULL;
 		packet->data_ref = false;
 
-		packet->header = NULL;
-		packet->version = NULL;
+		packet->remaining_data = 0;
+
+		packet->header = (PacketHeader) {
+			.packet_type = PACKET_TYPE_NONE,
+			.packet_size = 0,
+			.handler_id = 0,
+			.request_type = 0,
+			.sock_fd = 0
+		};
+
+		packet->version = (PacketVersion) {
+			.protocol_id = 0,
+			.protocol_version = {
+				.major = 0,
+				.minor = 0
+			}
+		};
+
 		packet->packet_size = 0;
 		packet->packet = NULL;
 		packet->packet_ref = false;
@@ -308,25 +327,10 @@ Packet *packet_new (void) {
 	return packet;
 
 }
+void packet_delete (void *packet_ptr) {
 
-// create a new packet with the option to pass values directly
-// data is copied into packet buffer and can be safely freed
-Packet *packet_create (PacketType type, void *data, size_t data_size) {
-
-	Packet *packet = packet_new ();
-	if (packet) {
-		packet->packet_type = type;
-		if (data) packet_append_data (packet, data, data_size);
-	}
-
-	return packet;
-
-}
-
-void packet_delete (void *ptr) {
-
-	if (ptr) {
-		Packet *packet = (Packet *) ptr;
+	if (packet_ptr) {
+		Packet *packet = (Packet *) packet_ptr;
 
 		packet->cerver = NULL;
 		packet->client = NULL;
@@ -335,9 +339,6 @@ void packet_delete (void *ptr) {
 		if (!packet->data_ref) {
 			if (packet->data) free (packet->data);
 		}
-
-		packet_header_delete (packet->header);
-		packet_version_delete (packet->version);
 
 		if (!packet->packet_ref) {
 			if (packet->packet) free (packet->packet);
@@ -348,8 +349,58 @@ void packet_delete (void *ptr) {
 
 }
 
-// sets the pakcet destinatary is directed to and the protocol to use
-void packet_set_network_values (Packet *packet, Client *client, Connection *connection) {
+// create a new packet with the option to pass values directly
+// data is copied into packet buffer and can be safely freed
+Packet *packet_create (
+	const PacketType type, const u32 req_type,
+	const void *data, const size_t data_size
+) {
+
+	Packet *packet = packet_new ();
+	if (packet) {
+		packet->packet_type = type;
+		packet->req_type = req_type;
+
+		if (data) {
+			packet_append_data (packet, data, data_size);
+		}
+	}
+
+	return packet;
+
+}
+
+// creates a packet with a data buffer of the specified size
+Packet *packet_create_with_data (
+	const size_t data_size
+) {
+
+	Packet *packet = packet_new ();
+	if (packet) {
+		if (data_size > 0) {
+			packet->data = malloc (data_size);
+			if (packet->data) {
+				packet->data_size = data_size;
+				packet->data_end = packet->data;
+				packet->remaining_data = data_size;
+			}
+
+			else {
+				packet_delete (packet);
+				packet = NULL;
+			}
+		}
+	}
+
+	return packet;
+
+}
+
+// sets the pakcet destinatary
+void packet_set_network_values (
+	Packet *packet,
+	Client *client, Connection *connection
+) {
 
 	if (packet) {
 		packet->client = client;
@@ -358,13 +409,15 @@ void packet_set_network_values (Packet *packet, Client *client, Connection *conn
 
 }
 
+
 // sets the packet's header
 // copies the header's values into the packet
-void packet_set_header (Packet *packet, PacketHeader *header) {
+void packet_set_header (
+	Packet *packet, const PacketHeader *header
+) {
 
 	if (packet && header) {
-		if (!packet->header) packet->header = (PacketHeader *) malloc (sizeof (PacketHeader));
-		if (packet->header) memcpy (&packet->header, header, sizeof (PacketHeader));
+		(void) memcpy (&packet->header, header, sizeof (PacketHeader));
 	}
 
 }
@@ -379,22 +432,46 @@ void packet_set_header_values (
 ) {
 
 	if (packet) {
-		if (!packet->header) packet->header = (PacketHeader *) malloc (sizeof (PacketHeader));
-		if (packet->header) {
-			packet->header->packet_type = packet_type;
-			packet->header->packet_size = packet_size;
-			packet->header->handler_id = handler_id;
-			packet->header->request_type = request_type;
-			packet->header->sock_fd = sock_fd;
+		packet->header.packet_type = packet_type;
+		packet->header.packet_size = packet_size;
+		packet->header.handler_id = handler_id;
+		packet->header.request_type = request_type;
+		packet->header.sock_fd = sock_fd;
+	}
+
+}
+
+// allocates the packet's data with size data_size
+// data can be added using packet_add_data ()
+// returns 0 on success, 1 on error
+unsigned int packet_create_data (
+	Packet *packet, const size_t data_size
+) {
+
+	unsigned int retval = 1;
+
+	if (packet && (data_size > 0)) {
+		packet->data = malloc (data_size);
+		if (packet->data) {
+			packet->data_size = data_size;
+			packet->data_end = packet->data;
+			packet->remaining_data = data_size;
+
+			retval = 0;
 		}
 	}
+
+	return retval;
 
 }
 
 // sets the data of the packet -> copies the data into the packet
 // if the packet had data before it is deleted and replaced with the new one
 // returns 0 on success, 1 on error
-u8 packet_set_data (Packet *packet, void *data, size_t data_size) {
+u8 packet_set_data (
+	Packet *packet,
+	const void *data, const size_t data_size
+) {
 
 	u8 retval = 1;
 
@@ -407,7 +484,7 @@ u8 packet_set_data (Packet *packet, void *data, size_t data_size) {
 		packet->data_size = data_size;
 		packet->data = malloc (packet->data_size);
 		if (packet->data) {
-			memcpy (packet->data, data, data_size);
+			(void) memcpy (packet->data, data, data_size);
 			packet->data_end = (char *) packet->data;
 			packet->data_end += packet->data_size;
 
@@ -422,11 +499,40 @@ u8 packet_set_data (Packet *packet, void *data, size_t data_size) {
 
 }
 
+// adds the data to the packet's existing data buffer
+// the data size must be <= the packet's remaining data
+// returns 0 on success, 1 on error
+u8 packet_add_data (
+	Packet *packet,
+	const void *data, const size_t data_size
+) {
+
+	u8 retval = 1;
+
+	if (packet && data) {
+		// check that we can copy the data
+		if (data_size <= packet->remaining_data) {
+			(void) memcpy (packet->data_end, data, data_size);
+
+			packet->data_end += data_size;
+			packet->remaining_data -= data_size;
+
+			retval = 0;
+		}
+	}
+
+	return retval;
+
+}
+
 // appends the data to the end if the packet already has data
 // if the packet is empty, creates a new buffer
 // it creates a new copy of the data and the original can be safely freed
 // this does not work if the data has been set using a reference
-u8 packet_append_data (Packet *packet, void *data, size_t data_size) {
+u8 packet_append_data (
+	Packet *packet,
+	const void *data, const size_t data_size
+) {
 
 	u8 retval = 1;
 
@@ -440,7 +546,7 @@ u8 packet_append_data (Packet *packet, void *data, size_t data_size) {
 				packet->data_end += packet->data_size;
 
 				// copy the new buffer
-				memcpy (packet->data_end, data, data_size);
+				(void) memcpy (packet->data_end, data, data_size);
 				packet->data_end += data_size;
 
 				packet->data = new_data;
@@ -454,7 +560,10 @@ u8 packet_append_data (Packet *packet, void *data, size_t data_size) {
 
 			else {
 				#ifdef PACKETS_DEBUG
-				client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to realloc packet data!");
+				client_log (
+					LOG_TYPE_ERROR, LOG_TYPE_NONE,
+					"Failed to realloc packet data!"
+				);
 				#endif
 				packet->data = NULL;
 				packet->data_size = 0;
@@ -467,7 +576,7 @@ u8 packet_append_data (Packet *packet, void *data, size_t data_size) {
 			packet->data = malloc (packet->data_size);
 			if (packet->data) {
 				// copy the data to the packet data buffer
-				memcpy (packet->data, data, data_size);
+				(void) memcpy (packet->data, data, data_size);
 				packet->data_end = (char *) packet->data;
 				packet->data_end += packet->data_size;
 
@@ -479,7 +588,10 @@ u8 packet_append_data (Packet *packet, void *data, size_t data_size) {
 
 			else {
 				#ifdef PACKETS_DEBUG
-				client_log (LOG_TYPE_ERROR, LOG_TYPE_NONE, "Failed to allocate packet data!");
+				client_log (
+					LOG_TYPE_ERROR, LOG_TYPE_NONE,
+					"Failed to allocate packet data!"
+				);
 				#endif
 				packet->data = NULL;
 				packet->data_size = 0;
@@ -495,7 +607,9 @@ u8 packet_append_data (Packet *packet, void *data, size_t data_size) {
 // data will not be copied into the packet and will not be freed after use
 // this method is usefull for example if you just want to send a raw json packet to a non-cerver
 // use this method with packet_send () with the raw flag on
-u8 packet_set_data_ref (Packet *packet, void *data, size_t data_size) {
+u8 packet_set_data_ref (
+	Packet *packet, void *data, size_t data_size
+) {
 
 	u8 retval = 1;
 
@@ -518,7 +632,9 @@ u8 packet_set_data_ref (Packet *packet, void *data, size_t data_size) {
 // sets a the packet's packet using by copying the passed data
 // deletes the previuos packet's packet
 // returns 0 on succes, 1 on error
-u8 packet_set_packet (Packet *packet, void *data, size_t data_size) {
+u8 packet_set_packet (
+	Packet *packet, void *data, size_t data_size
+) {
 
 	u8 retval = 1;
 
@@ -530,7 +646,7 @@ u8 packet_set_packet (Packet *packet, void *data, size_t data_size) {
 		packet->packet_size = data_size;
 		packet->packet = malloc (packet->packet_size);
 		if (packet->packet) {
-			memcpy (packet->packet, data, data_size);
+			(void) memcpy (packet->packet, data, data_size);
 
 			retval = 0;
 		}
@@ -543,7 +659,9 @@ u8 packet_set_packet (Packet *packet, void *data, size_t data_size) {
 // sets a reference to a data buffer to send as the packet
 // data will not be copied into the packet and will not be freed after use
 // usefull when you need to generate your own cerver type packet by hand
-u8 packet_set_packet_ref (Packet *packet, void *data, size_t packet_size) {
+u8 packet_set_packet_ref (
+	Packet *packet, void *data, size_t packet_size
+) {
 
 	u8 retval = 1;
 
@@ -563,7 +681,6 @@ u8 packet_set_packet_ref (Packet *packet, void *data, size_t packet_size) {
 
 }
 
-
 // prepares the packet to be ready to be sent
 // returns 0 on sucess, 1 on error
 u8 packet_generate (Packet *packet) {
@@ -578,16 +695,21 @@ u8 packet_generate (Packet *packet) {
 		}
 
 		packet->packet_size = sizeof (PacketHeader) + packet->data_size;
-		if (!packet->header)
-			packet->header = packet_header_create (packet->packet_type, packet->packet_size, packet->req_type);
+
+		packet->header.packet_type = packet->packet_type;
+		packet->header.packet_size = packet->packet_size;
+		packet->header.request_type = packet->req_type;
 
 		// create the packet buffer to be sent
 		packet->packet = malloc (packet->packet_size);
 		if (packet->packet) {
 			char *end = (char *) packet->packet;
-			memcpy (end, packet->header, sizeof (PacketHeader));
-			end += sizeof (PacketHeader);
-			memcpy (end, packet->data, packet->data_size);
+			(void) memcpy (end, &packet->header, sizeof (PacketHeader));
+
+			if (packet->data_size > 0) {
+				end += sizeof (PacketHeader);
+				(void) memcpy (end, packet->data, packet->data_size);
+			}
 
 			retval = 0;
 		}
@@ -597,11 +719,63 @@ u8 packet_generate (Packet *packet) {
 
 }
 
+// creates a request packet that is ready to be sent
+// returns a newly allocated packet
+Packet *packet_create_request (
+	const PacketType packet_type,
+	const u32 request_type
+) {
+
+	Packet *packet = (Packet *) malloc (sizeof (Packet));
+	if (packet) {
+		*packet = (Packet) {
+			.cerver = NULL,
+			.client = NULL,
+			.connection = NULL,
+
+			.packet_type = packet_type,
+			.req_type = request_type,
+
+			.data_size = 0,
+			.data = NULL,
+			.data_ptr = NULL,
+			.data_end = NULL,
+			.data_ref = false,
+
+			.header = (PacketHeader) {
+				.packet_type = packet_type,
+				.packet_size = sizeof (PacketHeader),
+
+				.handler_id = 0,
+
+				.request_type = request_type,
+
+				.sock_fd = 0
+			},
+
+			.packet_size = sizeof (PacketHeader),
+			.packet = (void *) &packet->header,
+			.packet_ref = true
+		};
+	}
+
+	return packet;
+
+}
+
+// creates a new ping packet (PACKET_TYPE_TEST)
+// returns a newly allocated packet
+Packet *packet_create_ping (void) {
+
+	return packet_create_request (PACKET_TYPE_TEST, 0);
+
+}
+
 // generates a simple request packet of the requested type reday to be sent,
 // and with option to pass some data
 Packet *packet_generate_request (
-	PacketType packet_type, u32 req_type,
-	void *data, size_t data_size
+	const PacketType packet_type, const u32 req_type,
+	const void *data, const size_t data_size
 ) {
 
 	Packet *packet = packet_new ();
@@ -630,7 +804,9 @@ Packet *packet_generate_request (
 }
 
 static inline u8 packet_send_tcp_actual (
-	const Packet *packet, Connection *connection, int flags, size_t *total_sent, bool raw
+	const Packet *packet,
+	Connection *connection,
+	int flags, size_t *total_sent, bool raw
 ) {
 
 	ssize_t sent = 0;
@@ -656,16 +832,20 @@ static inline u8 packet_send_tcp_actual (
 // sends a packet directly using the tcp protocol and the packet sock fd
 // returns 0 on success, 1 on error
 static u8 packet_send_tcp (
-	const Packet *packet, Connection *connection, int flags, size_t *total_sent, bool raw
+	const Packet *packet,
+	Connection *connection,
+	int flags, size_t *total_sent, bool raw
 ) {
 
 	u8 retval = 1;
 
-	pthread_mutex_lock (connection->socket->write_mutex);
+	(void) pthread_mutex_lock (connection->socket->write_mutex);
 
-	retval = packet_send_tcp_actual (packet, connection, flags, total_sent, raw);
+	retval = packet_send_tcp_actual (
+		packet, connection, flags, total_sent, raw
+	);
 
-	pthread_mutex_unlock (connection->socket->write_mutex);
+	(void) pthread_mutex_unlock (connection->socket->write_mutex);
 
 	return retval;
 
@@ -673,19 +853,23 @@ static u8 packet_send_tcp (
 
 // sends a packet to the socket in two parts, first the header & then the data
 // returns 0 on success, 1 on error
-static u8 packet_send_split_tcp (const Packet *packet, Connection *connection, int flags, size_t *total_sent) {
+static u8 packet_send_split_tcp (
+	const Packet *packet,
+	Connection *connection,
+	int flags, size_t *total_sent
+) {
 
 	u8 retval = 1;
 
 	if (packet && connection) {
-		pthread_mutex_lock (connection->socket->write_mutex);
+		(void) pthread_mutex_lock (connection->socket->write_mutex);
 
 		size_t actual_sent = 0;
 
 		// first send the header
 		bool fail = false;
 		ssize_t sent = 0;
-		char *p = (char *) packet->header;
+		char *p = (char *) &packet->header;
 		size_t packet_size = sizeof (PacketHeader);
 
 		while (packet_size > 0) {
@@ -720,28 +904,34 @@ static u8 packet_send_split_tcp (const Packet *packet, Connection *connection, i
 			retval = 0;
 		}
 
-		pthread_mutex_unlock (connection->socket->write_mutex);
+		(void) pthread_mutex_unlock (connection->socket->write_mutex);
 	}
 
 	return retval;
 
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-function"
-static u8 packet_send_udp (const void *packet, size_t packet_size) {
+// #pragma GCC diagnostic push
+// #pragma GCC diagnostic ignored "-Wunused-function"
+// static u8 packet_send_udp (const void *packet, size_t packet_size) {
 
-	// TODO:
+// 	// TODO:
 
-	return 0;
+// 	return 0;
 
-}
-#pragma GCC diagnostic pop
+// }
+// #pragma GCC diagnostic pop
 
 static void packet_send_update_stats (
 	PacketType packet_type, size_t sent,
+	Cerver *cerver,
 	Client *client, Connection *connection
 ) {
+
+	if (cerver) {
+		cerver->stats->n_packets_sent += 1;
+		cerver->stats->total_bytes_sent += sent;
+	}
 
 	if (client) {
 		client->stats->n_packets_sent += 1;
@@ -816,6 +1006,7 @@ static inline u8 packet_send_internal (
 	const Packet *packet,
 	int flags, size_t *total_sent,
 	bool raw, bool split, bool unsafe,
+	Cerver *cerver,
 	Client *client, Connection *connection
 ) {
 
@@ -827,14 +1018,14 @@ static inline u8 packet_send_internal (
 				size_t sent = 0;
 
 				if (!(split ? packet_send_split_tcp (packet, connection, flags, &sent)
-					: unsafe ? packet_send_tcp_actual (packet, connection, flags, &sent, raw)
+					: unsafe ? packet_send_tcp_actual (packet, connection, flags, &sent, raw) 
 						: packet_send_tcp (packet, connection, flags, &sent, raw))
-					) {
+				) {
 					if (total_sent) *total_sent = sent;
 
 					packet_send_update_stats (
 						packet->packet_type, sent,
-						client, connection
+						cerver, client, connection
 					);
 
 					retval = 0;
@@ -868,12 +1059,29 @@ static inline u8 packet_send_internal (
 // sends a packet using its network values
 // raw flag to send a raw packet (only the data that was set to the packet, without any header)
 // returns 0 on success, 1 on error
-u8 packet_send (const Packet *packet, int flags, size_t *total_sent, bool raw) {
+u8 packet_send (
+	const Packet *packet, int flags, size_t *total_sent, bool raw
+) {
 
 	return packet_send_internal (
 		packet, flags, total_sent,
 		raw, false, false,
-		packet->client, packet->connection
+		packet->cerver, packet->client, packet->connection
+	);
+
+}
+
+// works just as packet_send () but the socket's write mutex won't be locked
+// useful when you need to lock the mutex manually
+// returns 0 on success, 1 on error
+u8 packet_send_unsafe (
+	const Packet *packet, int flags, size_t *total_sent, bool raw
+) {
+
+	return packet_send_internal (
+		packet, flags, total_sent,
+		raw, false, true,
+		packet->cerver, packet->client, packet->connection
 	);
 
 }
@@ -886,26 +1094,14 @@ u8 packet_send (const Packet *packet, int flags, size_t *total_sent, bool raw) {
 u8 packet_send_to (
 	const Packet *packet,
 	size_t *total_sent, bool raw,
+	Cerver *cerver,
 	Client *client, Connection *connection
 ) {
 
 	return packet_send_internal (
 		packet, 0, total_sent,
 		raw, false, false,
-		client, connection
-	);
-
-}
-
-// works just as packet_send () but the socket's write mutex won't be locked
-// useful when you need to lock the mutex manually
-// returns 0 on success, 1 on error
-u8 packet_send_unsafe (const Packet *packet, int flags, size_t *total_sent, bool raw) {
-
-	return packet_send_internal (
-		packet, flags, total_sent,
-		raw, false, true,
-		packet->client, packet->connection
+		cerver, client, connection
 	);
 
 }
@@ -916,12 +1112,14 @@ u8 packet_send_unsafe (const Packet *packet, int flags, size_t *total_sent, bool
 // the socket's write mutex will be locked to ensure that the packet
 // is sent correctly and to avoid race conditions
 // returns 0 on success, 1 on error
-u8 packet_send_split (const Packet *packet, int flags, size_t *total_sent) {
+u8 packet_send_split (
+	const Packet *packet, int flags, size_t *total_sent
+) {
 
 	return packet_send_internal (
 		packet, flags, total_sent,
 		false, true, false,
-		packet->client, packet->connection
+		packet->cerver, packet->client, packet->connection
 	);
 
 }
@@ -932,13 +1130,14 @@ u8 packet_send_split (const Packet *packet, int flags, size_t *total_sent) {
 u8 packet_send_to_split (
 	const Packet *packet,
 	size_t *total_sent,
+	Cerver *cerver,
 	Client *client, Connection *connection
 ) {
 
 	return packet_send_internal (
 		packet, 0, total_sent,
 		false, true, false,
-		client, connection
+		cerver, client, connection
 	);
 
 }
@@ -984,14 +1183,14 @@ u8 packet_send_pieces (
 	u8 retval = 1;
 
 	if (packet && pieces && sizes) {
-		pthread_mutex_lock (packet->connection->socket->write_mutex);
+		(void) pthread_mutex_lock (packet->connection->socket->write_mutex);
 
 		size_t actual_sent = 0;
 
 		// first send the header
 		if (!packet_send_pieces_actual (
 			packet->connection->socket,
-			(char *) packet->header, sizeof (PacketHeader),
+			(char *) &packet->header, sizeof (PacketHeader),
 			flags,
 			&actual_sent
 		)) {
@@ -1010,12 +1209,12 @@ u8 packet_send_pieces (
 
 		packet_send_update_stats (
 			packet->packet_type, actual_sent,
-			packet->client, packet->connection
+			packet->cerver, packet->client, packet->connection
 		);
 
 		if (total_sent) *total_sent = actual_sent;
 
-		pthread_mutex_unlock (packet->connection->socket->write_mutex);
+		(void) pthread_mutex_unlock (packet->connection->socket->write_mutex);
 	}
 
 	return retval;
@@ -1037,7 +1236,7 @@ u8 packet_send_to_socket (
 		const char *p = raw ? (char *) packet->data : (char *) packet->packet;
 		size_t packet_size = raw ? packet->data_size : packet->packet_size;
 
-		pthread_mutex_lock (socket->write_mutex);
+		(void) pthread_mutex_lock (socket->write_mutex);
 
 		while (packet_size > 0) {
 			sent = send (socket->sock_fd, p, packet_size, flags);
@@ -1052,39 +1251,120 @@ u8 packet_send_to_socket (
 
 		if (total_sent) *total_sent = (size_t) sent;
 
-		pthread_mutex_lock (socket->write_mutex);
+		(void) pthread_mutex_unlock (socket->write_mutex);
 	}
 
 	return retval;
 
 }
 
+// sends a packet of selected types without any data
+// returns 0 on success, 1 on error
+u8 packet_send_request (
+	const PacketType packet_type,
+	const u32 request_type,
+	Cerver *cerver,
+	Client *client, Connection *connection
+) {
+
+	u8 retval = 1;
+
+	Packet request = {
+		.cerver = cerver,
+		.client = client,
+		.connection = connection,
+
+		.packet_type = packet_type,
+		.req_type = request_type,
+
+		.data_size = 0,
+		.data = NULL,
+		.data_ptr = NULL,
+		.data_end = NULL,
+		.data_ref = false,
+
+		.header = (PacketHeader) {
+			.packet_type = packet_type,
+			.packet_size = sizeof (PacketHeader),
+
+			.handler_id = 0,
+
+			.request_type = request_type,
+
+			.sock_fd = 0,
+		},
+
+		.version = (PacketVersion) {
+			.protocol_id = 0,
+			.protocol_version = {
+				.major = 0,
+				.minor = 0
+			}
+		},
+
+		.packet_size = sizeof (PacketHeader),
+		.packet = (void *) &request.header,
+		.packet_ref = true
+	};
+
+	size_t sent = 0;
+	if (!packet_send (&request, 0, &sent, false)) {
+		if (sent == sizeof (PacketHeader)) {
+			retval = 0;
+		}
+	}
+
+	return retval;
+
+}
+
+// sends a ping packet (PACKET_TYPE_TEST)
+// returns 0 on success, 1 on error
+u8 packet_send_ping (
+	Cerver *cerver,
+	Client *client, Connection *connection
+) {
+
+	return packet_send_request (
+		PACKET_TYPE_TEST, 0,
+		cerver,
+		client, connection
+	);
+
+}
+
 // check if packet has a compatible protocol id and a version
 // returns false on a bad packet
-bool packet_check (Packet *packet) {
+bool packet_check (const Packet *packet) {
 
 	bool retval = false;
 
 	if (packet) {
-		if (packet->version) {
-			if (packet->version->protocol_id == protocol_id) {
-				if ((packet->version->protocol_version.major <= protocol_version.major)
-					&& (packet->version->protocol_version.minor >= protocol_version.minor)) {
-					retval = true;
-				}
-
-				else {
-					#ifdef PACKETS_DEBUG
-					client_log (LOG_TYPE_WARNING, LOG_TYPE_PACKET, "Packet with incompatible version.");
-					#endif
-				}
+		if (packet->version.protocol_id == protocol_id) {
+			if (
+				(packet->version.protocol_version.major <= protocol_version.major)
+				&& (packet->version.protocol_version.minor >= protocol_version.minor)
+			) {
+				retval = true;
 			}
 
 			else {
 				#ifdef PACKETS_DEBUG
-				client_log (LOG_TYPE_WARNING, LOG_TYPE_PACKET, "Packet with unknown protocol ID.");
+				client_log (
+					LOG_TYPE_WARNING, LOG_TYPE_PACKET,
+					"Packet with incompatible version"
+				);
 				#endif
 			}
+		}
+
+		else {
+			#ifdef PACKETS_DEBUG
+			client_log (
+				LOG_TYPE_WARNING, LOG_TYPE_PACKET,
+				"Packet with unknown protocol ID"
+			);
+			#endif
 		}
 	}
 
