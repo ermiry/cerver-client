@@ -37,6 +37,26 @@ static u8 client_file_receive (
 
 static u64 next_client_id = 0;
 
+#pragma region global
+
+// initializes global client values
+// should be called only once at the start of the program
+void client_init (void) {
+
+	client_log_init ();
+
+}
+
+// correctly disposes global values
+// should be called only once at the very end of the program
+void client_end (void) {
+
+	client_log_end ();
+
+}
+
+#pragma endregion
+
 #pragma region aux
 
 static ClientConnection *client_connection_aux_new (
@@ -944,7 +964,7 @@ unsigned int client_connect (
 	if (client && connection) {
 		if (!connection_connect (connection)) {
 			client_event_trigger (CLIENT_EVENT_CONNECTED, client, connection);
-			// connection->connected = true;
+			// connection->active = true;
 			connection->active = true;
 			(void) time (&connection->connected_timestamp);
 
@@ -993,7 +1013,7 @@ static void *client_connect_thread (void *client_connection_ptr) {
 
 		if (!connection_connect (cc->connection)) {
 			// client_event_trigger (cc->client, EVENT_CONNECTED);
-			// cc->connection->connected = true;
+			// cc->connection->active = true;
 			cc->connection->active = true;
 			(void) time (&cc->connection->connected_timestamp);
 
