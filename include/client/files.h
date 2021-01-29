@@ -11,6 +11,8 @@
 
 #include "client/config.h"
 
+#include "client/utils/json.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -20,9 +22,16 @@ struct _Connection;
 
 #pragma region main
 
+// sanitizes a filename to correctly be used to save a file
+// removes every character & whitespaces except for
+// alphabet, numbers, '-', '_' and  '.'
+CLIENT_EXPORT void files_sanitize_filename (char *filename);
+
 // check if a directory already exists, and if not, creates it
 // returns 0 on success, 1 on error
-CLIENT_EXPORT unsigned int files_create_dir (const char *dir_path, mode_t mode);
+CLIENT_EXPORT unsigned int files_create_dir (
+	const char *dir_path, mode_t mode
+);
 
 // returns an allocated string with the file extension
 // NULL if no file extension
@@ -31,8 +40,11 @@ CLIENT_EXPORT char *files_get_file_extension (const char *filename);
 // returns a list of strings containg the names of all the files in the directory
 CLIENT_EXPORT DoubleList *files_get_from_dir (const char *dir);
 
-// reads eachone of the file's lines into a newly created string and returns them inside a dlist
-CLIENT_EXPORT DoubleList *file_get_lines (const char *filename);
+// reads each one of the file's lines into newly created strings
+// and returns them inside a dlist
+CLIENT_EXPORT DoubleList *file_get_lines (
+	const char *filename, const size_t buffer_size
+);
 
 // returns true if the filename exists
 CLIENT_EXPORT bool file_exists (const char *filename);
@@ -45,11 +57,19 @@ CLIENT_EXPORT FILE *file_open_as_file (
 
 // opens and reads a file into a buffer
 // sets file size to the amount of bytes read
-CLIENT_EXPORT char *file_read (const char *filename, size_t *file_size);
+CLIENT_EXPORT char *file_read (
+	const char *filename, size_t *file_size
+);
 
 // opens a file with the required flags
 // returns fd on success, -1 on error
-CLIENT_EXPORT int file_open_as_fd (const char *filename, struct stat *filestatus, int flags);
+CLIENT_EXPORT int file_open_as_fd (
+	const char *filename, struct stat *filestatus, int flags
+);
+
+CLIENT_EXPORT json_value *file_json_parse (
+	const char *filename
+);
 
 #pragma endregion
 

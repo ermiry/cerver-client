@@ -25,14 +25,43 @@
 #include "client/network.h"
 #include "client/packets.h"
 
-#include "client/utils/utils.h"
+#include "client/utils/json.h"
 #include "client/utils/log.h"
+#include "client/utils/utils.h"
 
 #pragma region main
 
+// sanitizes a filename to correctly be used to save a file
+// removes every character & whitespaces except for
+// alphabet, numbers, '-', '_' and  '.'
+void files_sanitize_filename (char *filename) {
+
+	if (filename) {
+		for (int i = 0, j; filename[i] != '\0'; ++i) {
+			while (
+				!(filename[i] >= 'a' && filename[i] <= 'z') && !(filename[i] >= 'A' && filename[i] <= 'Z')	// alphabet
+				&& !(filename[i] >= 48 && filename[i] <= 57)												// numbers
+				&& !(filename[i] == '-') && !(filename[i] == '_') && !(filename[i] == '.')					// clean characters
+				&& !(filename[i] == '\0')
+			) {
+				for (j = i; filename[j] != '\0'; ++j) {
+					filename[j] = filename[j + 1];
+				}
+
+				filename[j] = '\0';
+			}
+		}
+
+		c_string_remove_spaces (filename);
+	}
+
+}
+
 // check if a directory already exists, and if not, creates it
 // returns 0 on success, 1 on error
-unsigned int files_create_dir (const char *dir_path, mode_t mode) {
+unsigned int files_create_dir (
+	const char *dir_path, mode_t mode
+) {
 
 	unsigned int retval = 1;
 
@@ -46,11 +75,15 @@ unsigned int files_create_dir (const char *dir_path, mode_t mode) {
 				}
 
 				else {
-					client_log_error ("Failed to create dir %s!", dir_path);
+					client_log_error (
+						"Failed to create dir %s!", dir_path
+					);
 				}
 			} break;
 			case 0: {
-				client_log_warning ("Dir %s already exists!", dir_path);
+				client_log_warning (
+					"Dir %s already exists!", dir_path
+				);
 			} break;
 
 			default: break;
@@ -78,7 +111,7 @@ char *files_get_file_extension (const char *filename) {
 			if (ext_len) {
 				retval = (char *) calloc (ext_len + 1, sizeof (char));
 				if (retval) {
-					memcpy (retval, ptr + 1, ext_len);
+					(void) memcpy (retval, ptr + 1, ext_len);
 					retval[ext_len] = '\0';
 				}
 			}
@@ -96,19 +129,19 @@ DoubleList *files_get_from_dir (const char *dir) {
 	DoubleList *images = NULL;
 
 	if (dir) {
-		DIR *dp;
-		struct dirent *ep;
-
 		images = dlist_init (str_delete, str_comparator);
 
-		dp = opendir (dir);
+		DIR *dp = opendir (dir);
 		if (dp) {
+			struct dirent *ep = NULL;
 			String *file = NULL;
 			while ((ep = readdir (dp)) != NULL) {
 				if (strcmp (ep->d_name, ".") && strcmp (ep->d_name, "..")) {
 					file = str_create ("%s/%s", dir, ep->d_name);
 
-					dlist_insert_after (images, dlist_end (images), file);
+					(void) dlist_insert_after (
+						images, dlist_end (images), file
+					);
 				}
 			}
 
@@ -124,19 +157,17 @@ DoubleList *files_get_from_dir (const char *dir) {
 
 }
 
-static String *file_get_line (FILE *file) {
+static String *file_get_line (
+	FILE *file,
+	char *buffer, const size_t buffer_size
+) {
 
 	String *str = NULL;
 
-	if (file) {
-		if (!feof (file)) {
-			char line[1024] = { 0 };
-			if (fgets (line, 1024, file)) {
-				size_t curr = strlen(line);
-				if(line[curr - 1] == '\n') line[curr - 1] = '\0';
-
-				str = str_new (line);
-			}
+	if (!feof (file)) {
+		if (fgets (buffer, buffer_size, file)) {
+			c_string_remove_line_breaks (buffer);
+			str = str_new (buffer);
 		}
 	}
 
@@ -144,8 +175,11 @@ static String *file_get_line (FILE *file) {
 
 }
 
-// reads eachone of the file's lines into a newly created string and returns them inside a dlist
-DoubleList *file_get_lines (const char *filename) {
+// reads each one of the file's lines into newly created strings
+// and returns them inside a dlist
+DoubleList *file_get_lines (
+	const char *filename, const size_t buffer_size
+) {
 
 	DoubleList *lines = NULL;
 
@@ -154,12 +188,18 @@ DoubleList *file_get_lines (const char *filename) {
 		if (file) {
 			lines = dlist_init (str_delete, str_comparator);
 
-			String *line = NULL;
-			while ((line = file_get_line (file))) {
-				dlist_insert_after (lines, dlist_end (lines), line);
+			char *buffer = (char *) calloc (buffer_size, sizeof (char));
+			if (buffer) {
+				String *line = NULL;
+			
+				while ((line = file_get_line (file, buffer, buffer_size))) {
+					(void) dlist_insert_at_end_unsafe (lines, line);
+				}
+
+				free (buffer);
 			}
 
-			fclose (file);
+			(void) fclose (file);
 		}
 
 		else {
@@ -188,12 +228,14 @@ bool file_exists (const char *filename) {
 }
 
 // opens a file and returns it as a FILE
-FILE *file_open_as_file (const char *filename, const char *modes, struct stat *filestatus) {
+FILE *file_open_as_file (
+	const char *filename, const char *modes, struct stat *filestatus
+) {
 
 	FILE *fp = NULL;
 
 	if (filename) {
-		memset (filestatus, 0, sizeof (struct stat));
+		(void) memset (filestatus, 0, sizeof (struct stat));
 		if (!stat (filename, filestatus))
 			fp = fopen (filename, modes);
 
@@ -236,7 +278,7 @@ char *file_read (const char *filename, size_t *file_size) {
 				free (file_contents);
 			}
 
-			fclose (fp);
+			(void) fclose (fp);
 		}
 
 		else {
@@ -255,26 +297,37 @@ char *file_read (const char *filename, size_t *file_size) {
 
 // opens a file with the required flags
 // returns fd on success, -1 on error
-int file_open_as_fd (const char *filename, struct stat *filestatus, int flags) {
+int file_open_as_fd (
+	const char *filename, struct stat *filestatus, int flags
+) {
 
 	int retval = -1;
 
 	if (filename) {
-		memset (filestatus, 0, sizeof (struct stat));
-		if (!stat (filename, filestatus))
+		(void) memset (filestatus, 0, sizeof (struct stat));
+		if (!stat (filename, filestatus)) {
 			retval = open (filename, flags);
-
-		else {
-			#ifdef FILES_DEBUG
-			client_log (
-				LOG_TYPE_ERROR, LOG_TYPE_FILE,
-				"File %s not found!", filename
-			);
-			#endif
 		}
 	}
 
 	return retval;
+
+}
+
+json_value *file_json_parse (const char *filename) {
+
+	json_value *value = NULL;
+
+	if (filename) {
+		size_t file_size = 0;
+		char *file_contents = file_read (filename, &file_size);
+		json_char *json = (json_char *) file_contents;
+		value = json_parse (json, file_size);
+
+		free (file_contents);
+	}
+
+	return value;
 
 }
 
