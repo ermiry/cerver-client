@@ -3,7 +3,7 @@
 #include "client/utils/log.h"
 
 // print full erver version information
-void client_version_print_full (void) {
+void cerver_client_version_print_full (void) {
 
 	client_log_both (
 		LOG_TYPE_NONE, LOG_TYPE_NONE,
@@ -25,7 +25,7 @@ void client_version_print_full (void) {
 }
 
 // print the version id
-void client_version_print_version_id (void) {
+void cerver_client_version_print_version_id (void) {
 
 	client_log_both (
 		LOG_TYPE_NONE, LOG_TYPE_NONE,
@@ -36,7 +36,7 @@ void client_version_print_version_id (void) {
 }
 
 // print the version name
-void client_version_print_version_name (void) {
+void cerver_client_version_print_version_name (void) {
 
 	client_log_both (
 		LOG_TYPE_NONE, LOG_TYPE_NONE,
