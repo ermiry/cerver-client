@@ -8,6 +8,7 @@
 
 #include "client/collections/dlist.h"
 
+#include "client/auth.h"
 #include "client/cerver.h"
 #include "client/client.h"
 #include "client/connection.h"
@@ -19,10 +20,286 @@
 #include "client/packets.h"
 #include "client/receive.h"
 
+#include "client/threads/jobs.h"
 #include "client/threads/thread.h"
 
 #include "client/utils/log.h"
 #include "client/utils/utils.h"
+
+static int unique_handler_id = 0;
+
+static HandlerData *handler_data_new (void) {
+
+	HandlerData *handler_data = (HandlerData *) malloc (sizeof (HandlerData));
+	if (handler_data) {
+		handler_data->handler_id = 0;
+
+		handler_data->data = NULL;
+		handler_data->packet = NULL;
+	}
+
+	return handler_data;
+
+}
+
+static void handler_data_delete (HandlerData *handler_data) {
+
+	if (handler_data) free (handler_data);
+
+}
+
+static Handler *handler_new (void) {
+
+	Handler *handler = (Handler *) malloc (sizeof (Handler));
+	if (handler) {
+		handler->type = HANDLER_TYPE_NONE;
+		handler->unique_id = -1;
+
+		handler->id = -1;
+		handler->thread_id = 0;
+
+		handler->data = NULL;
+		handler->data_create = NULL;
+		handler->data_create_args = NULL;
+		handler->data_delete = NULL;
+
+		handler->handler = NULL;
+		handler->direct_handle = false;
+
+		handler->job_queue = NULL;
+
+		handler->cerver = NULL;
+		handler->client = NULL;
+	}
+
+	return handler;
+
+}
+
+void handler_delete (void *handler_ptr) {
+
+	if (handler_ptr) {
+		Handler *handler = (Handler *) handler_ptr;
+
+		job_queue_delete (handler->job_queue);
+
+		free (handler_ptr);
+	}
+
+}
+
+// creates a new handler
+// handler method is your actual app packet handler
+Handler *handler_create (Action handler_method) {
+
+	Handler *handler = handler_new ();
+	if (handler) {
+		handler->unique_id = unique_handler_id;
+		unique_handler_id += 1;
+
+		handler->handler = handler_method;
+
+		handler->job_queue = job_queue_create ();
+	}
+
+	return handler;
+
+}
+
+// creates a new handler that will be used for cerver's multiple app handlers configuration
+// it should be registered to the cerver before it starts
+// the user is responsible for setting the unique id, which will be used to match
+// incoming packets
+// handler method is your actual app packet handler
+Handler *handler_create_with_id (int id, Action handler_method) {
+
+	Handler *handler = handler_create (handler_method);
+	if (handler) {
+		handler->id = id;
+	}
+
+	return handler;
+
+}
+
+// sets the handler's data directly
+// this data will be passed to the handler method using a HandlerData structure
+void handler_set_data (Handler *handler, void *data) {
+
+	if (handler) handler->data = data;
+
+}
+
+// set a method to create the handler's data before it starts handling any packet
+// this data will be passed to the handler method using a HandlerData structure
+void handler_set_data_create (
+	Handler *handler,
+	void *(*data_create) (void *args), void *data_create_args
+) {
+
+	if (handler) {
+		handler->data_create = data_create;
+		handler->data_create_args = data_create_args;
+	}
+
+}
+
+// set the method to be used to delete the handler's data
+void handler_set_data_delete (Handler *handler, Action data_delete) {
+
+	if (handler) handler->data_delete = data_delete;
+
+}
+
+// used to avoid pushing job to the queue and instead handle
+// the packet directly in the same thread
+void handler_set_direct_handle (Handler *handler, bool direct_handle) {
+
+	if (handler) handler->direct_handle = direct_handle;
+
+}
+
+// while client is running, check for new jobs and handle them
+static void handler_do_while_client (Handler *handler) {
+
+	Job *job = NULL;
+	Packet *packet = NULL;
+	HandlerData *handler_data = handler_data_new ();
+	while (handler->client->running) {
+		bsem_wait (handler->job_queue->has_jobs);
+
+		if (handler->client->running) {
+			(void) pthread_mutex_lock (handler->client->handlers_lock);
+			handler->client->num_handlers_working += 1;
+			(void) pthread_mutex_unlock (handler->client->handlers_lock);
+
+			// read job from queue
+			job = job_queue_pull (handler->job_queue);
+			if (job) {
+				packet = (Packet *) job->args;
+
+				handler_data->handler_id = handler->id;
+				handler_data->data = handler->data;
+				handler_data->packet = packet;
+
+				handler->handler (handler_data);
+
+				job_delete (job);
+				packet_delete (packet);
+			}
+
+			(void) pthread_mutex_lock (handler->client->handlers_lock);
+			handler->client->num_handlers_working -= 1;
+			(void) pthread_mutex_unlock (handler->client->handlers_lock);
+		}
+	}
+
+	handler_data_delete (handler_data);
+
+}
+
+static void *handler_do (void *handler_ptr) {
+
+	if (handler_ptr) {
+		Handler *handler = (Handler *) handler_ptr;
+
+		pthread_mutex_t *handlers_lock = NULL;
+		switch (handler->type) {
+			case HANDLER_TYPE_CLIENT:
+				handlers_lock = handler->client->handlers_lock;
+				break;
+			
+			default: break;
+		}
+
+		// set the thread name
+		if (handler->id >= 0) {
+			char thread_name[THREAD_NAME_BUFFER_LEN] = { 0 };
+
+			switch (handler->type) {
+				case HANDLER_TYPE_CLIENT:
+					(void) snprintf (
+						thread_name, THREAD_NAME_BUFFER_LEN,
+						"client-handler-%d", handler->unique_id
+					);
+					break;
+				default: break;
+			}
+
+			(void) thread_set_name (thread_name);
+		}
+
+		// TODO: register to signals to handle multiple actions
+
+		if (handler->data_create)
+			handler->data = handler->data_create (handler->data_create_args);
+
+		// mark the handler as alive and ready
+		(void) pthread_mutex_lock (handlers_lock);
+		switch (handler->type) {
+			case HANDLER_TYPE_CLIENT: handler->client->num_handlers_alive += 1; break;
+			default: break;
+		}
+		(void) pthread_mutex_unlock (handlers_lock);
+
+		// while cerver / client is running, check for new jobs and handle them
+		switch (handler->type) {
+			case HANDLER_TYPE_CLIENT: handler_do_while_client (handler); break;
+			default: break;
+		}
+
+		if (handler->data_delete)
+			handler->data_delete (handler->data);
+
+		(void) pthread_mutex_lock (handlers_lock);
+		switch (handler->type) {
+			case HANDLER_TYPE_CLIENT: handler->client->num_handlers_alive -= 1; break;
+			default: break;
+		}
+		(void) pthread_mutex_unlock (handlers_lock);
+	}
+
+	return NULL;
+
+}
+
+// starts the new handler by creating a dedicated thread for it
+// called by internal cerver methods
+int handler_start (Handler *handler) {
+
+	int retval = 1;
+
+	if (handler) {
+		if (handler->type != HANDLER_TYPE_NONE) {
+			if (!thread_create_detachable (
+				&handler->thread_id,
+				(void *(*)(void *)) handler_do,
+				(void *) handler
+			)) {
+				#ifdef HANDLER_DEBUG
+				cerver_log (
+					LOG_TYPE_DEBUG, LOG_TYPE_HANDLER,
+					"Created handler %d thread!",
+					handler->unique_id
+				);
+				#endif
+
+				retval = 0;
+			}
+		}
+
+		else {
+			cerver_log_error (
+				"handler_start () - Handler %d is of invalid type!",
+				handler->unique_id
+			);
+		}
+	}
+
+	return retval;
+
+}
+
 
 const char *client_handler_error_to_string (
 	const ClientHandlerError error
@@ -1153,7 +1430,7 @@ static void client_receive_handle_failed (
 // performs the actual recv () method on the connection's sock fd
 // handles if the receive method failed
 // the amount of bytes read from the socket is placed in rc
-static ReceiveError client_receive_actual (
+ReceiveError client_receive_actual (
 	Client *client, Connection *connection,
 	char *buffer, const size_t buffer_size,
 	size_t *rc
@@ -1238,7 +1515,7 @@ static ReceiveError client_receive_actual (
 // into the specified buffer
 // this method will only return once the requested bytes
 // have been received or on any error
-static ReceiveError client_receive_data (
+ReceiveError client_receive_data (
 	Client *client, Connection *connection,
 	char *buffer, const size_t buffer_size,
 	size_t requested_data
