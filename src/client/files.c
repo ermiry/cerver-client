@@ -2,13 +2,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "client/config.h"
+
+#include <dirent.h>
+#include <fcntl.h>
 #include <time.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
-
-#define _XOPEN_SOURCE 700
-#include <dirent.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -25,14 +24,43 @@
 #include "client/network.h"
 #include "client/packets.h"
 
-#include "client/utils/utils.h"
+#include "client/utils/json.h"
 #include "client/utils/log.h"
+#include "client/utils/utils.h"
 
 #pragma region main
 
+// sanitizes a filename to correctly be used to save a file
+// removes every character & whitespaces except for
+// alphabet, numbers, '-', '_' and  '.'
+void files_sanitize_filename (char *filename) {
+
+	if (filename) {
+		for (int i = 0, j; filename[i] != '\0'; ++i) {
+			while (
+				!(filename[i] >= 'a' && filename[i] <= 'z') && !(filename[i] >= 'A' && filename[i] <= 'Z')	// alphabet
+				&& !(filename[i] >= 48 && filename[i] <= 57)												// numbers
+				&& !(filename[i] == '-') && !(filename[i] == '_') && !(filename[i] == '.')					// clean characters
+				&& !(filename[i] == '\0')
+			) {
+				for (j = i; filename[j] != '\0'; ++j) {
+					filename[j] = filename[j + 1];
+				}
+
+				filename[j] = '\0';
+			}
+		}
+
+		c_string_remove_spaces (filename);
+	}
+
+}
+
 // check if a directory already exists, and if not, creates it
 // returns 0 on success, 1 on error
-unsigned int files_create_dir (const char *dir_path, mode_t mode) {
+unsigned int files_create_dir (
+	const char *dir_path, mode_t mode
+) {
 
 	unsigned int retval = 1;
 
@@ -46,11 +74,15 @@ unsigned int files_create_dir (const char *dir_path, mode_t mode) {
 				}
 
 				else {
-					client_log_error ("Failed to create dir %s!", dir_path);
+					client_log_error (
+						"Failed to create dir %s!", dir_path
+					);
 				}
 			} break;
 			case 0: {
-				client_log_warning ("Dir %s already exists!", dir_path);
+				client_log_warning (
+					"Dir %s already exists!", dir_path
+				);
 			} break;
 
 			default: break;
@@ -78,7 +110,7 @@ char *files_get_file_extension (const char *filename) {
 			if (ext_len) {
 				retval = (char *) calloc (ext_len + 1, sizeof (char));
 				if (retval) {
-					memcpy (retval, ptr + 1, ext_len);
+					(void) memcpy (retval, ptr + 1, ext_len);
 					retval[ext_len] = '\0';
 				}
 			}
@@ -96,19 +128,19 @@ DoubleList *files_get_from_dir (const char *dir) {
 	DoubleList *images = NULL;
 
 	if (dir) {
-		DIR *dp;
-		struct dirent *ep;
-
 		images = dlist_init (str_delete, str_comparator);
 
-		dp = opendir (dir);
+		DIR *dp = opendir (dir);
 		if (dp) {
+			struct dirent *ep = NULL;
 			String *file = NULL;
 			while ((ep = readdir (dp)) != NULL) {
 				if (strcmp (ep->d_name, ".") && strcmp (ep->d_name, "..")) {
 					file = str_create ("%s/%s", dir, ep->d_name);
 
-					dlist_insert_after (images, dlist_end (images), file);
+					(void) dlist_insert_after (
+						images, dlist_end (images), file
+					);
 				}
 			}
 
@@ -124,19 +156,17 @@ DoubleList *files_get_from_dir (const char *dir) {
 
 }
 
-static String *file_get_line (FILE *file) {
+static String *file_get_line (
+	FILE *file,
+	char *buffer, const size_t buffer_size
+) {
 
 	String *str = NULL;
 
-	if (file) {
-		if (!feof (file)) {
-			char line[1024] = { 0 };
-			if (fgets (line, 1024, file)) {
-				size_t curr = strlen(line);
-				if(line[curr - 1] == '\n') line[curr - 1] = '\0';
-
-				str = str_new (line);
-			}
+	if (!feof (file)) {
+		if (fgets (buffer, buffer_size, file)) {
+			c_string_remove_line_breaks (buffer);
+			str = str_new (buffer);
 		}
 	}
 
@@ -144,8 +174,11 @@ static String *file_get_line (FILE *file) {
 
 }
 
-// reads eachone of the file's lines into a newly created string and returns them inside a dlist
-DoubleList *file_get_lines (const char *filename) {
+// reads each one of the file's lines into newly created strings
+// and returns them inside a dlist
+DoubleList *file_get_lines (
+	const char *filename, const size_t buffer_size
+) {
 
 	DoubleList *lines = NULL;
 
@@ -154,12 +187,18 @@ DoubleList *file_get_lines (const char *filename) {
 		if (file) {
 			lines = dlist_init (str_delete, str_comparator);
 
-			String *line = NULL;
-			while ((line = file_get_line (file))) {
-				dlist_insert_after (lines, dlist_end (lines), line);
+			char *buffer = (char *) calloc (buffer_size, sizeof (char));
+			if (buffer) {
+				String *line = NULL;
+			
+				while ((line = file_get_line (file, buffer, buffer_size))) {
+					(void) dlist_insert_at_end_unsafe (lines, line);
+				}
+
+				free (buffer);
 			}
 
-			fclose (file);
+			(void) fclose (file);
 		}
 
 		else {
@@ -188,12 +227,14 @@ bool file_exists (const char *filename) {
 }
 
 // opens a file and returns it as a FILE
-FILE *file_open_as_file (const char *filename, const char *modes, struct stat *filestatus) {
+FILE *file_open_as_file (
+	const char *filename, const char *modes, struct stat *filestatus
+) {
 
 	FILE *fp = NULL;
 
 	if (filename) {
-		memset (filestatus, 0, sizeof (struct stat));
+		(void) memset (filestatus, 0, sizeof (struct stat));
 		if (!stat (filename, filestatus))
 			fp = fopen (filename, modes);
 
@@ -236,7 +277,7 @@ char *file_read (const char *filename, size_t *file_size) {
 				free (file_contents);
 			}
 
-			fclose (fp);
+			(void) fclose (fp);
 		}
 
 		else {
@@ -255,26 +296,37 @@ char *file_read (const char *filename, size_t *file_size) {
 
 // opens a file with the required flags
 // returns fd on success, -1 on error
-int file_open_as_fd (const char *filename, struct stat *filestatus, int flags) {
+int file_open_as_fd (
+	const char *filename, struct stat *filestatus, int flags
+) {
 
 	int retval = -1;
 
 	if (filename) {
-		memset (filestatus, 0, sizeof (struct stat));
-		if (!stat (filename, filestatus))
+		(void) memset (filestatus, 0, sizeof (struct stat));
+		if (!stat (filename, filestatus)) {
 			retval = open (filename, flags);
-
-		else {
-			#ifdef FILES_DEBUG
-			client_log (
-				LOG_TYPE_ERROR, LOG_TYPE_FILE,
-				"File %s not found!", filename
-			);
-			#endif
 		}
 	}
 
 	return retval;
+
+}
+
+json_value *file_json_parse (const char *filename) {
+
+	json_value *value = NULL;
+
+	if (filename) {
+		size_t file_size = 0;
+		char *file_contents = file_read (filename, &file_size);
+		json_char *json = (json_char *) file_contents;
+		value = json_parse (json, file_size);
+
+		free (file_contents);
+	}
+
+	return value;
 
 }
 
@@ -308,7 +360,7 @@ static u8 file_send_header (
 		end += sizeof (PacketHeader);
 
 		FileHeader *file_header = (FileHeader *) end;
-		strncpy (file_header->filename, filename, DEFAULT_FILENAME_LEN);
+		(void) strncpy (file_header->filename, filename, DEFAULT_FILENAME_LEN);
 		file_header->len = filelen;
 
 		packet_set_network_values (packet, client, connection);
@@ -329,7 +381,7 @@ static ssize_t file_send_actual (
 
 	ssize_t retval = 0;
 
-	pthread_mutex_lock (connection->socket->write_mutex);
+	(void) pthread_mutex_lock (connection->socket->write_mutex);
 
 	// send a first packet with file info
 	if (!file_send_header (
@@ -347,7 +399,7 @@ static ssize_t file_send_actual (
 		);
 	}
 
-	pthread_mutex_unlock (connection->socket->write_mutex);
+	(void) pthread_mutex_unlock (connection->socket->write_mutex);
 
 	return retval;
 
@@ -401,7 +453,7 @@ ssize_t file_send (
 				file_fd, actual_filename, filestatus.st_size
 			);
 
-			close (file_fd);
+			(void) close (file_fd);
 		}
 	}
 
@@ -465,7 +517,8 @@ static inline u8 file_receive_internal_receive (
 		default: {
 			#ifdef FILES_DEBUG
 			client_log_debug (
-				"file_receive_internal_receive () - spliced %ld bytes", *received
+				"file_receive_internal_receive () - spliced %ld bytes",
+				*received
 			);
 			#endif
 
@@ -507,7 +560,10 @@ static inline u8 file_receive_internal_move (
 
 		default: {
 			#ifdef FILES_DEBUG
-			client_log_debug ("file_receive_internal_move () - spliced %ld bytes", *moved);
+			client_log_debug (
+				"file_receive_internal_move () - spliced %ld bytes",
+				*moved
+			);
 			#endif
 
 			retval = 0;
@@ -518,7 +574,9 @@ static inline u8 file_receive_internal_move (
 
 }
 
-static u8 file_receive_internal (Connection *connection, size_t filelen, int file_fd) {
+static u8 file_receive_internal (
+	Connection *connection, size_t filelen, int file_fd
+) {
 
 	u8 retval = 1;
 
@@ -531,15 +589,19 @@ static u8 file_receive_internal (Connection *connection, size_t filelen, int fil
 		while (len > 0) {
 			if (buff_size > len) buff_size = len;
 
-			if (file_receive_internal_receive (connection, pipefds[1], buff_size, &received)) break;
+			if (file_receive_internal_receive (
+				connection, pipefds[1], buff_size, &received
+			)) break;
 
-			if (file_receive_internal_move (pipefds[0], file_fd, buff_size, &moved)) break;
+			if (file_receive_internal_move (
+				pipefds[0], file_fd, buff_size, &moved
+			)) break;
 
 			len -= buff_size;
 		}
 
-		close (pipefds[0]);
-    	close (pipefds[1]);
+		(void) close (pipefds[0]);
+    	(void) close (pipefds[1]);
 
 		if (len <= 0) retval = 0;
 	}
@@ -548,9 +610,12 @@ static u8 file_receive_internal (Connection *connection, size_t filelen, int fil
 
 }
 
-// receives an incomming file in the socket and splice its information to a local file
-// returns 0 on success, 1 on error
-u8 file_receive (
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+// opens the file using an already created filename
+// and use the fd to receive and save the file
+u8 file_receive_actual (
 	Client *client, Connection *connection,
 	FileHeader *file_header,
 	const char *file_data, size_t file_data_len,
@@ -559,85 +624,77 @@ u8 file_receive (
 
 	u8 retval = 1;
 
-	// generate a custom filename taking into account the uploads path
-	*saved_filename = c_string_create (
-		"%s/%ld-%d-%s", 
-		client->uploads_path->str, 
-		time (NULL), random_int_in_range (0, 1000),
-		file_header->filename
-	);
+	int file_fd = open (*saved_filename, O_CREAT | O_WRONLY | O_TRUNC, 0777);
+	if (file_fd > 0) {
+		// ssize_t received = splice (
+		// 	connection->socket->sock_fd, NULL,
+		// 	file_fd, NULL,
+		// 	file_header->len,
+		// 	0
+		// );
 
-	if (*saved_filename) {
-		int file_fd = open (*saved_filename, O_CREAT | O_WRONLY | O_TRUNC, 0777);
-		if (file_fd > 0) {
-			// ssize_t received = splice (
-			// 	connection->socket->sock_fd, NULL,
-			// 	file_fd, NULL,
-			// 	file_header->len,
-			// 	SPLICE_F_MOVE | SPLICE_F_MORE
-			// );
-
-			// we received some part of the file when reading packets,
-			// they should be the first ones to be saved into the file
-			if (file_data && file_data_len) {
-				ssize_t wrote = write (file_fd, file_data, file_data_len);
-				if (wrote < 0) {
-					client_log_error ("file_receive_actual () - write () has failed!");
-					perror ("Error");
-					printf ("\n");
-				}
-
-				else {
-					#ifdef FILES_DEBUG
-					printf (
-						"\n\nwrote %ld of file_data_len %ld\n\n",
-						wrote,
-						file_data_len
-					);
-					#endif
-				}
+		// we received some part of the file when reading packets,
+		// they should be the first ones to be saved into the file
+		if (file_data && file_data_len) {
+			ssize_t wrote = write (file_fd, file_data, file_data_len);
+			if (wrote < 0) {
+				client_log_error ("file_receive_actual () - write () has failed!");
+				perror ("Error");
+				client_log_line_break ();
 			}
 
-			// there is still more data to be received
-			if (file_data_len < file_header->len) {
-				size_t real_filelen = file_header->len - file_data_len;
+			else {
 				#ifdef FILES_DEBUG
-				printf (
-					"\nfilelen: %ld - file data len %ld = %ld\n\n", 
-					file_header->len, file_data_len, real_filelen
+				client_log_debug (
+					"\n\nwrote %ld of file_data_len %ld\n\n",
+					wrote,
+					file_data_len
 				);
 				#endif
-				if (!file_receive_internal (
-					connection,
-					real_filelen,
-					file_fd
-				)) {
-					#ifdef FILES_DEBUG
-					client_log_success ("file_receive_internal () has finished");
-					#endif
+			}
+		}
 
-					retval = 0;
-				}
+		// there is still more data to be received
+		if (file_data_len < file_header->len) {
+			size_t real_filelen = file_header->len - file_data_len;
+			#ifdef FILES_DEBUG
+			client_log_debug (
+				"\nfilelen: %ld - file data len %ld = %ld\n\n",
+				file_header->len, file_data_len, real_filelen
+			);
+			#endif
+			if (!file_receive_internal (
+				connection,
+				real_filelen,
+				file_fd
+			)) {
+				#ifdef FILES_DEBUG
+				client_log_success ("file_receive_internal () has finished");
+				#endif
 
-				else {
-					free (*saved_filename);
-					*saved_filename = NULL;
-				}
+				retval = 0;
 			}
 
-			close (file_fd);
+			else {
+				free (*saved_filename);
+				*saved_filename = NULL;
+			}
 		}
 
-		else {
-			client_log_error ("file_receive () - failed to open file");
+		(void) close (file_fd);
+	}
 
-			free (*saved_filename);
-			*saved_filename = NULL;
-		}
+	else {
+		client_log_error ("file_receive_actual () - failed to open file");
+
+		free (*saved_filename);
+		*saved_filename = NULL;
 	}
 
 	return retval;
 
 }
+
+#pragma GCC diagnostic pop
 
 #pragma endregion

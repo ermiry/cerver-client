@@ -5,21 +5,17 @@
 #include <stdbool.h>
 
 #include "client/types/types.h"
-#include "client/types/string.h"
 
 #include "client/config.h"
 #include "client/network.h"
-#include "client/socket.h"
-#include "client/cerver.h"
-#include "client/client.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct _Cerver;
 struct _Client;
 struct _Connection;
+struct _Socket;
 
 #pragma region protocol
 
@@ -69,11 +65,22 @@ CLIENT_PUBLIC void packet_version_delete (PacketVersion *version);
 
 CLIENT_PUBLIC PacketVersion *packet_version_create (void);
 
-CLIENT_PUBLIC void packet_version_print (PacketVersion *version);
+// copies the data from the source version to the destination
+// returns 0 on success, 1 on error
+CLIENT_PUBLIC u8 packet_version_copy (
+	PacketVersion *dest, const PacketVersion *source
+);
+
+CLIENT_PUBLIC void packet_version_print (
+	const PacketVersion *version
+);
 
 #pragma endregion
 
 #pragma region types
+
+#define PACKETS_MAX_TYPES					16
+#define PACKETS_CURRENT_TYPES				10
 
 #define PACKET_TYPE_MAP(XX)					\
 	XX(0, 	NONE)							\
@@ -86,7 +93,8 @@ CLIENT_PUBLIC void packet_version_print (PacketVersion *version);
 	XX(7, 	APP)							\
 	XX(8, 	APP_ERROR)						\
 	XX(9, 	CUSTOM)							\
-	XX(10, 	TEST)
+	XX(10, 	TEST)							\
+	XX(11, 	BAD)
 
 // these indicate what type of packet we are sending/recieving
 typedef enum PacketType {
@@ -119,9 +127,17 @@ typedef struct _PacketsPerType PacketsPerType;
 
 CLIENT_PUBLIC PacketsPerType *packets_per_type_new (void);
 
-CLIENT_PUBLIC void packets_per_type_delete (void *ptr);
+CLIENT_PUBLIC void packets_per_type_delete (
+	void *packets_per_type_ptr
+);
 
-CLIENT_PUBLIC void packets_per_type_print (PacketsPerType *packets_per_type);
+CLIENT_PUBLIC void packets_per_type_print (
+	const PacketsPerType *packets_per_type
+);
+
+CLIENT_PUBLIC void packets_per_type_array_print (
+	const u64 packets[PACKETS_MAX_TYPES]
+);
 
 #pragma endregion
 
@@ -129,14 +145,14 @@ CLIENT_PUBLIC void packets_per_type_print (PacketsPerType *packets_per_type);
 
 struct _PacketHeader {
 
-	PacketType packet_type;
-	size_t packet_size;
+	PacketType packet_type;		// the main packet type
+	size_t packet_size;			// total size of the packet (header + data)
 
-	u8 handler_id;
+	u8 handler_id;				// used in cervers with multiple app handlers
 
-	u32 request_type;
+	u32 request_type;			// the packet's subtype
 
-	u16 sock_fd;
+	u16 sock_fd;				// used in when working with load balancers
 
 };
 
@@ -146,14 +162,30 @@ CLIENT_PUBLIC PacketHeader *packet_header_new (void);
 
 CLIENT_PUBLIC void packet_header_delete (PacketHeader *header);
 
-CLIENT_PUBLIC PacketHeader *packet_header_create (PacketType packet_type, size_t packet_size, u32 req_type);
+CLIENT_PUBLIC PacketHeader *packet_header_create (
+	const PacketType packet_type,
+	const size_t packet_size,
+	const u32 req_type
+);
 
-// prints an already existing PacketHeader. Mostly used for debugging
-CLIENT_PUBLIC void packet_header_print (PacketHeader *header);
+// allocates a new packet header and copies the values from source
+CLIENT_PUBLIC PacketHeader *packet_header_create_from (
+	const PacketHeader *source
+);
 
-// allocates space for the dest packet header and copies the data from source
+// copies the data from the source header to the destination
 // returns 0 on success, 1 on error
-CLIENT_PUBLIC u8 packet_header_copy (PacketHeader **dest, PacketHeader *source);
+CLIENT_PUBLIC u8 packet_header_copy (
+	PacketHeader *dest, const PacketHeader *source
+);
+
+CLIENT_PUBLIC void packet_header_print (
+	const PacketHeader *header
+);
+
+CLIENT_PUBLIC void packet_header_log (
+	const PacketHeader *header
+);
 
 #pragma endregion
 
@@ -233,8 +265,6 @@ typedef enum GamePacketType {
 
 struct _Packet {
 
-	// the cerver and client the packet is from
-	struct _Cerver *cerver;
 	struct _Client *client;
 	struct _Connection *connection;
 
@@ -248,9 +278,15 @@ struct _Packet {
 	char *data_end;
 	bool data_ref;
 
+	// used to handle big packets
+	// that don't fit inside a single buffer
+	size_t remaining_data;
+
+	PacketHeader header;
+
+	PacketVersion version;
+
 	// the actual packet to be sent
-	PacketHeader *header;
-	PacketVersion *version;
 	size_t packet_size;
 	void *packet;
 	bool packet_ref;
@@ -267,7 +303,15 @@ CLIENT_PUBLIC void packet_delete (void *ptr);
 
 // creates a new packet with the option to pass values directly
 // data is copied into packet buffer and can be safely freed
-CLIENT_EXPORT Packet *packet_create (PacketType type, void *data, size_t data_size);
+CLIENT_EXPORT Packet *packet_create (
+	const PacketType type, const u32 req_type,
+	const void *data, const size_t data_size
+);
+
+// creates a packet with a data buffer of the specified size
+CLIENT_PRIVATE Packet *packet_create_with_data (
+	const size_t data_size
+);
 
 // sets the packet destinatary to whom this packet is going to be sent
 CLIENT_EXPORT void packet_set_network_values (
@@ -277,7 +321,9 @@ CLIENT_EXPORT void packet_set_network_values (
 
 // sets the packet's header
 // copies the header's values into the packet
-CLIENT_EXPORT void packet_set_header (Packet *packet, PacketHeader *header);
+CLIENT_EXPORT void packet_set_header (
+	Packet *packet, const PacketHeader *header
+);
 
 // sets the packet's header values
 // if the packet does NOT yet have a header, it will be created
@@ -288,59 +334,101 @@ CLIENT_EXPORT void packet_set_header_values (
 	u16 sock_fd
 );
 
+// allocates the packet's data with size data_size
+// data can be added using packet_add_data ()
+// returns 0 on success, 1 on error
+CLIENT_PUBLIC unsigned int packet_create_data (
+	Packet *packet, const size_t data_size
+);
+
 // sets the data of the packet -> copies the data into the packet
 // if the packet had data before it is deleted and replaced with the new one
 // returns 0 on success, 1 on error
-CLIENT_EXPORT u8 packet_set_data (Packet *packet, void *data, size_t data_size);
+CLIENT_EXPORT u8 packet_set_data (
+	Packet *packet,
+	const void *data, const size_t data_size
+);
+
+// adds the data to the packet's existing data buffer
+// the data size must be <= the packet's remaining data
+// returns 0 on success, 1 on error
+CLIENT_PRIVATE u8 packet_add_data (
+	Packet *packet,
+	const void *data, const size_t data_size
+);
 
 // appends the data to the end if the packet already has data
 // if the packet is empty, creates a new buffer
 // it creates a new copy of the data and the original can be safely freed
 // this does not work if the data has been set using a reference
 // returns 0 on success, 1 on error
-CLIENT_EXPORT u8 packet_append_data (Packet *packet, void *data, size_t data_size);
+CLIENT_EXPORT u8 packet_append_data (
+	Packet *packet,
+	const void *data, const size_t data_size
+);
 
 // sets a reference to a data buffer to send
 // data will not be copied into the packet and will not be freed after use
 // this method is usefull for example if you just want to send a raw json packet to a non-cerver
 // use this method with packet_send () with the raw flag on
 // returns 0 on success, 1 on error
-CLIENT_EXPORT u8 packet_set_data_ref (Packet *packet, void *data, size_t data_size);
+CLIENT_EXPORT u8 packet_set_data_ref (
+	Packet *packet, void *data, size_t data_size
+);
 
 // sets a packet's packet by copying the passed data, so you will be able to free your data
 // this data is expected to already contain a header, otherwise, send with raw flag
 // deletes the previuos packet's packet
 // returns 0 on succes, 1 on error
-CLIENT_EXPORT u8 packet_set_packet (Packet *packet, void *data, size_t data_size);
+CLIENT_EXPORT u8 packet_set_packet (
+	Packet *packet, void *data, size_t data_size
+);
 
 // sets a reference to a data buffer to send as the packet
 // data will not be copied into the packet and will not be freed after use
 // usefull when you need to generate your own cerver type packet by hand
 // returns 0 on success, 1 on error
-CLIENT_EXPORT u8 packet_set_packet_ref (Packet *packet, void *data, size_t packet_size);
+CLIENT_EXPORT u8 packet_set_packet_ref (
+	Packet *packet, void *data, size_t packet_size
+);
 
 // prepares the packet to be ready to be sent
 // WARNING: dont call this method if you have set the packet directly
 // returns 0 on success, 1 on error
 CLIENT_EXPORT u8 packet_generate (Packet *packet);
 
+// creates a request packet that is ready to be sent
+// returns a newly allocated packet
+CLIENT_EXPORT Packet *packet_create_request (
+	const PacketType packet_type,
+	const u32 request_type
+);
+
+// creates a new ping packet (PACKET_TYPE_TEST)
+// returns a newly allocated packet
+CLIENT_EXPORT Packet *packet_create_ping (void);
+
 // generates a simple request packet of the requested type reday to be sent,
 // and with option to pass some data
 // returns a newly allocated packet that should be deleted after use
 CLIENT_EXPORT Packet *packet_generate_request (
-	PacketType packet_type, u32 req_type,
-	void *data, size_t data_size
+	const PacketType packet_type, const u32 req_type,
+	const void *data, const size_t data_size
 );
 
 // sends a packet using its network values
 // raw flag to send a raw packet (only the data that was set to the packet, without any header)
 // returns 0 on success, 1 on error
-CLIENT_EXPORT u8 packet_send (const Packet *packet, int flags, size_t *total_sent, bool raw);
+CLIENT_EXPORT u8 packet_send (
+	const Packet *packet, int flags, size_t *total_sent, bool raw
+);
 
 // works just as packet_send () but the socket's write mutex won't be locked
 // useful when you need to lock the mutex manually
 // returns 0 on success, 1 on error
-CLIENT_EXPORT u8 packet_send_unsafe (const Packet *packet, int flags, size_t *total_sent, bool raw);
+CLIENT_PUBLIC u8 packet_send_unsafe (
+	const Packet *packet, int flags, size_t *total_sent, bool raw
+);
 
 // sends a packet to the specified destination
 // sets flags to 0
@@ -359,7 +447,9 @@ CLIENT_EXPORT u8 packet_send_to (
 // the socket's write mutex will be locked to ensure that the packet
 // is sent correctly and to avoid race conditions
 // returns 0 on success, 1 on error
-CLIENT_EXPORT u8 packet_send_split (const Packet *packet, int flags, size_t *total_sent);
+CLIENT_EXPORT u8 packet_send_split (
+	const Packet *packet, int flags, size_t *total_sent
+);
 
 // sends a packet to the socket in two parts, first the header & then the data
 // works just as packet_send_split () but with the flags set to 0
@@ -389,9 +479,33 @@ CLIENT_EXPORT u8 packet_send_to_socket (
 	struct _Socket *socket, int flags, size_t *total_sent, bool raw
 );
 
+// sends a packet of selected types without any data
+// returns 0 on success, 1 on error
+CLIENT_EXPORT u8 packet_send_request (
+	const PacketType packet_type,
+	const u32 request_type,
+	struct _Client *client, struct _Connection *connection
+);
+
+// sends a ping packet (PACKET_TYPE_TEST)
+// returns 0 on success, 1 on error
+CLIENT_EXPORT u8 packet_send_ping (
+	struct _Client *client, struct _Connection *connection
+);
+
+// routes a packet from one connection's sock fd to another connection's sock fd
+// the header is sent first and then the packet's body (if any) is handled directly between fds
+// by calling the splice method using a pipe as the middleman
+// this method is thread safe, since it will block the socket until the entire packet has been routed
+// returns 0 on success, 1 on error
+CLIENT_PUBLIC u8 packet_route_between_connections (
+	struct _Connection *from, struct _Connection *to,
+	PacketHeader *header, size_t *sent
+);
+
 // check if packet has a compatible protocol id and a version
 // returns false on a bad packet
-CLIENT_PUBLIC bool packet_check (Packet *packet);
+CLIENT_EXPORT bool packet_check (const Packet *packet);
 
 #pragma endregion
 

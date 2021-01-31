@@ -18,6 +18,9 @@ struct _Cerver;
 struct _Packet;
 struct _Token;
 
+struct _Client;
+struct _Connection;
+
 #pragma region types
 
 #define CERVER_TYPE_MAP(XX)					\
@@ -106,25 +109,28 @@ CLIENT_PUBLIC void cerver_delete (void *ptr);
 
 #pragma region handler
 
-// handles cerver type packets
-CLIENT_PRIVATE void cerver_packet_handler (struct _Packet *packet);
+// compare the info the server sent us with the one we expected
+// and ajust our connection values if necessary
+CLIENT_PRIVATE u8 cerver_check_info (
+	Cerver *cerver, struct _Client *client, struct _Connection *connection
+);
 
 #pragma endregion
 
 #pragma region serialization
 
-#define S_CERVER_NAME_LENGTH            64
+#define S_CLIENT_NAME_LENGTH            64
 
-#define S_CERVER_NAME_LENGTH                64
-#define S_CERVER_WELCOME_LENGTH             128
+#define S_CLIENT_NAME_LENGTH                64
+#define S_CLIENT_WELCOME_LENGTH             128
 
 // serialized cerver structure
 typedef struct SCerver {
 
 	CerverType type;
 
-	char name[S_CERVER_NAME_LENGTH];
-	char welcome[S_CERVER_WELCOME_LENGTH];
+	char name[S_CLIENT_NAME_LENGTH];
+	char welcome[S_CLIENT_WELCOME_LENGTH];
 
 	bool use_ipv6;
 	Protocol protocol;
@@ -134,6 +140,8 @@ typedef struct SCerver {
 	bool uses_sessions;
 
 } SCerver;
+
+CLIENT_PRIVATE Cerver *cerver_deserialize (SCerver *scerver);
 
 #pragma endregion
 

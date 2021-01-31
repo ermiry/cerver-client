@@ -7,16 +7,14 @@
 
 #include "client/config.h"
 
+#define CLIENT_MAX_EVENTS				32
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 struct _Client;
 struct _Connection;
-
-#pragma region types
-
-#define CLIENT_MAX_EVENTS				32
 
 #define CLIENT_EVENT_MAP(XX)																													\
 	XX(0,	NONE, 				No event)																										\
@@ -47,11 +45,9 @@ typedef enum ClientEventType {
 } ClientEventType;
 
 // get the description for the current error type
-CLIENT_EXPORT const char *client_event_type_description (ClientEventType type);
-
-#pragma endregion
-
-#pragma region event
+CLIENT_EXPORT const char *client_event_type_description (
+	const ClientEventType type
+);
 
 struct _ClientEvent {
 
@@ -65,8 +61,8 @@ struct _ClientEvent {
 	void *response_data;                // data that came with the response
 	Action delete_response_data;
 
-	Action action;                      // the action to be triggered
-	void *action_args;                  // the action arguments
+	Work work;                      	// the action to be triggered
+	void *work_args;                  // the action arguments
 	Action delete_action_args;          // how to get rid of the data
 
 };
@@ -83,14 +79,16 @@ CLIENT_PRIVATE void client_event_delete (void *ptr);
 CLIENT_EXPORT u8 client_event_register (
 	struct _Client *client,
 	const ClientEventType event_type,
-	Action action, void *action_args, Action delete_action_args,
+	Work work, void *work_args, Action delete_action_args,
 	bool create_thread, bool drop_after_trigger
 );
 
 // unregister the action associated with an event
 // deletes the action args using the delete_action_args () if NOT NULL
 // returns 0 on success, 1 on error or if event is NOT registered
-CLIENT_EXPORT u8 client_event_unregister (struct _Client *client, const ClientEventType event_type);
+CLIENT_EXPORT u8 client_event_unregister (
+	struct _Client *client, const ClientEventType event_type
+);
 
 CLIENT_PRIVATE void client_event_set_response (
 	struct _Client *client,
@@ -103,10 +101,6 @@ CLIENT_PRIVATE void client_event_trigger (
 	const ClientEventType event_type,
 	const struct _Client *client, const struct _Connection *connection
 );
-
-#pragma endregion
-
-#pragma region data
 
 // structure that is passed to the user registered method
 typedef struct ClientEventData {
@@ -122,9 +116,9 @@ typedef struct ClientEventData {
 
 } ClientEventData;
 
-CLIENT_PUBLIC void client_event_data_delete (ClientEventData *event_data);
-
-#pragma endregion
+CLIENT_PUBLIC void client_event_data_delete (
+	ClientEventData *event_data
+);
 
 #ifdef __cplusplus
 }

@@ -91,7 +91,9 @@ static int cerver_connect (const char *ip, unsigned int port) {
 
 		client = client_create ();
 		if (client) {
-			client_set_app_handlers (client, app_handler, NULL);
+			Handler *app_packet_handler = handler_create (app_handler);
+			handler_set_direct_handle (app_packet_handler, true);
+			client_set_app_handlers (client, app_packet_handler, NULL);
 
 			connection = client_connection_create (client, ip, port, PROTOCOL_TCP, false);
 			if (connection) {
@@ -141,7 +143,7 @@ static void app_handler (void *packet_ptr) {
 	if (packet_ptr) {
 		Packet *packet = (Packet *) packet_ptr;
 		
-		switch (packet->header->request_type) {
+		switch (packet->header.request_type) {
 			case TEST_MSG: client_log (LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Got a test message from cerver!"); break;
 
 			default: 
@@ -184,7 +186,7 @@ static unsigned int test_msg_send (void) {
 
 	unsigned int retval = 1;
 
-	if ((client->running) && (connection->connected)) {
+	if ((client->running) && (connection->active)) {
 		Packet *packet = packet_generate_request (PACKET_TYPE_APP, TEST_MSG, NULL, 0);
 		if (packet) {
 			retval = send_packet (packet);
@@ -240,7 +242,7 @@ static unsigned int app_msg_send_generate_request (const char *message) {
 
 	unsigned int retval = 1;
 
-	if ((client->running) && (connection->connected)) {
+	if ((client->running) && (connection->active)) {
 		AppData *app_data = app_data_create (message);
 		if (app_data) {
 			Packet *packet = packet_generate_request (
@@ -276,11 +278,10 @@ static unsigned int app_msg_send_generate_split (const char *message) {
 			size_t data_size = sizeof (AppData);
 			size_t packet_len = sizeof (PacketHeader) + data_size;
 
-			packet->header = packet_header_new ();
-			packet->header->packet_type = PACKET_TYPE_APP;
-			packet->header->packet_size = packet_len;
+			packet->header.packet_type = PACKET_TYPE_APP;
+			packet->header.packet_size = packet_len;
 
-			packet->header->request_type = APP_MSG;
+			packet->header.request_type = APP_MSG;
 
 			packet->data = malloc (data_size);
 			packet->data_size = data_size;
@@ -324,11 +325,10 @@ static unsigned int app_msg_send_generate_pieces (void) {
 		size_t data_size = sizeof (AppData) * n_messages;
 		size_t packet_len = sizeof (PacketHeader) + data_size;
 
-		packet->header = packet_header_new ();
-		packet->header->packet_type = PACKET_TYPE_APP;
-		packet->header->packet_size = packet_len;
+		packet->header.packet_type = PACKET_TYPE_APP;
+		packet->header.packet_size = packet_len;
 
-		packet->header->request_type = MULTI_MSG;
+		packet->header.request_type = MULTI_MSG;
 
 		void **messages = (void **) calloc (n_messages, sizeof (AppData));
 		size_t *sizes = (size_t *) calloc (n_messages, sizeof (size_t));

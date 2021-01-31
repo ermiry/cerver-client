@@ -1,26 +1,47 @@
-#include <stdio.h>
-
 #include "client/version.h"
 
-// print full version information
+#include "client/utils/log.h"
+
+// print full erver version information
 void cerver_client_version_print_full (void) {
 
-	printf ("\n\nCerver Client Version: %s\n", CLIENT_VERSION_NAME);
-	printf ("Release Date & time: %s - %s\n", CLIENT_VERSION_DATE, CLIENT_VERSION_TIME);
-	printf ("Author: %s\n\n", CLIENT_VERSION_AUTHOR);
+	client_log_both (
+		LOG_TYPE_NONE, LOG_TYPE_NONE,
+		"Cerver Version: %s", CLIENT_VERSION_NAME
+	);
+
+	client_log_both (
+		LOG_TYPE_NONE, LOG_TYPE_NONE,
+		"Release Date & time: %s - %s",
+		CLIENT_VERSION_DATE, CLIENT_VERSION_TIME
+	);
+
+	client_log_both (
+		LOG_TYPE_NONE, LOG_TYPE_NONE,
+		"Author: %s\n",
+		CLIENT_VERSION_AUTHOR
+	);
 
 }
 
 // print the version id
 void cerver_client_version_print_version_id (void) {
 
-	printf ("\n\nCerver Client Version ID: %s\n", CLIENT_VERSION);
+	client_log_both (
+		LOG_TYPE_NONE, LOG_TYPE_NONE,
+		"Cerver Version ID: %s\n",
+		CLIENT_VERSION
+	);
 
 }
 
 // print the version name
 void cerver_client_version_print_version_name (void) {
 
-	printf ("\n\nCerver Client Version: %s\n", CLIENT_VERSION_NAME);
+	client_log_both (
+		LOG_TYPE_NONE, LOG_TYPE_NONE,
+		"Cerver Version: %s\n",
+		CLIENT_VERSION_NAME
+	);
 
 }

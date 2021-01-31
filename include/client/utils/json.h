@@ -27,8 +27,8 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _CERVER_UTILS_JSON_H_
-#define _CERVER_UTILS_JSON_H_
+#ifndef _CLIENT_UTILS_JSON_H_
+#define _CLIENT_UTILS_JSON_H_
 
 #include <stdlib.h>
 

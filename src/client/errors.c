@@ -21,10 +21,8 @@
 
 u8 client_error_unregister (Client *client, const ClientErrorType error_type);
 
-#pragma region types
-
 // get the description for the current error type
-const char *client_error_type_description (ClientErrorType type) {
+const char *client_error_type_description (const ClientErrorType type) {
 
 	switch (type) {
 		#define XX(num, name, description) case CLIENT_ERROR_##name: return #description;
@@ -35,11 +33,6 @@ const char *client_error_type_description (ClientErrorType type) {
 	return client_error_type_description (CLIENT_ERROR_UNKNOWN);
 
 }
-
-
-#pragma endregion
-
-#pragma region data
 
 static ClientErrorData *client_error_data_new (void) {
 
@@ -87,10 +80,6 @@ static ClientErrorData *client_error_data_create (
 
 }
 
-#pragma endregion
-
-#pragma region errors
-
 static ClientError *client_error_new (void) {
 
 	ClientError *client_error = (ClientError *) malloc (sizeof (ClientError));
@@ -100,8 +89,8 @@ static ClientError *client_error_new (void) {
 		client_error->create_thread = false;
 		client_error->drop_after_trigger = false;
 
-		client_error->action = NULL;
-		client_error->action_args = NULL;
+		client_error->work = NULL;
+		client_error->work_args = NULL;
 		client_error->delete_action_args = NULL;
 	}
 
@@ -114,9 +103,9 @@ void client_error_delete (void *client_error_ptr) {
 	if (client_error_ptr) {
 		ClientError *client_error = (ClientError *) client_error_ptr;
 
-		if (client_error->action_args) {
+		if (client_error->work_args) {
 			if (client_error->delete_action_args)
-				client_error->delete_action_args (client_error->action_args);
+				client_error->delete_action_args (client_error->work_args);
 		}
 
 		free (client_error_ptr);
@@ -132,7 +121,7 @@ void client_error_delete (void *client_error_ptr) {
 u8 client_error_register (
 	Client *client,
 	const ClientErrorType error_type,
-	Action action, void *action_args, Action delete_action_args,
+	Work work, void *work_args, Action delete_action_args,
 	bool create_thread, bool drop_after_trigger
 ) {
 
@@ -146,8 +135,8 @@ u8 client_error_register (
 			error->create_thread = create_thread;
 			error->drop_after_trigger = drop_after_trigger;
 
-			error->action = action;
-			error->action_args = action_args;
+			error->work = work;
+			error->work_args = work_args;
 			error->delete_action_args = delete_action_args;
 
 			// search if there is an action already registred for that error and remove it
@@ -197,12 +186,12 @@ u8 client_error_trigger (
 		ClientError *error = client->errors[error_type];
 		if (error) {
 			// trigger the action
-			if (error->action) {
+			if (error->work) {
 				if (error->create_thread) {
 					pthread_t thread_id = 0;
 					retval = thread_create_detachable (
 						&thread_id,
-						(void *(*)(void *)) error->action,
+						error->work,
 						client_error_data_create (
 							client, connection,
 							error,
@@ -212,7 +201,7 @@ u8 client_error_trigger (
 				}
 
 				else {
-					error->action (client_error_data_create (
+					(void) error->work (client_error_data_create (
 						client, connection,
 						error,
 						error_message
@@ -231,10 +220,6 @@ u8 client_error_trigger (
 	return retval;
 
 }
-
-#pragma endregion
-
-#pragma region handler
 
 // handles error packets
 void client_error_packet_handler (Packet *packet) {
@@ -342,7 +327,7 @@ void client_error_packet_handler (Packet *packet) {
 				client_error_trigger (
 					CLIENT_ERROR_UNKNOWN,
 					packet->client, packet->connection,
-					NULL
+					s_error->msg
 				);
 			} break;
 		}
@@ -350,12 +335,10 @@ void client_error_packet_handler (Packet *packet) {
 
 }
 
-#pragma endregion
-
-#pragma region packets
-
 // creates an error packet ready to be sent
-Packet *error_packet_generate (const ClientErrorType type, const char *msg) {
+Packet *client_error_packet_generate (
+	const ClientErrorType type, const char *msg
+) {
 
 	Packet *packet = packet_new ();
 	if (packet) {
@@ -386,14 +369,14 @@ Packet *error_packet_generate (const ClientErrorType type, const char *msg) {
 
 // creates and send a new error packet
 // returns 0 on success, 1 on error
-u8 error_packet_generate_and_send (
+u8 client_error_packet_generate_and_send (
 	const ClientErrorType type, const char *msg,
 	Client *client, Connection *connection
 ) {
 
 	u8 retval = 1;
 
-	Packet *error_packet = error_packet_generate (type, msg);
+	Packet *error_packet = client_error_packet_generate (type, msg);
 	if (error_packet) {
 		packet_set_network_values (error_packet, client, connection);
 		retval = packet_send (error_packet, 0, NULL, false);
