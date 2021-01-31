@@ -288,7 +288,6 @@ Packet *packet_new (void) {
 
 	Packet *packet = (Packet *) malloc (sizeof (Packet));
 	if (packet) {
-		packet->cerver = NULL;
 		packet->client = NULL;
 		packet->connection = NULL;
 
@@ -332,7 +331,6 @@ void packet_delete (void *packet_ptr) {
 	if (packet_ptr) {
 		Packet *packet = (Packet *) packet_ptr;
 
-		packet->cerver = NULL;
 		packet->client = NULL;
 		packet->connection = NULL;
 
@@ -729,7 +727,6 @@ Packet *packet_create_request (
 	Packet *packet = (Packet *) malloc (sizeof (Packet));
 	if (packet) {
 		*packet = (Packet) {
-			.cerver = NULL,
 			.client = NULL,
 			.connection = NULL,
 
@@ -924,14 +921,8 @@ static u8 packet_send_split_tcp (
 
 static void packet_send_update_stats (
 	PacketType packet_type, size_t sent,
-	Cerver *cerver,
 	Client *client, Connection *connection
 ) {
-
-	if (cerver) {
-		cerver->stats->n_packets_sent += 1;
-		cerver->stats->total_bytes_sent += sent;
-	}
 
 	if (client) {
 		client->stats->n_packets_sent += 1;
@@ -1006,7 +997,6 @@ static inline u8 packet_send_internal (
 	const Packet *packet,
 	int flags, size_t *total_sent,
 	bool raw, bool split, bool unsafe,
-	Cerver *cerver,
 	Client *client, Connection *connection
 ) {
 
@@ -1025,7 +1015,7 @@ static inline u8 packet_send_internal (
 
 					packet_send_update_stats (
 						packet->packet_type, sent,
-						cerver, client, connection
+						client, connection
 					);
 
 					retval = 0;
@@ -1066,7 +1056,7 @@ u8 packet_send (
 	return packet_send_internal (
 		packet, flags, total_sent,
 		raw, false, false,
-		packet->cerver, packet->client, packet->connection
+		packet->client, packet->connection
 	);
 
 }
@@ -1081,7 +1071,7 @@ u8 packet_send_unsafe (
 	return packet_send_internal (
 		packet, flags, total_sent,
 		raw, false, true,
-		packet->cerver, packet->client, packet->connection
+		packet->client, packet->connection
 	);
 
 }
@@ -1094,14 +1084,13 @@ u8 packet_send_unsafe (
 u8 packet_send_to (
 	const Packet *packet,
 	size_t *total_sent, bool raw,
-	Cerver *cerver,
 	Client *client, Connection *connection
 ) {
 
 	return packet_send_internal (
 		packet, 0, total_sent,
 		raw, false, false,
-		cerver, client, connection
+		client, connection
 	);
 
 }
@@ -1119,7 +1108,7 @@ u8 packet_send_split (
 	return packet_send_internal (
 		packet, flags, total_sent,
 		false, true, false,
-		packet->cerver, packet->client, packet->connection
+		packet->client, packet->connection
 	);
 
 }
@@ -1130,14 +1119,13 @@ u8 packet_send_split (
 u8 packet_send_to_split (
 	const Packet *packet,
 	size_t *total_sent,
-	Cerver *cerver,
 	Client *client, Connection *connection
 ) {
 
 	return packet_send_internal (
 		packet, 0, total_sent,
 		false, true, false,
-		cerver, client, connection
+		client, connection
 	);
 
 }
@@ -1209,7 +1197,7 @@ u8 packet_send_pieces (
 
 		packet_send_update_stats (
 			packet->packet_type, actual_sent,
-			packet->cerver, packet->client, packet->connection
+			packet->client, packet->connection
 		);
 
 		if (total_sent) *total_sent = actual_sent;
@@ -1263,14 +1251,12 @@ u8 packet_send_to_socket (
 u8 packet_send_request (
 	const PacketType packet_type,
 	const u32 request_type,
-	Cerver *cerver,
 	Client *client, Connection *connection
 ) {
 
 	u8 retval = 1;
 
 	Packet request = {
-		.cerver = cerver,
 		.client = client,
 		.connection = connection,
 
@@ -1321,13 +1307,11 @@ u8 packet_send_request (
 // sends a ping packet (PACKET_TYPE_TEST)
 // returns 0 on success, 1 on error
 u8 packet_send_ping (
-	Cerver *cerver,
 	Client *client, Connection *connection
 ) {
 
 	return packet_send_request (
 		PACKET_TYPE_TEST, 0,
-		cerver,
 		client, connection
 	);
 

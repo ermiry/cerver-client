@@ -13,7 +13,6 @@
 extern "C" {
 #endif
 
-struct _Cerver;
 struct _Client;
 struct _Connection;
 struct _Socket;
@@ -266,8 +265,6 @@ typedef enum GamePacketType {
 
 struct _Packet {
 
-	// the cerver and client the packet is from
-	struct _Cerver *cerver;
 	struct _Client *client;
 	struct _Connection *connection;
 
@@ -441,7 +438,6 @@ CLIENT_PUBLIC u8 packet_send_unsafe (
 CLIENT_EXPORT u8 packet_send_to (
 	const Packet *packet,
 	size_t *total_sent, bool raw,
-	struct _Cerver *cerver,
 	struct _Client *client, struct _Connection *connection
 );
 
@@ -461,7 +457,6 @@ CLIENT_EXPORT u8 packet_send_split (
 CLIENT_EXPORT u8 packet_send_to_split (
 	const Packet *packet,
 	size_t *total_sent,
-	struct _Cerver *cerver,
 	struct _Client *client, struct _Connection *connection
 );
 
@@ -489,14 +484,12 @@ CLIENT_EXPORT u8 packet_send_to_socket (
 CLIENT_EXPORT u8 packet_send_request (
 	const PacketType packet_type,
 	const u32 request_type,
-	struct _Cerver *cerver,
 	struct _Client *client, struct _Connection *connection
 );
 
 // sends a ping packet (PACKET_TYPE_TEST)
 // returns 0 on success, 1 on error
 CLIENT_EXPORT u8 packet_send_ping (
-	struct _Cerver *cerver,
 	struct _Client *client, struct _Connection *connection
 );
 

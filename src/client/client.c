@@ -858,7 +858,6 @@ static unsigned int client_connection_get_next_packet_actual (
 
 	// TODO: use a static packet
 	Packet *packet = packet_new ();
-	packet->cerver = NULL;
 	packet->client = client;
 	packet->connection = connection;
 
