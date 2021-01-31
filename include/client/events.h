@@ -23,10 +23,10 @@ struct _Connection;
 	XX(3,	CONNECTION_FAILED, 	Failed to connect to cerver)																					\
 	XX(4,	CONNECTION_CLOSE, 	The connection was clossed directly by client. This happens when a call to a recv () methods returns <= 0)		\
 	XX(5,	CONNECTION_DATA, 	Data has been received; only triggered from client request methods)												\
-	XX(6,	CLIENT_INFO, 		Received cerver info from the cerver)																			\
-	XX(7,	CLIENT_TEARDOWN, 	The cerver is going to teardown & the client will disconnect)													\
-	XX(8,	CLIENT_STATS, 		Received cerver stats)																							\
-	XX(9,	CLIENT_GAME_STATS, 	Received cerver game stats)																						\
+	XX(6,	CERVER_INFO, 		Received cerver info from the cerver)																			\
+	XX(7,	CERVER_TEARDOWN, 	The cerver is going to teardown & the client will disconnect)													\
+	XX(8,	CERVER_STATS, 		Received cerver stats)																							\
+	XX(9,	CERVER_GAME_STATS, 	Received cerver game stats)																						\
 	XX(10,	AUTH_SENT, 			Auth data has been sent to the cerver)																			\
 	XX(11,	SUCCESS_AUTH, 		Auth with cerver has been successfull)																			\
 	XX(12,	MAX_AUTH_TRIES, 	Maxed out attempts to authenticate to cerver; need to try again)												\
