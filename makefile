@@ -2,6 +2,8 @@ TYPE		:= development
 
 NATIVE		:= 0
 
+COVERAGE	:= 0
+
 DEBUG		:= 0
 
 SLIB		:= libclient.so
@@ -66,6 +68,9 @@ ifeq ($(TYPE), development)
 	CFLAGS += -g -fasynchronous-unwind-tables $(DEVELOPMENT)
 else ifeq ($(TYPE), test)
 	CFLAGS += -g -fasynchronous-unwind-tables -D_FORTIFY_SOURCE=2 -fstack-protector -O2
+	ifeq ($(COVERAGE), 1)
+		CFLAGS += -fprofile-arcs -ftest-coverage
+	endif
 else ifeq ($(TYPE), beta)
 	CFLAGS += -g -D_FORTIFY_SOURCE=2 -O2
 else
@@ -95,7 +100,9 @@ CFLAGS += -fPIC $(COMMON)
 LIB         := -L /usr/local/lib $(PTHREAD) $(MATH)
 
 ifeq ($(TYPE), test)
-	LIB += -lgcov --coverage
+	ifeq ($(COVERAGE), 1)
+		LIB += -lgcov --coverage
+	endif
 endif
 
 INC         := -I $(INCDIR) -I /usr/local/include
@@ -190,7 +197,9 @@ TESTCOVDIR	:= $(COVDIR)/test
 TESTFLAGS	:= -g $(DEFINES) -Wall -Wno-unknown-pragmas -Wno-format
 
 ifeq ($(TYPE), test)
-	TESTFLAGS += -fprofile-arcs -ftest-coverage
+	ifeq ($(COVERAGE), 1)
+		TESTFLAGS += -fprofile-arcs -ftest-coverage
+	endif
 endif
 
 ifeq ($(NATIVE), 1)
@@ -202,7 +211,9 @@ TESTLIBS	:= -L /usr/local/lib $(PTHREAD)
 TESTLIBS += -Wl,-rpath=./$(TARGETDIR) -L ./$(TARGETDIR) -l client
 
 ifeq ($(TYPE), test)
-	TESTLIBS += -lgcov --coverage
+	ifeq ($(COVERAGE), 1)
+		TESTLIBS += -lgcov --coverage
+	endif
 endif
 
 TESTINC		:= -I $(INCDIR) -I ./$(TESTDIR)
