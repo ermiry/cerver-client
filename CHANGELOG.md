@@ -1,22 +1,10 @@
-## General
-- Removed game sources as they were outdated
-- Removed game related client methods
-- Added dedicated header with auth related definitions
-- Updated files related methods with latest implementations
-- Updated client & connection sources with latest methods implementations
+## Client
+- Split client_connection_start () into dedicated connection methods
+- Checking for connection queue in client_connection_start ()
 
-## Handler
-- Removed SockReceive structure & related methods
-- Added receive related definitions in dedicated sources
-- Added latest handler methods implementations
-- Added main handler structure definitions & methods
+## Connection
+- Added the ability to send packets using a connection queue
 
 ## Packets
-- Refactored packet header field to be static instead of a pointer
-- Updated packets sources with latest methods implementations
-
-## Threads
-- Added latest bsem & job queue implementations
-
-## Examples
-- Updated examples with latest methods & types
+- Refactored packets stats methods to use the correct types
+- Added base packet_send_actual () to send a tcp packet
