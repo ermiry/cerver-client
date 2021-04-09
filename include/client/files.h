@@ -11,8 +11,6 @@
 
 #include "client/config.h"
 
-#include "client/utils/json.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -65,10 +63,6 @@ CLIENT_EXPORT char *file_read (
 // returns fd on success, -1 on error
 CLIENT_EXPORT int file_open_as_fd (
 	const char *filename, struct stat *filestatus, int flags
-);
-
-CLIENT_EXPORT json_value *file_json_parse (
-	const char *filename
 );
 
 #pragma endregion
