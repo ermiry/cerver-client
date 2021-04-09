@@ -1,10 +1,11 @@
-## Client
-- Split client_connection_start () into dedicated connection methods
-- Checking for connection queue in client_connection_start ()
+## General
+- Removed previous json utilities methods
+- Removed file_json_parse () from files sources
+- Added latest custom json sources from cerver
+- Updated examples & tests compilation instructions
+- Refactored coverage configuration in makefile
+- Refactored coverage into dedicated test workflow
 
-## Connection
-- Added the ability to send packets using a connection queue
-
-## Packets
-- Refactored packets stats methods to use the correct types
-- Added base packet_send_actual () to send a tcp packet
+## Tests
+- Refactored run tests scripts instructions
+- Added latest dedicated json methods unit tests

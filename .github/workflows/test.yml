@@ -1,4 +1,4 @@
-name: Client Code Coverage
+name: Cerver Tests
 
 on:
   pull_request:
@@ -6,24 +6,23 @@ on:
       - '*'
 
 jobs:
-  coverage:
-    name: Client coverage
+  test:
+    name: Cerver tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
-      # compile
-      - name: gcc make
-        run: make TYPE=test
-      - name: gcc tests
-        run: make TYPE=test test
+      - name: Compile Sources
+        run: make TYPE=test COVERAGE=1
 
-      # run
-      - name: test
+      - name: Compile Tests
+        run: make TYPE=test COVERAGE=1 test
+
+      - name: Unit Tests
         run: bash test/run.sh
 
-      - name: coverage
+      - name: Coverage
         run: make coverage
 
       - name: Upload coverage to Codecov
@@ -35,11 +34,3 @@ jobs:
           name: build
           fail_ci_if_error: true
           # verbose: true
-
-      - name: clean tests
-        run: make clean-tests
-
-      - name: g++ tests
-        run: make TYPE=test CC=g++ test
-      - name: g++ run tests
-        run: bash test/run.sh
