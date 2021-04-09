@@ -14,6 +14,7 @@
 #include "client/receive.h"
 #include "client/socket.h"
 
+#include "client/threads/jobs.h"
 #include "client/threads/thread.h"
 
 #define CONNECTION_NAME_SIZE						64
@@ -35,6 +36,9 @@
 #define CONNECTION_DEFAULT_UPDATE_TIMEOUT			2
 
 #define CONNECTION_DEFAULT_RECEIVE_PACKETS			true
+
+#define CONNECTION_DEFAULT_USE_SEND_QUEUE			false
+#define CONNECTION_DEFAULT_SEND_FLAGS				0
 
 #ifdef __cplusplus
 extern "C" {
@@ -119,6 +123,11 @@ struct _Connection {
 	);
 	void *custom_receive_args;              		// arguments to be passed to the custom receive method
 	void (*custom_receive_args_delete)(void *);		// method to delete the arguments when the connection gets deleted
+
+	bool use_send_queue;
+	int send_flags;
+	pthread_t send_thread_id;
+	JobQueue *send_queue;
 
 	bool authenticated;                     // the connection has been authenticated to the cerver
 	void *auth_data;                        // maybe auth credentials
@@ -219,6 +228,13 @@ CLIENT_PUBLIC void connection_set_custom_receive (
 	void *args, void (*args_delete)(void *)
 );
 
+// enables the ability to send packets using the connection's queue
+// a dedicated thread will be created to send queued packets
+CLIENT_PUBLIC void connection_set_send_queue (
+	Connection *connection, int flags
+);
+
+
 // sets the connection auth data to send whenever the cerver requires authentication
 // and a method to destroy it once the connection has ended,
 // if delete_auth_data is NULL, the auth data won't be deleted
@@ -269,7 +285,17 @@ CLIENT_PRIVATE u8 connection_register_to_client (
 );
 
 // starts listening and receiving data in the connection sock
-CLIENT_PRIVATE void *connection_update (void *ptr);
+CLIENT_PRIVATE void *connection_update (
+	void *client_connection_ptr
+);
+
+CLIENT_PUBLIC void connection_send_packet (
+	Connection *connection, Packet *packet
+);
+
+CLIENT_PRIVATE void *connection_send_thread (
+	void *client_connection_ptr
+);
 
 #ifdef __cplusplus
 }
