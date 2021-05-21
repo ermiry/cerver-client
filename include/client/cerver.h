@@ -119,18 +119,16 @@ CLIENT_PRIVATE u8 cerver_check_info (
 
 #pragma region serialization
 
-#define S_CLIENT_NAME_LENGTH            64
-
-#define S_CLIENT_NAME_LENGTH                64
-#define S_CLIENT_WELCOME_LENGTH             128
+#define S_CERVER_NAME_LENGTH                128
+#define S_CERVER_WELCOME_LENGTH             512
 
 // serialized cerver structure
 typedef struct SCerver {
 
 	CerverType type;
 
-	char name[S_CLIENT_NAME_LENGTH];
-	char welcome[S_CLIENT_WELCOME_LENGTH];
+	char name[S_CERVER_NAME_LENGTH];
+	char welcome[S_CERVER_WELCOME_LENGTH];
 
 	bool use_ipv6;
 	Protocol protocol;
