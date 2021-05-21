@@ -33,7 +33,8 @@ DEVELOPMENT := -D CERVER_DEBUG			\
 				-D HANDLER_DEBUG 		\
 				-D PACKETS_DEBUG 		\
 				-D AUTH_DEBUG 			\
-				-D FILES_DEBUG
+				-D FILES_DEBUG			\
+				-D THREADS_DEBUG
 
 CC          := gcc
 
