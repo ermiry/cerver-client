@@ -99,7 +99,7 @@ Handler *handler_create (Action handler_method) {
 
 		handler->handler = handler_method;
 
-		handler->job_queue = job_queue_create ();
+		handler->job_queue = job_queue_create (JOB_QUEUE_TYPE_JOBS);
 	}
 
 	return handler;
@@ -174,7 +174,7 @@ static void handler_do_while_client (Handler *handler) {
 			(void) pthread_mutex_unlock (handler->client->handlers_lock);
 
 			// read job from queue
-			job = job_queue_pull (handler->job_queue);
+			job = (Job *) job_queue_pull (handler->job_queue);
 			if (job) {
 				packet = (Packet *) job->args;
 
@@ -214,19 +214,12 @@ static void *handler_do (void *handler_ptr) {
 
 		// set the thread name
 		if (handler->id >= 0) {
-			char thread_name[THREAD_NAME_BUFFER_LEN] = { 0 };
-
 			switch (handler->type) {
 				case HANDLER_TYPE_CLIENT:
-					(void) snprintf (
-						thread_name, THREAD_NAME_BUFFER_LEN,
-						"client-handler-%d", handler->unique_id
-					);
+					(void) thread_set_name ("client-handler-%d", handler->unique_id);
 					break;
 				default: break;
 			}
-
-			(void) thread_set_name (thread_name);
 		}
 
 		// TODO: register to signals to handle multiple actions
