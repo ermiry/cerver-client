@@ -400,7 +400,7 @@ void connection_set_send_queue (
 		connection->use_send_queue = true;
 		connection->send_flags = flags;
 
-		connection->send_queue = job_queue_create ();
+		connection->send_queue = job_queue_create (JOB_QUEUE_TYPE_JOBS);
 	}
 
 }
@@ -691,8 +691,8 @@ void *connection_update (void *client_connection_ptr) {
 	if (client_connection_ptr) {
 		ClientConnection *cc = (ClientConnection *) client_connection_ptr;
 
-		char client_name[THREAD_NAME_BUFFER_LEN] = { 0 };
-		char connection_name[THREAD_NAME_BUFFER_LEN] = { 0 };
+		char client_name[THREAD_NAME_BUFFER_SIZE] = { 0 };
+		char connection_name[THREAD_NAME_BUFFER_SIZE] = { 0 };
 
 		#ifdef CONNECTION_DEBUG
 		client_log (
@@ -702,13 +702,13 @@ void *connection_update (void *client_connection_ptr) {
 		);
 		#endif
 
-		(void) strncpy (client_name, cc->client->name, THREAD_NAME_BUFFER_LEN - 1);
+		(void) strncpy (client_name, cc->client->name, THREAD_NAME_BUFFER_SIZE - 1);
 
 		if (strcmp (CONNECTION_DEFAULT_NAME, cc->connection->name)) {
 			(void) strncpy (
 				connection_name,
 				cc->connection->name,
-				THREAD_NAME_BUFFER_LEN - 1
+				THREAD_NAME_BUFFER_SIZE - 1
 			);
 
 			(void) thread_set_name (connection_name);
@@ -815,8 +815,8 @@ void *connection_send_thread (void *client_connection_ptr) {
 	if (client_connection_ptr) {
 		ClientConnection *cc = (ClientConnection *) client_connection_ptr;
 
-		char client_name[THREAD_NAME_BUFFER_LEN] = { 0 };
-		char connection_name[THREAD_NAME_BUFFER_LEN] = { 0 };
+		char client_name[THREAD_NAME_BUFFER_SIZE] = { 0 };
+		char connection_name[THREAD_NAME_BUFFER_SIZE] = { 0 };
 
 		#ifdef CONNECTION_DEBUG
 		client_log (
@@ -826,8 +826,8 @@ void *connection_send_thread (void *client_connection_ptr) {
 		);
 		#endif
 
-		(void) strncpy (client_name, cc->client->name, THREAD_NAME_BUFFER_LEN);
-		(void) strncpy (connection_name, cc->connection->name, THREAD_NAME_BUFFER_LEN);
+		(void) strncpy (client_name, cc->client->name, THREAD_NAME_BUFFER_SIZE);
+		(void) strncpy (connection_name, cc->connection->name, THREAD_NAME_BUFFER_SIZE);
 
 		Job *job = NULL;
 		size_t sent = 0;

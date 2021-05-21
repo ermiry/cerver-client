@@ -1,11 +1,15 @@
 ## General
-- Removed previous json utilities methods
-- Removed file_json_parse () from files sources
-- Added latest custom json sources from cerver
-- Updated examples & tests compilation instructions
-- Refactored coverage configuration in makefile
-- Refactored coverage into dedicated test workflow
+- Updated SCerver fields definitions
+- Added THREADS_DEBUG definition in makefile
+- Updated sources with new threads methods
+
+## Threads
+- Updated threads bsem internal methods
+- Updated thread_set_name () implementation
+- Updated thpool internal methods organization
+- Added latest jobs & queue definitions & methods
 
 ## Tests
-- Refactored run tests scripts instructions
-- Added latest dedicated json methods unit tests
+- Added latest definitions in dedicated test header
+- Added latest threads units tests methods
+- Added dedicated packets methods unit tests

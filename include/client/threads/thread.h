@@ -9,7 +9,7 @@
 
 #define THREAD_OK						0
 
-#define THREAD_NAME_BUFFER_LEN			64
+#define THREAD_NAME_BUFFER_SIZE			64
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,7 +25,9 @@ CLIENT_PUBLIC u8 thread_create_detachable (
 );
 
 // sets thread name from inisde it
-CLIENT_PUBLIC int thread_set_name (const char *name);
+CLIENT_PUBLIC unsigned int thread_set_name (
+	const char *name, ...
+);
 
 #pragma endregion
 
