@@ -33,10 +33,6 @@
 
 #define test_check_ptr_ne(X, Y) test_check (X != Y, NULL)
 
-#define test_check_int_ne(X, Y) test_check (X != Y, NULL)
-
-#define test_check_int_gt(X, Y) test_check (X > Y, NULL)
-
 #define																\
 	test_check_ptr(ptr)												\
 	({																\
@@ -48,7 +44,7 @@
 	})
 
 #define																\
-	test_check_null_ptr(ptr)												\
+	test_check_null_ptr(ptr)										\
 	({																\
 		if (ptr) {													\
 			where;													\
@@ -78,7 +74,7 @@
 	})
 
 #define																\
-	test_check_bool_eq(value, expected, msg)							\
+	test_check_bool_eq(value, expected, msg)						\
 	({																\
 		if (value != expected) {									\
 			where;													\
@@ -92,6 +88,26 @@
 			exit (1);												\
 		}															\
 	})
+
+#define																\
+	test_check_unsigned_eq(value, expected, msg)					\
+	({																\
+		if (value != expected) {									\
+			where;													\
+			(void) fprintf (										\
+				stderr,												\
+				"UNSIGNED %d does not match %d\n",					\
+				value, expected										\
+			);														\
+																	\
+			if (msg) (void) fprintf (stderr, "%s\n", (char *) msg);	\
+			exit (1);												\
+		}															\
+	})
+
+#define test_check_unsigned_ne(X, Y) test_check (X != Y, NULL)
+
+#define test_check_unsigned_gt(X, Y) test_check (X > Y, NULL)
 
 #define																\
 	test_check_int_eq(value, expected, msg)							\
@@ -108,6 +124,10 @@
 			exit (1);												\
 		}															\
 	})
+
+#define test_check_int_ne(X, Y) test_check (X != Y, NULL)
+
+#define test_check_int_gt(X, Y) test_check (X > Y, NULL)
 
 #define																\
 	test_check_long_int_eq(value, expected, msg)					\
@@ -134,6 +154,22 @@
 				stderr,												\
 				"STRING %s does not match %s\n",					\
 				(char *) value, (char *) expected					\
+			);														\
+																	\
+			if (msg) (void) fprintf (stderr, "%s\n", (char *) msg);	\
+			exit (1);												\
+		}															\
+	})
+
+#define																\
+	test_check_str_len(string, expected, msg)						\
+	({																\
+		if (strlen ((char *) string) != expected) {					\
+			where;													\
+			(void) fprintf (										\
+				stderr,												\
+				"STRING %s LEN does not match %d\n",				\
+				(char *) string, expected							\
 			);														\
 																	\
 			if (msg) (void) fprintf (stderr, "%s\n", (char *) msg);	\
