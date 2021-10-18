@@ -32,7 +32,9 @@ static int cerver_connect (const char *ip, unsigned int port) {
 
         client = client_create ();
         if (client) {
-            client_set_app_handlers (client, app_handler, NULL);
+            Handler *app_packet_handler = handler_create (app_handler);
+			handler_set_direct_handle (app_packet_handler, true);
+			client_set_app_handlers (client, app_packet_handler, NULL);
 
             connection = client_connection_create (client, ip, port, PROTOCOL_TCP, false);
             if (connection) {
@@ -82,7 +84,7 @@ static void app_handler (void *packet_ptr) {
 	if (packet_ptr) {
         Packet *packet = (Packet *) packet_ptr;
         if (packet) {
-            switch (packet->header->request_type) {
+            switch (packet->header.request_type) {
                 case TEST_MSG: client_log (LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Got a test message from cerver!"); break;
 
                 default: 
@@ -102,7 +104,7 @@ static int test_msg_send (void) {
 
     int retval = 1;
 
-    if ((client->running) && (connection->connected)) {
+    if ((client->running) && (connection->active)) {
         Packet *packet = packet_generate_request (PACKET_TYPE_APP, TEST_MSG, NULL, 0);
         if (packet) {
             packet_set_network_values (packet, client, connection);

@@ -7,6 +7,7 @@
 
 #include "client/version.h"
 
+#include "client/auth.h"
 #include "client/client.h"
 #include "client/packets.h"
 #include "client/events.h"
@@ -59,7 +60,7 @@ void credentials_delete (void *credentials_ptr) { if (credentials_ptr) free (cre
 
 #pragma region connect
 
-static void client_event_connection_close (void *client_event_data_ptr) {
+static void *client_event_connection_close (void *client_event_data_ptr) {
 
 	if (client_event_data_ptr) {
 		ClientEventData *client_event_data = (ClientEventData *) client_event_data_ptr;
@@ -67,16 +68,18 @@ static void client_event_connection_close (void *client_event_data_ptr) {
 		if (client_event_data->connection) {
 			client_log_warning (
 				"client_event_connection_close () - connection <%s> has been closed!",
-				client_event_data->connection->name->str
+				client_event_data->connection->name
 			);
 		}
 
 		client_event_data_delete (client_event_data);
 	}
 
+	return NULL;
+
 }
 
-static void client_error_failed_auth (void *client_error_data_ptr) {
+static void *client_error_failed_auth (void *client_error_data_ptr) {
 
 	if (client_error_data_ptr) {
 		ClientErrorData *client_error_data = (ClientErrorData *) client_error_data_ptr;
@@ -84,16 +87,18 @@ static void client_error_failed_auth (void *client_error_data_ptr) {
 		if (client_error_data->connection) {
 			client_log_error (
 				"client_error_failed_auth () - connection <%s> failed to authenticate!",
-				client_error_data->connection->name->str
+				client_error_data->connection->name
 			);
 		}
 
 		client_error_data_delete (client_error_data);
 	}
 
+	return NULL;
+
 }
 
-static void client_event_success_auth (void *client_event_data_ptr) {
+static void *client_event_success_auth (void *client_event_data_ptr) {
 
 	if (client_event_data_ptr) {
 		ClientEventData *client_event_data = (ClientEventData *) client_event_data_ptr;
@@ -101,7 +106,7 @@ static void client_event_success_auth (void *client_event_data_ptr) {
 		if (client_event_data->connection) {
 			client_log_success (
 				"client_event_success_auth () - connection <%s> has been authenticated!",
-				client_event_data->connection->name->str
+				client_event_data->connection->name
 			);
 		}
 
@@ -112,6 +117,8 @@ static void client_event_success_auth (void *client_event_data_ptr) {
 
 		client_event_data_delete (client_event_data);
 	}
+
+	return NULL;
 
 }
 
@@ -124,7 +131,9 @@ static int cerver_connect (void) {
 	client = client_create ();
 	if (client) {
 		// client_set_name (client, "main");
-		client_set_app_handlers (client, app_handler, NULL);
+		Handler *app_packet_handler = handler_create (app_handler);
+		handler_set_direct_handle (app_packet_handler, true);
+		client_set_app_handlers (client, app_packet_handler, NULL);
 
 		client_event_register (
 			client, 
@@ -250,7 +259,7 @@ static void app_handler (void *packet_ptr) {
 	if (packet_ptr) {
 		Packet *packet = (Packet *) packet_ptr;
 
-		switch (packet->header->request_type) {
+		switch (packet->header.request_type) {
 			case TEST_MSG: client_log (LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Got a test message from cerver!"); break;
 
 			default: 
@@ -269,7 +278,7 @@ static int test_msg_send (Connection *con) {
 
 	int retval = 1;
 
-	if ((client->running) && (con->connected)) {
+	if ((client->running) && (con->active)) {
 		Packet *packet = packet_generate_request (PACKET_TYPE_APP, TEST_MSG, NULL, 0);
 		if (packet) {
 			packet_set_network_values (packet, client, con);

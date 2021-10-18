@@ -2,6 +2,10 @@ TYPE		:= development
 
 NATIVE		:= 0
 
+COVERAGE	:= 0
+
+DEBUG		:= 0
+
 SLIB		:= libclient.so
 
 all: directories $(SLIB)
@@ -23,13 +27,14 @@ MATH		:= -lm
 
 DEFINES		:= -D _GNU_SOURCE
 
-DEVELOPMENT := -D CERVER_DEBUG 		\
+DEVELOPMENT := -D CERVER_DEBUG			\
 				-D CLIENT_DEBUG 		\
 				-D CONNECTION_DEBUG 	\
 				-D HANDLER_DEBUG 		\
 				-D PACKETS_DEBUG 		\
 				-D AUTH_DEBUG 			\
-				-D FILES_DEBUG
+				-D FILES_DEBUG			\
+				-D THREADS_DEBUG
 
 CC          := gcc
 
@@ -64,6 +69,9 @@ ifeq ($(TYPE), development)
 	CFLAGS += -g -fasynchronous-unwind-tables $(DEVELOPMENT)
 else ifeq ($(TYPE), test)
 	CFLAGS += -g -fasynchronous-unwind-tables -D_FORTIFY_SOURCE=2 -fstack-protector -O2
+	ifeq ($(COVERAGE), 1)
+		CFLAGS += -fprofile-arcs -ftest-coverage
+	endif
 else ifeq ($(TYPE), beta)
 	CFLAGS += -g -D_FORTIFY_SOURCE=2 -O2
 else
@@ -93,7 +101,9 @@ CFLAGS += -fPIC $(COMMON)
 LIB         := -L /usr/local/lib $(PTHREAD) $(MATH)
 
 ifeq ($(TYPE), test)
-	LIB += -lgcov --coverage
+	ifeq ($(COVERAGE), 1)
+		LIB += -lgcov --coverage
+	endif
 endif
 
 INC         := -I $(INCDIR) -I /usr/local/include
@@ -149,7 +159,7 @@ endif
 # common flags
 EXAFLAGS += -Wall -Wno-unknown-pragmas
 
-EXALIBS		:= -L ./$(TARGETDIR) -l client
+EXALIBS		:= -Wl,-rpath=./$(TARGETDIR) -L ./$(TARGETDIR) -l client
 EXAINC		:= -I ./$(INCDIR) -I ./$(EXAMDIR)
 
 EXAMPLES	:= $(shell find $(EXAMDIR) -type f -name *.$(SRCEXT))
@@ -157,17 +167,17 @@ EXOBJS		:= $(patsubst $(EXAMDIR)/%,$(EXABUILD)/%,$(EXAMPLES:.$(SRCEXT)=.$(OBJEXT
 
 examples: $(EXOBJS)
 	@mkdir -p ./examples/bin
-	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/test.o -o ./$(EXATARGET)/test -l client
-	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/handlers.o -o ./$(EXATARGET)/handlers -l client
-	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/multi.o -o ./$(EXATARGET)/multi -l client
-	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/packets.o -o ./$(EXATARGET)/packets -l client
-	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/requests.o -o ./$(EXATARGET)/requests -l client
-	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/files.o -o ./$(EXATARGET)/files -l client
-	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/auth.o -o ./$(EXATARGET)/auth -l client
-	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/sessions.o -o ./$(EXATARGET)/sessions -l client
-	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/admin.o -o ./$(EXATARGET)/admin -l client
-	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/balancer.o -o ./$(EXATARGET)/balancer -l client
-	$(CC) -I ./$(INCDIR) -L ./$(TARGETDIR) ./$(EXABUILD)/logs.o -o ./$(EXATARGET)/logs -l client
+	$(CC) $(EXAINC) ./$(EXABUILD)/test.o -o ./$(EXATARGET)/test $(EXALIBS)
+	$(CC) $(EXAINC) ./$(EXABUILD)/handlers.o -o ./$(EXATARGET)/handlers $(EXALIBS)
+	$(CC) $(EXAINC) ./$(EXABUILD)/multi.o -o ./$(EXATARGET)/multi $(EXALIBS)
+	$(CC) $(EXAINC) ./$(EXABUILD)/packets.o -o ./$(EXATARGET)/packets $(EXALIBS)
+	$(CC) $(EXAINC) ./$(EXABUILD)/requests.o -o ./$(EXATARGET)/requests $(EXALIBS)
+	$(CC) $(EXAINC) ./$(EXABUILD)/files.o -o ./$(EXATARGET)/files $(EXALIBS)
+	$(CC) $(EXAINC) ./$(EXABUILD)/auth.o -o ./$(EXATARGET)/auth $(EXALIBS)
+	$(CC) $(EXAINC) ./$(EXABUILD)/sessions.o -o ./$(EXATARGET)/sessions $(EXALIBS)
+	$(CC) $(EXAINC) ./$(EXABUILD)/admin.o -o ./$(EXATARGET)/admin $(EXALIBS)
+	$(CC) $(EXAINC) ./$(EXABUILD)/balancer.o -o ./$(EXATARGET)/balancer $(EXALIBS)
+	$(CC) $(EXAINC) ./$(EXABUILD)/logs.o -o ./$(EXATARGET)/logs $(EXALIBS)
 
 # compile examples
 $(EXABUILD)/%.$(OBJEXT): $(EXAMDIR)/%.$(SRCEXT)
@@ -188,17 +198,23 @@ TESTCOVDIR	:= $(COVDIR)/test
 TESTFLAGS	:= -g $(DEFINES) -Wall -Wno-unknown-pragmas -Wno-format
 
 ifeq ($(TYPE), test)
-	TESTFLAGS += -fprofile-arcs -ftest-coverage
+	ifeq ($(COVERAGE), 1)
+		TESTFLAGS += -fprofile-arcs -ftest-coverage
+	endif
 endif
 
 ifeq ($(NATIVE), 1)
 	TESTFLAGS += -march=native
 endif
 
-TESTLIBS	:= $(PTHREAD) $(CURL) -L ./$(TARGETDIR) -l client
+TESTLIBS	:= -L /usr/local/lib $(PTHREAD)
+
+TESTLIBS += -Wl,-rpath=./$(TARGETDIR) -L ./$(TARGETDIR) -l client
 
 ifeq ($(TYPE), test)
-	TESTLIBS += -lgcov --coverage
+	ifeq ($(COVERAGE), 1)
+		TESTLIBS += -lgcov --coverage
+	endif
 endif
 
 TESTINC		:= -I $(INCDIR) -I ./$(TESTDIR)
@@ -211,6 +227,9 @@ TESTCOVS	:= $(patsubst $(TESTDIR)/%,$(TESTBUILD)/%,$(TESTS:.$(SRCEXT)=.$(SRCEXT)
 test: $(TESTOBJS)
 	@mkdir -p ./$(TESTTARGET)
 	$(CC) $(TESTINC) ./$(TESTBUILD)/collections/*.o -o ./$(TESTTARGET)/collections $(TESTLIBS)
+	$(CC) $(TESTINC) ./$(TESTBUILD)/json/*.o -o ./$(TESTTARGET)/json $(TESTLIBS)
+	$(CC) $(TESTINC) ./$(TESTBUILD)/packets.o -o ./$(TESTTARGET)/packets $(TESTLIBS)
+	$(CC) $(TESTINC) ./$(TESTBUILD)/threads/*.o -o ./$(TESTTARGET)/threads $(TESTLIBS)
 	$(CC) $(TESTINC) ./$(TESTBUILD)/utils/*.o -o ./$(TESTTARGET)/utils $(TESTLIBS)
 
 # compile tests

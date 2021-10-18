@@ -3,11 +3,11 @@
 
 #include "client/config.h"
 
-#define CLIENT_VERSION                      "1.3.2"
-#define CLIENT_VERSION_NAME                 "Release 1.3.2"
-#define CLIENT_VERSION_DATE			        "27/01/2020"
-#define CLIENT_VERSION_TIME			        "22:45 CST"
-#define CLIENT_VERSION_AUTHOR			    "Erick Salas"
+#define CLIENT_VERSION				"1.4"
+#define CLIENT_VERSION_NAME			"Release 1.4"
+#define CLIENT_VERSION_DATE			"18/10/2021"
+#define CLIENT_VERSION_TIME			"10:26 CST"
+#define CLIENT_VERSION_AUTHOR		"Erick Salas"
 
 #ifdef __cplusplus
 extern "C" {

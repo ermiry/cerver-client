@@ -14,10 +14,8 @@
 
 u8 client_event_unregister (Client *client, ClientEventType event_type);
 
-#pragma region types
-
 // get the description for the current event type
-const char *client_event_type_description (ClientEventType type) {
+const char *client_event_type_description (const ClientEventType type) {
 
 	switch (type) {
 		#define XX(num, name, description) case CLIENT_EVENT_##name: return #description;
@@ -28,11 +26,6 @@ const char *client_event_type_description (ClientEventType type) {
 	return client_event_type_description (CLIENT_EVENT_UNKNOWN);
 
 }
-
-
-#pragma endregion
-
-#pragma region data
 
 static ClientEventData *client_event_data_new (void) {
 
@@ -71,17 +64,13 @@ static ClientEventData *client_event_data_create (
 		event_data->response_data = event->response_data;
 		event_data->delete_response_data = event->delete_response_data;
 
-		event_data->action_args = event->action_args;
+		event_data->action_args = event->work_args;
 		event_data->delete_action_args = event->delete_action_args;
 	}
 
 	return event_data;
 
 }
-
-#pragma endregion
-
-#pragma region events
 
 static ClientEvent *client_event_new (void) {
 
@@ -96,8 +85,8 @@ static ClientEvent *client_event_new (void) {
 		event->response_data = NULL;
 		event->delete_response_data = NULL;
 
-		event->action = NULL;
-		event->action_args = NULL;
+		event->work = NULL;
+		event->work_args = NULL;
 		event->delete_action_args = NULL;
 	}
 
@@ -115,9 +104,9 @@ void client_event_delete (void *ptr) {
 				event->delete_response_data (event->response_data);
 		}
 
-		if (event->action_args) {
+		if (event->work_args) {
 			if (event->delete_action_args)
-				event->delete_action_args (event->action_args);
+				event->delete_action_args (event->work_args);
 		}
 
 		free (event);
@@ -133,7 +122,7 @@ void client_event_delete (void *ptr) {
 u8 client_event_register (
 	Client *client,
 	const ClientEventType event_type,
-	Action action, void *action_args, Action delete_action_args,
+	Work work, void *work_args, Action delete_action_args,
 	bool create_thread, bool drop_after_trigger
 ) {
 
@@ -147,8 +136,8 @@ u8 client_event_register (
 			event->create_thread = create_thread;
 			event->drop_after_trigger = drop_after_trigger;
 
-			event->action = action;
-			event->action_args = action_args;
+			event->work = work;
+			event->work_args = work_args;
 			event->delete_action_args = delete_action_args;
 
 			// search if there is an action already registred for that event and remove it
@@ -167,7 +156,9 @@ u8 client_event_register (
 // unregister the action associated with an event
 // deletes the action args using the delete_action_args () if NOT NULL
 // returns 0 on success, 1 on error or if event is NOT registered
-u8 client_event_unregister (Client *client, const ClientEventType event_type) {
+u8 client_event_unregister (
+	Client *client, const ClientEventType event_type
+) {
 
 	u8 retval = 1;
 
@@ -210,12 +201,12 @@ void client_event_trigger (
 		ClientEvent *event = client->events[event_type];
 		if (event) {
 			// trigger the action
-			if (event->action) {
+			if (event->work) {
 				if (event->create_thread) {
 					pthread_t thread_id = 0;
-					thread_create_detachable (
+					(void) thread_create_detachable (
 						&thread_id,
-						(void *(*)(void *)) event->action,
+						event->work,
 						client_event_data_create (
 							client, connection,
 							event
@@ -224,19 +215,19 @@ void client_event_trigger (
 				}
 
 				else {
-					event->action (client_event_data_create (
+					(void) event->work (client_event_data_create (
 						client, connection,
 						event
 					));
 				}
 
 				if (event->drop_after_trigger) {
-					(void) client_event_unregister ((Client *) client, event_type);
+					(void) client_event_unregister (
+						(Client *) client, event_type
+					);
 				}
 			}
 		}
 	}
 
 }
-
-#pragma endregion

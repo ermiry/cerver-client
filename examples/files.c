@@ -8,6 +8,8 @@
 #include "client/version.h"
 
 #include "client/client.h"
+#include "client/errors.h"
+#include "client/events.h"
 #include "client/packets.h"
 
 #include "client/utils/utils.h"
@@ -26,7 +28,7 @@ static void app_handler (void *packet_ptr);
 
 #pragma region events
 
-static void client_error_file_not_found (void *client_error_data_ptr) {
+static void *client_error_file_not_found (void *client_error_data_ptr) {
 
 	if (client_error_data_ptr) {
 		ClientErrorData *client_error_data = (ClientErrorData *) client_error_data_ptr;
@@ -36,9 +38,11 @@ static void client_error_file_not_found (void *client_error_data_ptr) {
 		client_error_data_delete (client_error_data);
 	}
 
+	return NULL;
+
 }
 
-static void client_event_connection_close (void *client_event_data_ptr) {
+static void *client_event_connection_close (void *client_event_data_ptr) {
 
 	if (client_event_data_ptr) {
 		ClientEventData *client_event_data = (ClientEventData *) client_event_data_ptr;
@@ -46,12 +50,14 @@ static void client_event_connection_close (void *client_event_data_ptr) {
 		if (client_event_data->connection) {
 			client_log_warning (
 				"client_event_connection_close () - connection <%s> has been closed!",
-				client_event_data->connection->name->str
+				client_event_data->connection->name
 			);
 		}
 
 		client_event_data_delete (client_event_data);
 	}
+
+	return NULL;
 
 }
 
@@ -68,7 +74,9 @@ static int cerver_connect (const char *ip, unsigned int port) {
 
 		client = client_create ();
 		if (client) {
-			client_set_app_handlers (client, app_handler, NULL);
+			Handler *app_packet_handler = handler_create (app_handler);
+			handler_set_direct_handle (app_packet_handler, true);
+			client_set_app_handlers (client, app_packet_handler, NULL);
 
 			client_event_register (
 				client, 
@@ -132,7 +140,7 @@ static void app_handler (void *packet_ptr) {
 	if (packet_ptr) {
         Packet *packet = (Packet *) packet_ptr;
         if (packet) {
-            switch (packet->header->request_type) {
+            switch (packet->header.request_type) {
                 case TEST_MSG: client_log (LOG_TYPE_DEBUG, LOG_TYPE_NONE, "Got a test message from cerver!"); break;
 
                 default: 
@@ -152,7 +160,7 @@ static int test_msg_send (void) {
 
     int retval = 1;
 
-    if ((client->running) && (connection->connected)) {
+    if ((client->running) && (connection->active)) {
         Packet *packet = packet_generate_request (PACKET_TYPE_APP, TEST_MSG, NULL, 0);
         if (packet) {
             packet_set_network_values (packet, client, connection);

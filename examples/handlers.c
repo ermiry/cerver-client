@@ -38,8 +38,17 @@ static int cerver_connect (const char *ip, unsigned int port) {
 
         client = client_create ();
         if (client) {
-            client_set_app_handlers (client, my_app_handler, my_app_error_handler);
-            client_set_custom_handler (client, my_custom_handler);
+            Handler *app_packet_handler = handler_create (my_app_handler);
+			handler_set_direct_handle (app_packet_handler, true);
+
+            Handler *app_error_packet_handler = handler_create (my_app_error_handler);
+			handler_set_direct_handle (app_error_packet_handler, true);
+
+			client_set_app_handlers (client, app_packet_handler, app_error_packet_handler);
+
+            Handler *custom_packet_handler = handler_create (my_custom_handler);
+			handler_set_direct_handle (custom_packet_handler, true);
+            client_set_custom_handler (client, custom_packet_handler);
 
             connection = client_connection_create (client, ip, port, PROTOCOL_TCP, false);
             if (connection) {
@@ -86,7 +95,7 @@ static void my_app_handler (void *data) {
 
 	if (data) {
 		Packet *packet = (Packet *) data;
-		switch (packet->header->request_type) {
+		switch (packet->header.request_type) {
             case TEST_MSG: 
                 client_log_debug ("Got a PACKET_TYPE_APP test!");
                 break;
@@ -103,7 +112,7 @@ static void my_app_error_handler (void *data) {
 
 	if (data) {
 		Packet *packet = (Packet *) data;
-		switch (packet->header->request_type) {
+		switch (packet->header.request_type) {
             case TEST_MSG: 
                 client_log_debug ("Got a PACKET_TYPE_APP_ERROR test!");
                 break;
@@ -120,7 +129,7 @@ static void my_custom_handler (void *data) {
 
 	if (data) {
 		Packet *packet = (Packet *) data;
-		switch (packet->header->request_type) {
+		switch (packet->header.request_type) {
             case TEST_MSG: 
                 client_log_debug ("Got a PACKET_TYPE_CUSTOM test!");
                 break;
@@ -141,7 +150,7 @@ static int test_app_msg_send (void) {
 
     int retval = 1;
 
-    if ((client->running) && (connection->connected)) {
+    if ((client->running) && (connection->active)) {
         Packet *packet = packet_generate_request (PACKET_TYPE_APP, TEST_MSG, NULL, 0);
         if (packet) {
             packet_set_network_values (packet, client, connection);
@@ -167,7 +176,7 @@ static int test_app_error_msg_send (void) {
 
     int retval = 1;
 
-    if ((client->running) && (connection->connected)) {
+    if ((client->running) && (connection->active)) {
         Packet *packet = packet_generate_request (PACKET_TYPE_APP_ERROR, TEST_MSG, NULL, 0);
         if (packet) {
             packet_set_network_values (packet, client, connection);
@@ -193,7 +202,7 @@ static int test_custom_msg_send (void) {
 
     int retval = 1;
 
-    if ((client->running) && (connection->connected)) {
+    if ((client->running) && (connection->active)) {
         Packet *packet = packet_generate_request (PACKET_TYPE_CUSTOM, TEST_MSG, NULL, 0);
         if (packet) {
             packet_set_network_values (packet, client, connection);
